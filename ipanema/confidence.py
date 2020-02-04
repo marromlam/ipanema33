@@ -7,14 +7,14 @@ from scipy.optimize import brentq
 from scipy.special import erf
 from scipy.stats import f
 
-from .minimizer import MinimizerException
+from .optimizers import OptimizerException
 
 CONF_ERR_GEN = 'Cannot determine Confidence Intervals'
 CONF_ERR_STDERR = '%s without sensible uncertainty estimates' % CONF_ERR_GEN
 CONF_ERR_NVARS = '%s with < 2 variables' % CONF_ERR_GEN
 
 
-def f_compare(ndata, nparas, new_chi, best_chi, nfix=1):
+def FisherTest(ndata, nparas, new_chi, best_chi, nfix=1):
     """Return the probability calculated using  the F-test.
 
     The null model (i.e., best-fit solution) is compared to an alternate model
@@ -92,7 +92,7 @@ def conf_interval(minimizer, result, p_names=None, sigmas=[1, 2, 3],
         Print extra debuging information (default is False).
     prob_func : None or callable, optional
         Function to calculate the probability from the optimized chi-square.
-        Default is None and uses the built-in f_compare (i.e., F-test).
+        Default is None and uses the built-in FisherTest (i.e., F-test).
 
     Returns
     -------
@@ -195,7 +195,7 @@ class ConfidenceInterval(object):
             raise MinimizerException(CONF_ERR_NVARS)
 
         if prob_func is None or not hasattr(prob_func, '__call__'):
-            self.prob_func = f_compare
+            self.prob_func = FisherTest
         if trace:
             self.trace_dict = {i: [] for i in self.p_names}
 
@@ -367,7 +367,7 @@ def conf_interval2d(minimizer, result, x_name, y_name, nx=10, ny=10,
         given, the default is 5 std-errs in each direction.
     prob_func : None or callable, optional
         Function to calculate the probability from the optimized chi-square.
-        Default is None and uses built-in f_compare (i.e., F-test).
+        Default is None and uses built-in FisherTest (i.e., F-test).
 
     Returns
     -------
@@ -392,7 +392,7 @@ def conf_interval2d(minimizer, result, x_name, y_name, nx=10, ny=10,
     org = copy_vals(result.params)
 
     if prob_func is None or not hasattr(prob_func, '__call__'):
-        prob_func = f_compare
+        prob_func = FisherTest
 
     x = params[x_name]
     y = params[y_name]

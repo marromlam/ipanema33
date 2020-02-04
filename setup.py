@@ -1,4 +1,8 @@
-"""
+#!/usr/bin/env python
+
+from setuptools import setup
+
+long_desc = """
 
 IPANEMA: Hyperthread Curve-Fitting Module for Python
 
@@ -39,27 +43,40 @@ Copyright (c) 2020 Ipanema Developers ; MIT License ; see LICENSE
 
 """
 
-from asteval import Interpreter
 
-# Samples
-from .samples import Sample, getDataFile
 
-# Core utils
-from .core.utils import initialize
-from .core.utils import ristra
-from .core import utils
-
-from .confidence import conf_interval, conf_interval2d
-from .optimizers import Optimizer, OptimizerException, optimize
-from .parameter import Parameter, Parameters
-
-from .tools.uncertainties_wrapper import wrap_unc, get_confidence_bands
-
-# Utils
-from .utils.printfuncs import (ci_report, fit_report, report_ci, report_errors,
-                         report_fit)
-
-#from .model import Model, CompositeModel
-#from . import shapes, models
-from . import histogram as hist
-from . import plotting
+setup(name='ipanema',
+      version='0.2',
+      author='Marcos Romero',
+      author_email='marcos.romero.lamas@cern.ch',
+      url='https://github.com/marromlam/ipanema.git',
+      download_url='https://github.com/marromlam/ipanema.git',
+      install_requires=['asteval>=0.9.12',
+                        'numpy>=1.10',
+                        'scipy>=0.19',
+                        'six>1.10',
+                        'uncertainties>=3.0',
+                        'pandas',
+                        'numdifftools',
+                        'emcee>=3.0'],
+      python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
+      license='MIT',
+      description="Fitting Tool for High Energy Physics",
+      long_description=long_desc,
+      platforms=['Linux', 'Mac OS X', 'Windows'],
+      classifiers=['Development Status :: 0 - Production/Unstable',
+                   'Intended Audience :: Science/Research',
+                   'License :: OSI Approved :: BSD License',
+                   'Operating System :: OS Independent',
+                   'Programming Language :: Python :: 2.7',
+                   'Programming Language :: Python :: 3.4',
+                   'Programming Language :: Python :: 3.5',
+                   'Programming Language :: Python :: 3.6',
+                   'Programming Language :: Python :: 3.7',
+                   'Topic :: Scientific/Engineering',
+                   ],
+      keywords='curve-fitting, minimization',
+      #tests_require=['pytest'],
+      package_dir={'ipanema': 'ipanema'},
+      packages=['ipanema'],
+)

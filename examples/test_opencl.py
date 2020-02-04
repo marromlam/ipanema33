@@ -5,26 +5,19 @@
 
 # Imports ----------------------------------------------------------------------
 import sys
-import os
-
-sys.path.append("/home3/marcos.romero/ipanema3/")
+sys.path.append("../")
 from ipanema import Parameters, fit_report, minimize
 import pyopencl as cl  # Import the OpenCL GPU computing API
 import pyopencl.array as pycl_array  # Import PyOpenCL Array (a Numpy array plus an OpenCL buffer object)
 import numpy as np  # Import Numpy number tools
 import matplotlib.pyplot as plt
 import corner
-
-
-
-
-
-
-
+from timeit import default_timer as timer
 
 
 # %% Prepare context: were OpenCL function should run --------------------------
 context = cl.Context([cl.get_platforms()[0].get_devices()[1]])
+print(context)
 queue = cl.CommandQueue(context)  # Instantiate a Queue
 
 
@@ -36,25 +29,11 @@ p_true.add('period', value=5.46)
 p_true.add('shift', value=0.123)
 p_true.add('decay', value=0.032)
 
-reload(Parameters)
-{p.name:p.__getstate__() for p in p_true.values()}
 
-p_true.values()
-
-p_true.dumps()
-
-
-{"amp": {"name": "amp", "value": 14.0, "vary": true, "expr": null, "min": -Infinity, "max": Infinity, "brute_step": null, "stderr": null, "correl": null, "init_value": 14.0, "user_data": null},
-"period": {"name": "period", "value": 5.46, "vary": true, "expr": null, "min": -Infinity, "max": Infinity, "brute_step": null, "stderr": null, "correl": null, "init_value": 5.46, "user_data": null},
-"shift": {"name": "shift", "value": 0.123, "vary": true, "expr": null, "min": -Infinity, "max": Infinity, "brute_step": null, "stderr": null, "correl": null, "init_value": 0.123, "user_data": null},
-"decay": {"name": "decay", "value": 0.032, "vary": true, "expr": null, "min": -Infinity, "max": Infinity, "brute_step": null, "stderr": null, "correl": null, "init_value": 0.032, "user_data": null}}
-
-
-'{"params": [{"name": "amp", "value": 14.0, "vary": true, "expr": null, "min": -Infinity, "max": Infinity, "brute_step": null, "stderr": null, "correl": null, "init_value": 14.0, "user_data": null}, {"name": "period", "value": 5.46, "vary": true, "expr": null, "min": -Infinity, "max": Infinity, "brute_step": null, "stderr": null, "correl": null, "init_value": 5.46, "user_data": null}, {"name": "shift", "value": 0.123, "vary": true, "expr": null, "min": -Infinity, "max": Infinity, "brute_step": null, "stderr": null, "correl": null, "init_value": 0.123, "user_data": null}, {"name": "decay", "value": 0.032, "vary": true, "expr": null, "min": -Infinity, "max": Infinity, "brute_step": null, "stderr": null, "correl": null, "init_value": 0.032, "user_data": null}]}'
 
 # %% Prepare CUDA model --------------------------------------------------------
 cudaModel = cl.Program(context, """
-
+#define BLOCK SIZE 256
 __kernel
 void shitModel(__global const float *data, __global float *lkhd,
                    float amp,  float period,  float shift,  float decay,
@@ -75,7 +54,7 @@ void shitModel(__global const float *data, __global float *lkhd,
 def model(data, lkhd, amp, period, shift, decay):
     cudaModel.shitModel(queue, data.shape, None, data.data, lkhd.data,
                   np.float32(amp), np.float32(period), np.float32(shift),
-                  np.float32(decay), np.int16(len(data)) )
+                  np.float32(decay), np.int32(len(data)) )
     return lkhd.get()
 
 
@@ -119,7 +98,7 @@ def residual(pars, x, data=None):
 
 
 # %% Prepare arrays ------------------------------------------------------------
-x_h = np.linspace(-5.0, 5.0, 100).astype(np.float32)
+x_h = np.linspace(-5.0, 5.0, 100000).astype(np.float32)
 x_d = pycl_array.to_device(queue, x_h).astype(np.float32)
 lkhd_h = 0*x_h
 lkhd_d = pycl_array.to_device(queue, 0*x_h).astype(np.float32)
@@ -149,8 +128,16 @@ out = minimize(chi2FCN, method="powell",params=fit_params, args=(x_d,), kws={'da
 #out = minimize(residual, params=fit_params, args=(x_h,), kws={'data': data_h})
 out.params.add('__lnsigma', value=np.log(0.1), min=np.log(0.001), max=np.log(2))
 
+t0 = timer()
 out = minimize(chi2FCN, method='emcee', nan_policy='omit', burn=300, steps=2000, thin=20, params=fit_params, is_weighted=False, args=(x_d,), kws={'data': data_d})
+t_gpu = timer()-t0
 
+
+t0 = timer()
+out = minimize(residual, method='emcee', nan_policy='omit', burn=300, steps=2000, thin=20, params=fit_params, is_weighted=False, args=(x_h,), kws={'data': data_h})
+t_cpu = timer()-t0
+
+print(" CPU: %.4f s\n GPU: %.4f s\nGAIN: %.4f s\n" % (t_cpu,t_gpu,t_cpu/t_gpu))
 
 
 #%% Fit plot
@@ -169,4 +156,4 @@ out = minimize(chi2FCN, method='emcee', nan_policy='omit', burn=300, steps=2000,
 
 
 
-print(fit_report(out))
+#print(fit_report(out))

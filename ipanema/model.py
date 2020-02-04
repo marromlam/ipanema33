@@ -12,11 +12,11 @@ import numpy as np
 from scipy.special import erf
 from scipy.stats import t
 
-from . import Minimizer, Parameter, Parameters, lineshapes
+from . import Optimizer, Parameter, Parameters, shapes
 from .confidence import conf_interval
 from .jsonutils import HAS_DILL, decode4js, encode4js
-from .minimizer import MinimizerResult
-from .printfuncs import ci_report, fit_report, fitreport_html_table
+from .optimizers import OptimizerResult
+from .utils.printfuncs import ci_report, fit_report, fitreport_html_table
 
 # Use pandas.isnull for aligning missing data if pandas is available.
 # otherwise use numpy.isnan
@@ -1210,8 +1210,8 @@ def _buildmodel(state, funcdefs=None):
     if len(state) != 3:
         raise ValueError("Cannot restore Model")
     known_funcs = {}
-    for fname in lineshapes.functions:
-        fcn = getattr(lineshapes, fname, None)
+    for fname in shapes.functions:
+        fcn = getattr(shapes, fname, None)
         if callable(fcn):
             known_funcs[fname] = fcn
     if funcdefs is not None:
@@ -1277,11 +1277,11 @@ def load_modelresult(fname, funcdefs=None):
     return mresult
 
 
-class ModelResult(Minimizer):
+class ModelResult(Optimizer):
     """Result from the Model fit.
 
     This has many attributes and methods for viewing and working with
-    the results of a fit using Model. It inherits from Minimizer, so
+    the results of a fit using Model. It inherits from Optimizer, so
     that it can be used to modify and re-run the fit for the Model.
 
     """
@@ -1328,7 +1328,7 @@ class ModelResult(Minimizer):
         self.ci_out = None
         self.user_options = None
         self.init_params = deepcopy(params)
-        Minimizer.__init__(self, model._residual, params, fcn_args=fcn_args,
+        Optimizer.__init__(self, model._residual, params, fcn_args=fcn_args,
                            fcn_kws=fcn_kws, iter_cb=iter_cb, nan_policy=nan_policy,
                            scale_covar=scale_covar, calc_covar=calc_covar, **fit_kws)
 
@@ -1705,7 +1705,7 @@ class ModelResult(Minimizer):
             self.data = self.userargs[0]
             self.weights = self.userargs[1]
         self.init_params = self.model.make_params(**self.init_values)
-        self.result = MinimizerResult()
+        self.result = OptimizerResult()
         self.result.params = self.params
         self.init_vals = list(self.init_values.items())
         return self

@@ -4,6 +4,7 @@ import re
 import warnings
 import numpy as np
 
+
 try:
     import numdifftools  # noqa: F401
     HAS_NUMDIFFTOOLS = True
@@ -132,20 +133,21 @@ def fit_report(inpars, modelpars=None, show_correl=True, min_correl=0.1,
     namelen = max([len(n) for n in parnames])
     if result is not None:
         add("[[Fit Statistics]]")
-        add("    # fitting method   = %s" % (result.method))
+        add("    fitting method     = %s" % (result.method))
         add("    # function evals   = %s" % getfloat_attr(result, 'nfev'))
         add("    # data points      = %s" % getfloat_attr(result, 'ndata'))
-        add("    # variables        = %s" % getfloat_attr(result, 'nvarys'))
+        add("    # variables        = %s" % getfloat_attr(result, 'nfree'))
         add("    chi-square         = %s" % getfloat_attr(result, 'chisqr'))
-        add("    reduced chi-square = %s" % getfloat_attr(result, 'redchi'))
+        add("    reduced chi-square = %s" % getfloat_attr(result, 'chi2'))
+        add("    -2 logLikelihood   = %s" % getfloat_attr(result, 'nll2'))
         add("    Akaike info crit   = %s" % getfloat_attr(result, 'aic'))
         add("    Bayesian info crit = %s" % getfloat_attr(result, 'bic'))
         if not result.errorbars:
             add("##  Warning: uncertainties could not be estimated:")
             if result.method in ('leastsq', 'least_squares') or HAS_NUMDIFFTOOLS:
-                parnames_varying = [par for par in result.params
-                                    if result.params[par].vary]
-                for name in parnames_varying:
+                parnames_freeing = [par for par in result.params
+                                    if result.params[par].free]
+                for name in parnames_freeing:
                     par = params[name]
                     space = ' '*(namelen-len(name))
                     if par.init_value and np.allclose(par.value, par.init_value):
@@ -172,15 +174,15 @@ def fit_report(inpars, modelpars=None, show_correl=True, min_correl=0.1,
             sval = gformat(par.value)
         except (TypeError, ValueError):
             sval = ' Non Numeric Value?'
-        if par.stderr is not None:
-            serr = gformat(par.stderr)
+        if par.stdev is not None:
+            serr = gformat(par.stdev)
             try:
-                spercent = '({:.2%})'.format(abs(par.stderr/par.value))
+                spercent = '({:.2%})'.format(abs(par.stdev/par.value))
             except ZeroDivisionError:
                 spercent = ''
             sval = '%s +/-%s %s' % (sval, serr, spercent)
 
-        if par.vary:
+        if par.free:
             add("    %s %s %s" % (nout, sval, inval))
         elif par.expr is not None:
             add("    %s %s == '%s'" % (nout, sval, par.expr))
@@ -191,7 +193,7 @@ def fit_report(inpars, modelpars=None, show_correl=True, min_correl=0.1,
         correls = {}
         for i, name in enumerate(parnames):
             par = params[name]
-            if not par.vary:
+            if not par.free:
                 continue
             if hasattr(par, 'correl') and par.correl is not None:
                 for name2 in parnames[i+1:]:
@@ -223,7 +225,7 @@ def fitreport_html_table(result, show_correl=True, min_correl=0.1):
     stat_row('fitting method', result.method)
     stat_row('# function evals', result.nfev)
     stat_row('# data points', result.ndata)
-    stat_row('# variables', result.nvarys)
+    stat_row('# variables', result.nfrees)
     stat_row('chi-square', gformat(result.chisqr))
     stat_row('reduced chi-square', gformat(result.redchi))
     stat_row('Akaike info crit.', gformat(result.aic))
@@ -236,7 +238,7 @@ def fitreport_html_table(result, show_correl=True, min_correl=0.1):
         parnames = list(result.params.keys())
         for i, name in enumerate(result.params):
             par = result.params[name]
-            if not par.vary:
+            if not par.free:
                 continue
             if hasattr(par, 'correl') and par.correl is not None:
                 for name2 in parnames[i+1:]:
@@ -257,7 +259,7 @@ def fitreport_html_table(result, show_correl=True, min_correl=0.1):
 
 def params_html_table(params):
     """Return an HTML representation of Parameters."""
-    has_err = any([p.stderr is not None for p in params.values()])
+    has_err = any([p.stdev is not None for p in params.values()])
     has_expr = any([p.expr is not None for p in params.values()])
     has_brute = any([p.brute_step is not None for p in params.values()])
 
@@ -270,8 +272,8 @@ def params_html_table(params):
     add('<table><tr>')
     headers = ['name', 'value']
     if has_err:
-        headers.extend(['standard error', 'relative error'])
-    headers.extend(['initial value', 'min', 'max', 'vary'])
+        headers.extend(['standard deviation', 'relative deviation'])
+    headers.extend(['initial value', 'min', 'max', 'free'])
     if has_expr:
         headers.append('expression')
     if has_brute:
@@ -284,15 +286,15 @@ def params_html_table(params):
         rows = [par.name, gformat(par.value)]
         if has_err:
             serr = ''
-            if par.stderr is not None:
-                serr = gformat(par.stderr)
+            if par.stdev is not None:
+                serr = gformat(par.stdev)
                 try:
-                    spercent = '({:.2%})'.format(abs(par.stderr/par.value))
+                    spercent = '({:.2%})'.format(abs(par.stdev/par.value))
                 except ZeroDivisionError:
                     spercent = ''
             rows.extend([serr, spercent])
         rows.extend((par.init_value, gformat(par.min),
-                     gformat(par.max), '%s' % par.vary))
+                     gformat(par.max), '%s' % par.free))
         if has_expr:
             expr = ''
             if par.expr is not None:
