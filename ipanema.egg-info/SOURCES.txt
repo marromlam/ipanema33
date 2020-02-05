@@ -1,0 +1,17 @@
+README.md
+setup.py
+ipanema/__init__.py
+ipanema/confidence.py
+ipanema/model.py
+ipanema/models.py
+ipanema/optimizers.py
+ipanema/parameter.py
+ipanema/psIpatia.py
+ipanema/rfuncs.py
+ipanema/samples.py
+ipanema/shapes.py
+ipanema.egg-info/PKG-INFO
+ipanema.egg-info/SOURCES.txt
+ipanema.egg-info/dependency_links.txt
+ipanema.egg-info/requires.txt
+ipanema.egg-info/top_level.txt

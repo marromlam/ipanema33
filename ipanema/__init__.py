@@ -61,5 +61,5 @@ from .utils.printfuncs import (ci_report, fit_report, report_ci, report_errors,
 
 #from .model import Model, CompositeModel
 #from . import shapes, models
-from . import histogram as hist
-from . import plotting
+from .plot import histogram as hist
+from .plot import untitled as plotting
