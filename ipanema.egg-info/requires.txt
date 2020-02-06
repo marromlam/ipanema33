@@ -11,3 +11,4 @@ hjson
 reikna
 iminuit
 matplotlib
+pyopencl
