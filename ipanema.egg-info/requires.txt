@@ -6,3 +6,8 @@ uncertainties>=3.0
 pandas
 numdifftools
 emcee>=3.0
+uproot
+hjson
+reikna
+iminuit
+matplotlib

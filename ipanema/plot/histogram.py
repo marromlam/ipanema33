@@ -1,7 +1,7 @@
 from scipy.stats import chi2
 from scipy.optimize import fsolve
 import math
-from .plotting import ipo
+from .untitled import ipo
 import numpy as np
 from scipy.interpolate import interp1d
 
