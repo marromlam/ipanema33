@@ -60,4 +60,6 @@ ipanema.egg-info/
 # Other files #
 ###############
 *.txt
+.fuse_*
 .pytest_cache
+ipanema/__pycache__/*
