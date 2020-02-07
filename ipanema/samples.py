@@ -3,10 +3,10 @@ import pandas
 import os
 import json
 import uproot
-import pycuda.driver as cuda
-import pycuda.cumath
-import pycuda.autoinit
-import pycuda.gpuarray as cu_array
+#import pycuda.driver as cuda
+#import pycuda.cumath
+#import pycuda.autoinit
+#import pycuda.gpuarray as cu_array
 
 from .parameter import Parameters
 from .core.utils import ristra

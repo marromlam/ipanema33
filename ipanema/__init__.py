@@ -59,8 +59,10 @@ from .tools.uncertainties_wrapper import wrap_unc, get_confidence_bands
 from .utils.printfuncs import (ci_report, fit_report, report_ci, report_errors,
                          report_fit)
 
-#from .model import Model, CompositeModel
+from .model import Model, CompositeModel
+
 #from . import shapes, models
+
 from .plot import histogram
 from .plot.histogram import hist
 from .plot import untitled as plotting

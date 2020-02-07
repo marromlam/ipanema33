@@ -93,7 +93,7 @@ class Parameters(OrderedDict):
     """
     Deep copy of params. current implementation is bullshit.
     """
-    self.loads(hjson.loads(params_in.dumps()))
+    self.loads(hjson.loads(self.dumps()))
     return self
 
   def __setitem__(self, key, par):
@@ -740,13 +740,13 @@ class Parameter(object):
     par_str = '{:.2uL}'.format(self.uvalue)
     #par_str = "\left(2.00 \pm 0.10\right) \times 10^{6}"
     #par_str = "2.00 \pm 0.10"
-    if len(par_str.split('\times 10^')) > 1:
-      expr, pow = par_str.split('\times 10^')
-      expr = expr.split('\left(')[1].split('\right)')[0]
+    if len(par_str.split(r'\times 10^')) > 1:
+      expr, pow = par_str.split(r'\times 10^')
+      expr = expr.split(r'\left(')[1].split('\right)')[0]
       pow = pow.split('{')[1].split('}')[0]
     else:
       expr = par_str; pow = '0'
-    return expr.split(' \\pm ')+[pow]
+    return expr.split(r' \pm ')+[pow]
 
 
 
