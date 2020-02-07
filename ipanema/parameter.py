@@ -80,13 +80,16 @@ class Parameters(OrderedDict):
     """
     return self.__deepcopy__(params_in)
 
-  def __copy__(self, params_in):
+  @classmethod
+  def __copy__(cls, params_in):                            # take a look at this
     """
     Alias of __deepcopy__
     """
-    return self.__deepcopy__(params_in)
+    c = cls()
+    c.loads(hjson.loads(params_in.dumps()))
+    return c
 
-  def __deepcopy__(self, params_in):
+  def __deepcopy__(self, params_in):                       # take a look at this
     """
     Deep copy of params. current implementation is bullshit.
     """
@@ -113,7 +116,7 @@ class Parameters(OrderedDict):
     """
     if not isinstance(friend, Parameters):
       raise ValueError("'%s' is not a Parameters object" % friend)
-    out = self.__deepcopy__(self)
+    out = self.__copy__(self)
     pars_original = list(out.keys())
     pars_friend = list(friend.keys())
     for par in pars_friend:
@@ -161,7 +164,6 @@ class Parameters(OrderedDict):
     s += "    })\n"
     return s
 
-
   def __params_to_string(self, cols, col_offset):
     par_dict = {}
     len_dict = {}
@@ -204,8 +206,6 @@ class Parameters(OrderedDict):
       for par in par_dict.values():
         len_dict[col] = max(len_dict[col], len(par[col]) + col_offset)
     return par_dict, len_dict
-
-
 
   def print(self, oneline=False,
                   cols=['value', 'stdev', 'min', 'max', 'free', 'latex'],
@@ -441,6 +441,7 @@ class Parameter(object):
     Update Parameter attributes.
 
     In:
+    0.123456789:
           value:  New float number
            free:  True or False
             min:  To remove limits use '-inf', not 'None'
