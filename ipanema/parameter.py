@@ -93,7 +93,7 @@ class Parameters(OrderedDict):
     """
     Deep copy of params. current implementation is bullshit.
     """
-    self.loads(hjson.loads(params_in.dumps()))
+    self.loads(hjson.loads(self.dumps()))
     return self
 
   def __setitem__(self, key, par):

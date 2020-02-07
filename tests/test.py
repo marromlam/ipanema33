@@ -1,15 +1,32 @@
-
+#%% dd
 from ipanema import Parameter, Parameters
 from ipanema import optimize
 from ipanema.optimizers import ALL_METHODS
-
+from ipanema import Model
 import matplotlib.pyplot as plt
 import numpy as np
 
 
 
-def gaussian(x,norm, mu, sigma):
+def my_gauss(x,norm=1, mu=0, sigma=1):
+  if not norm:
+    norm = (2*sigma*np.pi*np.pi)**(-0.5)
   return norm * np.exp(-(x-mu)**2 / sigma)
+
+x = np.linspace(-5,5,10)
+y = my_gauss(x, 3, 1, 0.4) + 0.05*np.random.randn(len(x))
+
+gauss_model = Model(my_gauss)
+gauss_model
+#dir(gauss_model)
+pars = gauss_model.make_params(norm=1,mu=1,sigma=1)
+gauss_model.eval(pars,x=x)
+
+
+help(gauss_model.fit)
+gauss_model.fit(data=y,params=pars,method='bfgs',fit_kwgs={'x':x},x=x)
+
+#%%
 
 
 def chi2(pars, x,y=None ):

@@ -192,6 +192,8 @@ ALL_METHODS.update(LIPSCHIZ_METHODS)
 ################################################################################
 # General methods ##############################################################
 
+
+
 def _lnprior_(fvar, bounds):
   """
   Calculate an improper uniform log-prior probability.
@@ -211,7 +213,8 @@ def _lnprior_(fvar, bounds):
   return 0
 
 
-def _lnpost_(theta, call_fcn, params, param_vary, bounds, fcnargs=(),
+
+def _lnpost_(theta, fcn_call, params, param_vary, bounds, fcnargs=(),
            userkws=None, float_behavior='posterior', is_weighted=True,
            nan_policy='raise'):
    """
@@ -223,7 +226,7 @@ def _lnpost_(theta, call_fcn, params, param_vary, bounds, fcnargs=(),
    ----------
    theta : sequence
        Float parameter values (only those being varied).
-   call_fcn : callable
+   fcn_call : callable
        User objective function.
    params : :class:`~lmfit.parameters.Parameters`
        The entire set of Parameters.
@@ -243,13 +246,13 @@ def _lnpost_(theta, call_fcn, params, param_vary, bounds, fcnargs=(),
        'chi2' - objective function returns a chi2 value
 
    is_weighted : bool
-       If `call_fcn` returns a vector of residuals then `is_weighted`
+       If `fcn_call` returns a vector of residuals then `is_weighted`
        specifies if the residuals have been weighted by data unc.
    nan_policy : str, optional
-       Specifies action if `call_fcn` returns NaN values. One of:
+       Specifies action if `fcn_call` returns NaN values. One of:
 
            'raise' - a `ValueError` is raised
-           'propagate' - the values returned from `call_fcn` are un-altered
+           'propagate' - the values returned from `fcn_call` are un-altered
            'omit' - the non-finite values are filtered
 
 
@@ -276,7 +279,7 @@ def _lnpost_(theta, call_fcn, params, param_vary, bounds, fcnargs=(),
    params.update_constraints()
 
    # now calculate the log-likelihood
-   out = call_fcn(params, *fcnargs, **userkwargs)
+   out = fcn_call(params, *fcnargs, **userkwargs)
    out = _handle_nans_(out, nan_policy=nan_policy, handle_inf=False)
 
    lnprob = np.asarray(out).ravel()
@@ -304,6 +307,7 @@ def _lnpost_(theta, call_fcn, params, param_vary, bounds, fcnargs=(),
    return lnprob
 
 
+
 def _make_random_gen_(seed):
   """
   Turn seed into a numpy.random.RandomState instance.
@@ -321,6 +325,7 @@ def _make_random_gen_(seed):
   if isinstance(seed, np.random.RandomState):
     return seed
   raise ValueError(f'{seed} cannot be used to seed a numpy.random.RandomState')
+
 
 
 def _handle_nans_(ristra, nan_policy='filter', handle_inf=True):
@@ -371,6 +376,8 @@ def _handle_nans_(ristra, nan_policy='filter', handle_inf=True):
            "Try setting nan_policy = 'filter'.")
       raise ValueError(msg)
   return ristra
+
+
 
 ################################################################################
 
@@ -478,7 +485,7 @@ class Optimizer(object):
                    " optimize(func, params, ..., maxfev=NNN)"
                    "or set leastsq_kws['maxfev']  to increase this maximum.")
 
-    def __init__(self, call_fcn, params,
+    def __init__(self, fcn_call, params,
                  fcn_args=None, fcn_kwgs=None,
                  iter_cb=None, scale_covar=True, nan_policy='raise',
                  reduce_fcn=None, calc_covar=True,
@@ -487,24 +494,25 @@ class Optimizer(object):
       Initialize the Optimizer class.
 
       The objective function should return the array of residuals to be
-      optimized that afterwards will be reduced to a FCN. A call_fcn function
+      optimized that afterwards will be reduced to a FCN. A fcn_call function
       usually needs data, uncertainties, weights..., these can be handled under
       fcn_args and fcn_kwgs. Parameters should be passed independly through
       the params argument.
 
       In:
-         call_fcn:  Objective function that returns the residual
+      0.123456789:
+         fcn_call:  Objective function that returns the residual
                     (array, same lengh as data). This function must have the
                     signature:
-                        call_fcn(params, *fcn_args, **fcn_kwgs)
+                        fcn_call(params, *fcn_args, **fcn_kwgs)
                     callable
 
 
            params:  Set of paramters.
                     ipanema.parameter.Parameters
-         fcn_args:  Positional arguments to pass to call_fcn.
+         fcn_args:  Positional arguments to pass to fcn_call.
                     tuple, optional (default=None)
-         fcn_kwgs:  Keyword arguments to pass to call_fcn.
+         fcn_kwgs:  Keyword arguments to pass to fcn_call.
                     dict, optional (default=None)
           iter_cb:  Function to be called at each fit iteration. This function
                     should have the signature:
@@ -532,7 +540,7 @@ class Optimizer(object):
               void
 
       """
-      self.call_fcn = call_fcn
+      self.fcn_call = fcn_call
       self.fcnargs = fcn_args
       if self.fcnargs is None: self.fcnargs = []
       self.fcnkwgs = fcn_kwgs
@@ -590,7 +598,7 @@ class Optimizer(object):
 
 
 
-    # Wrappers around call_fcn -------------------------------------------------
+    # Wrappers around fcn_call -------------------------------------------------
 
     def _residual_(self, fvars, apply_bounds_transformation=True):
         """Residual function used for least-squares fit.
@@ -630,7 +638,7 @@ class Optimizer(object):
 
         self.result.nfev += 1
 
-        out = self.call_fcn(params, *self.fcnargs, **self.fcnkwgs)
+        out = self.fcn_call(params, *self.fcnargs, **self.fcnkwgs)
 
         if callable(self.iter_cb):
             abort = self.iter_cb(params, self.result.nfev, out,
@@ -668,7 +676,7 @@ class Optimizer(object):
       pars.update_constraints()
 
       # Compute fcn
-      fcn = self.call_fcn(pars, *self.fcnargs, **self.fcnkwgs)
+      fcn = self.fcn_call(pars, *self.fcnargs, **self.fcnkwgs)
       self.result.nfev += 1 # update n of fcn evals
 
       if callable(self.iter_cb):
@@ -1111,7 +1119,7 @@ class Optimizer(object):
                     `(ntemps, nwalkers, nvary)`. You can also initialise using a
                     previous chain that had the same `ntemps`, `nwalkers` and
                     `nvary`. Note that `nvary` may be one larger than you expect it
-                    to be if your `call_fcn` returns an array and `is_weighted is
+                    to be if your `fcn_call` returns an array and `is_weighted is
                     False`.
                     array, optional (default=None)
     reuse_sampler:  If emcee was already used to optimize a function and there
@@ -1160,8 +1168,8 @@ class Optimizer(object):
       params = result.params
       result.method = 'emcee'
 
-      # check whether the call_fcn returns a vector of residuals
-      out = self.call_fcn(params, *self.fcnargs, **self.fcnkwgs)
+      # check whether the fcn_call returns a vector of residuals
+      out = self.fcn_call(params, *self.fcnargs, **self.fcnkwgs)
       out = np.asarray(out).ravel()
       if out.size > 1 and is_weighted is False:
           # we need to marginalise over a constant data uncertainty
@@ -1213,7 +1221,7 @@ class Optimizer(object):
 
       # function arguments for the log-probability functions
       # these values are sent to the log-probability functions by the sampler.
-      lnprob_args = (self.call_fcn, params, result.param_vary, bounds)
+      lnprob_args = (self.fcn_call, params, result.param_vary, bounds)
       lnprob_kwargs = {'is_weighted': is_weighted,
                        'float_behavior': float_behavior,
                        'fcnargs': self.fcnargs,
@@ -1319,7 +1327,7 @@ class Optimizer(object):
       result.nfev = ntemps*nwalkers*steps
 
       # Calculate the residual with the "best fit" parameters
-      out = self.call_fcn(params, *self.fcnargs, **self.fcnkwgs)
+      out = self.fcn_call(params, *self.fcnargs, **self.fcnkwgs)
       result.residual = _handle_nans_(out, nan_policy=self.nan_policy, handle_inf=False)
 
       # If uncertainty was automatically estimated, weight the residual properly
