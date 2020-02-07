@@ -118,6 +118,18 @@ class Sample(object):
     return cls(getDataFile(filename), name, cuts = cuts, params = params)
 
   @classmethod
+  def from_root(cls, filename, tree='DecayTree', branches=None, name = None, cuts = None, params = None, **kwargs):
+    if filename[-5:] != '.root': filename += '.root'
+    file = uproot.open(filename)[tree]
+    if not branches:
+      branches = [b.decode() for b in file.allkeys()]
+    if not name:
+      namewithextension = os.path.basename(os.path.normpath(filename))
+      name = os.path.splitext(namewithextension)[0]
+    df = file.pandas.df(branches=branches,**kwargs)
+    return cls(df, name, cuts = cuts, params = params)
+
+  @classmethod
   def from_pandas(cls, df, name = None, cuts = None, params = None,
                   copy=True, convert=True, trim=False):
     return cls(df, name, cuts=cuts, params=params,
