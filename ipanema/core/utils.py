@@ -2,7 +2,6 @@
 import os
 import builtins
 from reikna import cluda
-import atexit
 #os.path.dirname(os.path.abspath(__file__))
 
 
@@ -88,11 +87,6 @@ def initialize_device(device = None):
     # Create the context and THREAD
     if builtins.BACKEND == CUDA:
       builtins.CONTEXT = builtins.DEVICE.make_context()
-      def clear_cuda_context():
-          from pycuda.tools import clear_context_caches
-          builtins.CONTEXT.pop()
-          clear_context_caches()
-      atexit.register(clear_cuda_context)
     else:
       import pyopencl
       builtins.CONTEXT = pyopencl.Context([DEVICE])
