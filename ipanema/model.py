@@ -14,15 +14,9 @@ from scipy.stats import t
 
 from . import Optimizer, Parameter, Parameters, shapes
 from .confidence import conf_interval
-#from .jsonutils import HAS_DILL, decode4js, encode4js
+from .jsonutils import HAS_DILL, decode4js, encode4js
 from .optimizers import OptimizerResult
 from .utils.printfuncs import ci_report, fit_report, fitreport_html_table
-
-def decode4js(x):
-    return x
-def encode4js(x):
-    return x
-
 
 # Use pandas.isnull for aligning missing data if pandas is available.
 # otherwise use numpy.isnan
@@ -274,7 +268,6 @@ class Model(object):
         self.nan_policy = nan_policy
 
         self.opts = kws
-        print(kws)
         self.param_hints = OrderedDict()
         # the following has been changed from OrderedSet for the time being
         self._param_names = []
@@ -305,8 +298,8 @@ class Model(object):
 
         """
         funcdef = None
-
-        funcdef = self.func
+        if HAS_DILL:
+            funcdef = self.func
         state = (self.func.__name__, funcdef, self._name, self._prefix,
                  self.independent_vars, self._param_root_names,
                  self.param_hints, self.nan_policy, self.opts)
@@ -1022,12 +1015,10 @@ class Model(object):
         if fit_kws is None:
             fit_kws = {}
 
-        print(fit_kws,kwargs)
-
         output = ModelResult(self, params, method=method, iter_cb=iter_cb,
-                             scale_covar=scale_covar, fcn_kws=fit_kws,
+                             scale_covar=scale_covar, fcn_kws=kwargs,
                              nan_policy=self.nan_policy, calc_covar=calc_covar,
-                             **kwargs)
+                             **fit_kws)
         output.fit(data=data, weights=weights)
         output.components = self.components
         return output
@@ -1296,9 +1287,9 @@ class ModelResult(Optimizer):
     """
 
     def __init__(self, model, params, data=None, weights=None,
-                 method='leastsq', fcn_args=None, fcn_kwgs=None,
+                 method='leastsq', fcn_args=None, fcn_kws=None,
                  iter_cb=None, scale_covar=True, nan_policy='raise',
-                 calc_covar=True, **fit_kwgs):
+                 calc_covar=True, **fit_kws):
         """
         Parameters
         ----------
@@ -1338,8 +1329,8 @@ class ModelResult(Optimizer):
         self.user_options = None
         self.init_params = deepcopy(params)
         Optimizer.__init__(self, model._residual, params, fcn_args=fcn_args,
-                           fcn_kwgs=fit_kwgs, iter_cb=iter_cb, nan_policy=nan_policy,
-                           scale_covar=scale_covar, calc_covar=calc_covar, **fcn_kwgs)
+                           fcn_kws=fcn_kws, iter_cb=iter_cb, nan_policy=nan_policy,
+                           scale_covar=scale_covar, calc_covar=calc_covar, **fit_kws)
 
     def fit(self, data=None, params=None, weights=None, method=None,
             nan_policy=None, **kwargs):
@@ -1373,11 +1364,10 @@ class ModelResult(Optimizer):
             self.nan_policy = nan_policy
 
         self.ci_out = None
-        self.fcnargs = (self.data, self.weights)
-        self.fcnkwgs.update(kwargs)
-        print(self.fcnkwgs)
-        self.init_fit = self.model.eval(params=self.params, **self.fcnkwgs)
-        _ret = self.optimize(method=self.method)
+        self.userargs = (self.data, self.weights)
+        self.userkws.update(kwargs)
+        self.init_fit = self.model.eval(params=self.params, **self.userkws)
+        _ret = self.minimize(method=self.method)
 
         for attr in dir(_ret):
             if not attr.startswith('_'):
@@ -1388,7 +1378,7 @@ class ModelResult(Optimizer):
 
         self.init_values = self.model._make_all_args(self.init_params)
         self.best_values = self.model._make_all_args(_ret.params)
-        self.best_fit = self.model.eval(params=_ret.params, **self.fcnkwgs)
+        self.best_fit = self.model.eval(params=_ret.params, **self.userkws)
 
     def eval(self, params=None, **kwargs):
         """Evaluate model function.
