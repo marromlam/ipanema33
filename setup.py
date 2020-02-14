@@ -38,7 +38,7 @@ Copyright (c) 2020 Ipanema Developers ; GNU AFFERO GENERAL PUBLIC LICENSE
 
 
 setup(name='ipanema',
-      version='0.2',
+      version='0.3',
       author='Marcos Romero',
       author_email='marcos.romero.lamas@cern.ch',
       url='https://github.com/marromlam/ipanema.git',
