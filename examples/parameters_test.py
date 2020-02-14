@@ -29,7 +29,7 @@ print(f"a1 > a2 = {a1>a1}")
 # They can be printed showing the most important information
 print(f"a1 = {a1}")
 # or in LaTeX
-print(f"{a1.dumps_latex()}")
+print(f"{a1.dump_latex()}")
 
 # Their properties can be modified
 a1.value = 10
