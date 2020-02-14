@@ -27,18 +27,13 @@ before_script:
 
 test:
   script:
-    - python examples/parameters_test.py
+    - python -c "import ipanema"
 
 
 run:
   script:
-    - python setup.py bdist_wheel
-    # an alternative approach is to install and run:
-    - pip install dist/*
-    # run the command here
-  artifacts:
-    paths:
-      - dist/*.whl
+    - python examples/parameters_test.py
+    - python examples/simple_fit_test.py
 
 pages:
   script:
