@@ -63,3 +63,4 @@ ipanema.egg-info/
 .fuse_*
 .pytest_cache
 ipanema/__pycache__/*
+ipanema/core/__pycache__/*
