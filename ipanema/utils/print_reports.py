@@ -56,7 +56,7 @@ def fit_report(result, show_correl=True, min_correl=0.05, as_string=False):
       add(f"{'Akaike info criterion:':>30} {__parse_attr(result, 'aic')}")
       add(f"{'Bayesian info criterion:':>30} {__parse_attr(result, 'bic')}")
 
-      add(f"{'Fit messages:':>30}",__parse_attr(result, 'message'))
+      add(f"{'Fit messages:':>30} "+__parse_attr(result, 'message'))
 
       pars_free = [p for p in result.params if result.params[p].free]
       for name in pars_free:

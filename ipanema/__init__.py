@@ -27,14 +27,6 @@ Main functionalities:
     to explicitly explore parameter space to determine confidence levels
     even for the most difficult cases.
 
-  * Improved curve-fitting with the Model class. This extends the
-    capabilities of scipy.optimize.curve_fit(), allowing you to turn a
-    function that models your data into a Python class that helps you
-    parametrize and fit data with that model.
-
-  * Many built-in models for common lineshapes are included and ready
-    to use.
-
 Copyright (c) 2020 Ipanema Developers ; MIT License ; see LICENSE
 
 """
@@ -42,8 +34,7 @@ Copyright (c) 2020 Ipanema Developers ; MIT License ; see LICENSE
 from asteval import Interpreter
 
 # Samples
-import samples as samples
-from .samples import Sample
+from .samples import Sample, get_data_file
 
 # Core utils
 from .core.utils import initialize

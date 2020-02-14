@@ -12,10 +12,13 @@ from .tools.misc import get_vars_from_string
 
 
 # WHY THIS IS THE HELL NEEDED !!? ----------------------------------------------
-import pycuda.driver as cuda
-import pycuda.cumath
-import pycuda.autoinit
-import pycuda.gpuarray as cu_array
+try:
+  import pycuda.driver as cuda
+  import pycuda.cumath
+  import pycuda.autoinit
+  import pycuda.gpuarray as cu_array
+except:
+  0
 # ---------------------------------------------- WHY THIS IS THE HELL NEEDED !!?
 
 

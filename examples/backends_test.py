@@ -8,7 +8,7 @@ import pandas as pd
 #   initialize('opencl',1)    # to find out all the devices initialize('opencl')
 #   initialize('cuda',1)        # to find out all the devices initialize('cuda')
 
-initialize()
+initialize('cuda')
 
 
 
