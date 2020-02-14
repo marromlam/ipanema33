@@ -1,5 +1,4 @@
-# Compiled source #
-###################
+# Compiled source ##############################################################
 *.com
 *.class
 *.dll
@@ -12,10 +11,7 @@
 *.pdf
 *.doctree
 
-# Packages #
-############
-# it's better to unpack these files and commit the raw source
-# git has its own built in compression methods
+# Packages #####################################################################
 *.7z
 *.dmg
 *.gz
@@ -25,13 +21,12 @@
 *.tar
 *.zip
 
-# Temporal files #
+# Temporal files ###############################################################
 *#
 *~
 *.cache
 
-# Logs and databases #
-######################
+# Logs and databases ###########################################################
 *.log
 *.sql
 *.sqlite
@@ -40,8 +35,7 @@
 *.pkl
 .coverage
 
-# OS generated files #
-######################
+# OS generated files ###########################################################
 .DS_Store
 .DS_Store?
 ._*
@@ -51,14 +45,12 @@ ehthumbs.db
 Thumbs.db
 .nfs*
 
-# PIP installation files #
-##########################
+# PIP installation files #######################################################
 .eggs/
 build/
 ipanema.egg-info/
 
-# Other files #
-###############
+# Other files ##################################################################
 *.txt
 .fuse_*
 .pytest_cache
