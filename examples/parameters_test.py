@@ -50,4 +50,4 @@ C = A+B
 A.print()
 B.print()
 C.print()
-C.latex_dumps()
+C.dump_latex()
