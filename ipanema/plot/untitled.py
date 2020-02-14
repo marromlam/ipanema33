@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os, sys
 #sys.path.append(os.environ['PHIS_SCQ']+'tools')
 
-#from .ezaro_style import *
+from .ezaro_style import *
 
 class ipo(object):
   """docstring for ipanema-plot-object (ipo)."""

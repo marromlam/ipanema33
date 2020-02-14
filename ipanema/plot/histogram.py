@@ -7,6 +7,7 @@ from scipy.interpolate import interp1d
 
 
 
+
 def errors_poisson(data, a=0.318):
   """
   Uses chisquared info to get the poisson interval.
@@ -84,7 +85,7 @@ def hist(data, bins=60, weights=None, density = False, **kwargs):
 
   # Normalize if asked so
   if density:
-    counts /= norm; errl /= norm;  errh /= norm;
+    counts = counts/norm; errl = errl/norm;  errh = errh/norm
 
   # Construct the ipo-object
   result = ipo(**{**{'counts':counts,
