@@ -58,3 +58,8 @@ from .core import utils
 from .plot import histogram
 from .plot.histogram import hist
 from .plot import untitled as plotting
+
+# Useful variables
+from .optimizers import ALL_METHODS
+all_optimize_methods = list(ALL_METHODS.keys())
+del ALL_METHODS
