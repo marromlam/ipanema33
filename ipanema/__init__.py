@@ -27,7 +27,7 @@ Main functionalities:
     to explicitly explore parameter space to determine confidence levels
     even for the most difficult cases.
 
-Copyright (c) 2020 Ipanema Developers ; MIT License ; see LICENSE
+Copyright (c) 2020 Ipanema Developers ; GNU AFFERO GENERAL PUBLIC LICENSE
 
 """
 
@@ -39,19 +39,20 @@ from .samples import Sample, get_data_file
 # Core utils
 from .core.utils import initialize
 from .core.utils import ristra
-from .core import utils
 
-from .confidence import conf_interval, conf_interval2d
+# Optimize
 from .optimizers import Optimizer, OptimizerException, optimize
-from .parameter import Parameter, Parameters
 
+# Parameters
+from .parameter import Parameter, Parameters, isParameter
+
+# Confidence
+from .confidence import conf_interval, conf_interval2d
+
+# Tools and utils
 from .tools.uncertainties_wrapper import wrap_unc, get_confidence_bands
-
-# Utils
 from .utils.print_reports import fit_report
-
-#from .model import Model, CompositeModel
-#from . import shapes, models
+from .core import utils
 
 # Plot related stuff
 from .plot import histogram
