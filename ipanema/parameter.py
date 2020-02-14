@@ -185,6 +185,11 @@ class Parameters(OrderedDict):
               par_dict[name][col] = unc
           else:
             par_dict[name][col] = 'None'
+        elif col == 'reldev':
+          if getattr(par, 'stdev'):
+            par_dict[name][col] = f"({abs(par.stdev/par.value):.2%})"
+          else:
+            par_dict[name][col] = 'None'
         elif col == 'brute_step':
           if getattr(par, 'stdev'):
             par_dict[name][col] = ".8f" % getattr(par, 'stdev')
@@ -209,7 +214,7 @@ class Parameters(OrderedDict):
 
   def print(self, oneline=False,
                   cols=['value', 'stdev', 'min', 'max', 'free', 'latex'],
-                  col_offset = 2):
+                  col_offset = 2, as_string = False):
     """
     Print parameters table
     """
@@ -221,13 +226,15 @@ class Parameters(OrderedDict):
     line = '{:'+str(len_dict['name'])+'}'
     for col in cols[:-1]:
       line += ' {:>'+str(len_dict[col])+'}'
-    line += '  {:'+str(len_dict['latex'])+'}\n'
+    line += '  {:'+str(len_dict[cols[-1]])+'}\n'
 
     # Build the table
     all_cols = ['name'] + cols
     table = line.format(*all_cols).title()
     for name, par in zip(par_dict.keys(),par_dict.values()):
       table += line.format(*list(par.values()))
+    if as_string:
+      return table
     print(table)
 
 
@@ -756,13 +763,13 @@ class Parameter(object):
     par_str = '{:.2uL}'.format(self.uvalue)
     #par_str = "\left(2.00 \pm 0.10\right) \times 10^{6}"
     #par_str = "2.00 \pm 0.10"
-    if len(par_str.split('\times 10^')) > 1:
-      expr, pow = par_str.split('\times 10^')
-      expr = expr.split('\left(')[1].split('\right)')[0]
+    if len(par_str.split(r'\times 10^')) > 1:
+      expr, pow = par_str.split(r'\times 10^')
+      expr = expr.split(r'\left(')[1].split(r'\right)')[0]
       pow = pow.split('{')[1].split('}')[0]
     else:
       expr = par_str; pow = '0'
-    return expr.split(' \\pm ')+[pow]
+    return expr.split(r' \pm ')+[pow]
 
 
 

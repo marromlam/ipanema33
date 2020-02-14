@@ -57,8 +57,7 @@ from .parameter import Parameter, Parameters
 from .tools.uncertainties_wrapper import wrap_unc, get_confidence_bands
 
 # Utils
-from .utils.printfuncs import (ci_report, fit_report, report_ci, report_errors,
-                         report_fit)
+from .utils.print_reports import fit_report
 
 #from .model import Model, CompositeModel
 #from . import shapes, models
