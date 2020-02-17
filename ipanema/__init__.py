@@ -47,7 +47,7 @@ from .optimizers import Optimizer, OptimizerException, optimize
 from .parameter import Parameter, Parameters, isParameter
 
 # Confidence
-from .confidence import conf_interval, conf_interval2d
+from .confidence import confidence_interval, confidence_interval2d
 
 # Tools and utils
 from .tools.uncertainties_wrapper import wrap_unc, get_confidence_bands
@@ -61,5 +61,4 @@ from .plot import untitled as plotting
 
 # Useful variables
 from .optimizers import ALL_METHODS
-all_optimize_methods = list(ALL_METHODS.keys())
-del ALL_METHODS
+all_optimize_methods = list(ALL_METHODS.keys()); del ALL_METHODS
