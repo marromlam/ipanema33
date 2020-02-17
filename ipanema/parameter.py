@@ -750,7 +750,7 @@ class Parameter(object):
 
 
 
-  def dumps_latex(self):
+  def dump_latex(self):
     return self.name + ' = ' + '{:.2uL}'.format(self.uvalue)
 
 
