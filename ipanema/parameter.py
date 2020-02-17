@@ -2,16 +2,10 @@
 #                                                                              #
 #                           PARAMETER & PARAMETERS                             #
 #                                                                              #
-#     Author: Marcos Romero                                                    #
-#    Created: 04 - dec - 2019                                                  #
-#                                                                              #
 ################################################################################
 
 from collections import OrderedDict
-#from copy import deepcopy
 import hjson
-#import importlib
-
 from asteval import Interpreter, get_ast_names, valid_symbol_name
 from numpy import arcsin, array, cos, inf, isclose, nan, sin, sqrt
 from numpy import inf as Infinite
@@ -19,21 +13,14 @@ import scipy.special
 import uncertainties
 import uncertainties as unc
 
-#from .jsonutils import decode4js, encode4js
-#from .utils.printfuncs import params_html_table
-
 # Get some functions from scipy to be handled by asteval
 SCIPY_FUNCTIONS = {}
 for name in ['gamma', 'erf', 'erfc', 'wofz']:
   SCIPY_FUNCTIONS['sc_'+name] = getattr(scipy.special, name)
 
-
 # Asteval error checker
 def _check_ast_errors_(expr_eval):
   if len(expr_eval.error) > 0: expr_eval.raise_exception(None)
-
-
-
 
 
 
@@ -66,11 +53,15 @@ class Parameters(OrderedDict):
 
     self.update(*args, **kwds)
 
+
+
   def copy(self, params_in):
     """
     Parameters.copy() should always be a deepcopy.
     """
     return self.__copy__(params_in)
+
+
 
   @classmethod
   def __deepcopy__(cls, params_in):
@@ -78,9 +69,13 @@ class Parameters(OrderedDict):
     c.loads(hjson.loads(params_in.dumps()))
     return c
 
+
+
   def __copy__(self, params_in):
     self.loads(hjson.loads(params_in.dumps()))
     return self
+
+
 
   def __setitem__(self, key, par):
     """
@@ -96,6 +91,8 @@ class Parameters(OrderedDict):
     par._expr_eval = self._asteval
     self._asteval.symtable[key] = par.value
 
+
+
   def __add__(self, friend):
     """
     Add Parameters objects.
@@ -110,27 +107,13 @@ class Parameters(OrderedDict):
         out.add(friend[par])
     return out
 
-  def __iadd__(self, friend):
-    """Add/assign Parameters objects."""
-    if not isinstance(friend, Parameters):
-      raise ValueError("'%s' is not a Parameters object" % friend)
-    params = friend.values()
-    self.add_many(*params)
-    return self
+
 
   def __array__(self):
     """
     Convert Parameters to array.
     """
     return array([float(k) for k in self.values()])
-
-
-
-  def __setstate__(self, params):
-    """
-    Alias of add_many.
-    """
-    self.add_many(params)
 
 
 
@@ -239,14 +222,6 @@ class Parameters(OrderedDict):
 
 
 
-  # def _repr_html_(self):
-  #   """
-  #   Returns a HTML representation of parameters data.
-  #   """
-  #   return params_html_table(self)
-
-
-
   def _add_parameter_(self, param):
     """
     Add a Parameter. If param is a Paramter then it will be directly stored in
@@ -311,6 +286,26 @@ class Parameters(OrderedDict):
     """
     if path[:-4] != '.json': path += '.json'
     open(path,'w').write(self.dumps(**kwargs))
+
+
+
+  def lock(self,*args):
+    if args:
+      for par in args:
+        self[par].free = False
+    else:
+      for par in self:
+        self[par].free = False
+
+
+
+  def unlock(self,*args):
+    if args:
+      for par in args:
+        self[par].free = True
+    else:
+      for par in self:
+        self[par].free = True
 
 
 
@@ -382,13 +377,6 @@ class Parameters(OrderedDict):
     return table
 
 ################################################################################
-
-
-
-
-
-
-
 
 
 
@@ -526,11 +514,15 @@ class Parameter(object):
       self._val = self.min
     self.setup_bounds()
 
+
+
   def __getstatepickle__(self):
       """Get state for pickle."""
       return (self.name, self.value, self.free, self.expr, self.min,
               self.max, self.brute_step, self.stdev, self.correl,
               self.init_value, self.user_data)
+
+
 
   def __getstate__(self):
     """
@@ -685,11 +677,15 @@ class Parameter(object):
         self._expr_eval.symtable[self.name] = self._val
     return self._val
 
+
+
   def set_expr_eval(self, evaluator):
     """
     Set expression evaluator instance.
     """
     self._expr_eval = evaluator
+
+
 
   @property
   def value(self):
@@ -756,6 +752,7 @@ class Parameter(object):
 
   def dumps_latex(self):
     return self.name + ' = ' + '{:.2uL}'.format(self.uvalue)
+
 
 
   @property
