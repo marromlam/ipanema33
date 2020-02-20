@@ -2,7 +2,6 @@
 Operations with GPU objects
 '''
 import builtins
-from . import docstrings
 from . import multi_par
 from . import rfuncs
 from . import types

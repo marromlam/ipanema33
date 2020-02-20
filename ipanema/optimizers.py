@@ -944,10 +944,9 @@ class Optimizer(object):
     result.method = method
 
     minuit_kws = dict(errordef=1,
-                      print_level=1,
+                      print_level=-1,
                       pedantic=False)
     minuit_kws.update(method_kwgs)
-    #method='minos'
     try:
       ret = minuit(self._minuit_wrapper_,
                    forced_parameters=self.result.param_vary,
@@ -958,10 +957,8 @@ class Optimizer(object):
       ret.migrad(ncall=1000 * (len(result.param_init)+1))
       _counter = 1; # set a counter
       while not ret.migrad_ok() and _counter <= 20:
-        print(f'migrad_ok: {ret.migrad_ok()}')
         print(f"Goddamnit! This function is not well behaved!",\
               f"Let's give it a {_counter+1} try.")
-        print(_counter)
         ret.migrad(ncall=1000 * (len(result.param_init)+1))
         _counter += 1
       if _counter >= 20:
@@ -1521,7 +1518,7 @@ class Optimizer(object):
       np.seterr(all='ignore')
 
       try:
-        lsout = scipy_leastsq(self._residual_, variables, **lskws)
+        lsout = levenberg_marquardt(self._residual_, variables, **lskws)
       except AbortFitException:
         pass
 
@@ -1556,7 +1553,7 @@ class Optimizer(object):
           # transform the covariance matrix to "external" parameter space
           result.covar = self._int2ext_cov_(_cov, _best)
           # calculate parameter uncertainties and correlations
-          self._calculate_uncertainties_correlations()
+          self._calculate_uncertainties_correlations_()
       else:
           result.message = '%s Could not estimate error-bars.' % result.message
 
