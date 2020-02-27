@@ -1,23 +1,11 @@
-# -*- coding: utf-8 -*-
 ################################################################################
 #                                                                              #
 #                           PARAMETER & PARAMETERS                             #
 #                                                                              #
-#     Author: Marcos Romero                                                    #
-#    Created: 04 - dec - 2019                                                  #
-#                                                                              #
-#                                                                              #
-#                                                                              #
-#                                                                              #
 ################################################################################
 
-
-
 from collections import OrderedDict
-from copy import deepcopy
 import hjson
-import importlib
-
 from asteval import Interpreter, get_ast_names, valid_symbol_name
 from numpy import arcsin, array, cos, inf, isclose, nan, sin, sqrt
 from numpy import inf as Infinite
@@ -25,23 +13,14 @@ import scipy.special
 import uncertainties
 import uncertainties as unc
 
-#from .jsonutils import decode4js, encode4js
-from .utils.printfuncs import params_html_table
+# Get some functions from scipy to be handled by asteval
+SCIPY_FUNCTIONS = {}
+for name in ['gamma', 'erf', 'erfc', 'wofz']:
+  SCIPY_FUNCTIONS['sc_'+name] = getattr(scipy.special, name)
 
-SCIPY_FUNCTIONS = {'gamfcn': scipy.special.gamma}
-for name in ('erf', 'erfc', 'wofz'):
-    SCIPY_FUNCTIONS[name] = getattr(scipy.special, name)
-
-
-def check_ast_errors(expr_eval):
-  """
-  Check for errors derived from asteval.
-  """
-  if len(expr_eval.error) > 0:
-    expr_eval.raise_exception(None)
-
-
-
+# Asteval error checker
+def _check_ast_errors_(expr_eval):
+  if len(expr_eval.error) > 0: expr_eval.raise_exception(None)
 
 
 
@@ -74,27 +53,29 @@ class Parameters(OrderedDict):
 
     self.update(*args, **kwds)
 
+
+
   def copy(self, params_in):
     """
     Parameters.copy() should always be a deepcopy.
     """
-    return self.__deepcopy__(params_in)
+    return self.__copy__(params_in)
+
+
 
   @classmethod
-  def __copy__(cls, params_in):                            # take a look at this
-    """
-    Alias of __deepcopy__
-    """
+  def __deepcopy__(cls, params_in):
     c = cls()
     c.loads(hjson.loads(params_in.dumps()))
     return c
 
-  def __deepcopy__(self, params_in):                       # take a look at this
-    """
-    Deep copy of params. current implementation is bullshit.
-    """
+
+
+  def __copy__(self, params_in):
     self.loads(hjson.loads(params_in.dumps()))
     return self
+
+
 
   def __setitem__(self, key, par):
     """
@@ -110,13 +91,15 @@ class Parameters(OrderedDict):
     par._expr_eval = self._asteval
     self._asteval.symtable[key] = par.value
 
+
+
   def __add__(self, friend):
     """
     Add Parameters objects.
     """
     if not isinstance(friend, Parameters):
       raise ValueError("'%s' is not a Parameters object" % friend)
-    out = self.__copy__(self)
+    out = self.__deepcopy__(self)
     pars_original = list(out.keys())
     pars_friend = list(friend.keys())
     for par in pars_friend:
@@ -124,13 +107,7 @@ class Parameters(OrderedDict):
         out.add(friend[par])
     return out
 
-  def __iadd__(self, friend):
-    """Add/assign Parameters objects."""
-    if not isinstance(friend, Parameters):
-        raise ValueError("'%s' is not a Parameters object" % friend)
-    params = friend.values()
-    self.add_many(*params)
-    return self
+
 
   def __array__(self):
     """
@@ -138,11 +115,7 @@ class Parameters(OrderedDict):
     """
     return array([float(k) for k in self.values()])
 
-  def __setstate__(self, params):
-    """
-    Alias of add_many.
-    """
-    self.add_many(params)
+
 
   def eval(self, expr):
     """
@@ -152,6 +125,8 @@ class Parameters(OrderedDict):
     """
     return self._asteval.eval(expr)
 
+
+
   def __print__(self, oneline=False):
     """
     Return a pretty representation of a Parameters class.
@@ -160,11 +135,17 @@ class Parameters(OrderedDict):
       return super(Parameters, self).__repr__()
     s = "Parameters({\n"
     for key in self.keys():
-        s += "    '%s': %s, \n" % (key, self[key])
+      s += "    '%s': %s, \n" % (key, self[key])
     s += "    })\n"
     return s
 
-  def __params_to_string(self, cols, col_offset):
+
+
+  def _params_to_string_(self, cols, col_offset):
+    """
+    Prepare strings of parameters to be printed. This function is used both
+    to print parameters and to dump them to LaTeX.
+    """
     par_dict = {}
     len_dict = {}
     all_cols = ['name'] + cols
@@ -187,6 +168,11 @@ class Parameters(OrderedDict):
               par_dict[name][col] = unc
           else:
             par_dict[name][col] = 'None'
+        elif col == 'reldev':
+          if getattr(par, 'stdev'):
+            par_dict[name][col] = f"({abs(par.stdev/par.value):.2%})"
+          else:
+            par_dict[name][col] = 'None'
         elif col == 'brute_step':
           if getattr(par, 'stdev'):
             par_dict[name][col] = ".8f" % getattr(par, 'stdev')
@@ -207,39 +193,36 @@ class Parameters(OrderedDict):
         len_dict[col] = max(len_dict[col], len(par[col]) + col_offset)
     return par_dict, len_dict
 
+
+
   def print(self, oneline=False,
                   cols=['value', 'stdev', 'min', 'max', 'free', 'latex'],
-                  col_offset = 2):
+                  col_offset = 2, as_string = False):
     """
-    Print parameters
+    Print parameters table
     """
     if oneline: print(self.__print__(oneline=oneline)); return
 
-    par_dict, len_dict = self.__params_to_string(cols, col_offset)
+    par_dict, len_dict = self._params_to_string_(cols, col_offset)
+
     # Formating line (will be used to print)
     line = '{:'+str(len_dict['name'])+'}'
     for col in cols[:-1]:
       line += ' {:>'+str(len_dict[col])+'}'
-    line += '  {:'+str(len_dict['latex'])+'}\n'
+    line += '  {:'+str(len_dict[cols[-1]])+'}\n'
 
     # Build the table
     all_cols = ['name'] + cols
     table = line.format(*all_cols).title()
     for name, par in zip(par_dict.keys(),par_dict.values()):
       table += line.format(*list(par.values()))
+    if as_string:
+      return table
     print(table)
 
 
 
-  def _repr_html_(self):
-    """
-    Returns a HTML representation of parameters data.
-    """
-    return params_html_table(self)
-
-
-
-  def __add_parameter__(self, param):
+  def _add_parameter_(self, param):
     """
     Add a Parameter. If param is a Paramter then it will be directly stored in
     Parameters. If param is a dict, then a Parameter will be created and then
@@ -258,7 +241,7 @@ class Parameters(OrderedDict):
     """
     Add many parameters, using the given tuple.
     """
-    for par in params: self.__add_parameter__(par)
+    for par in params: self._add_parameter_(par)
 
 
 
@@ -270,79 +253,111 @@ class Parameters(OrderedDict):
 
 
 
-  def udict(self):
+  def uvaluesdict(self):
     """
     Dictionary (ordered one) of parameter values.
     """
     return OrderedDict((p.name, p.uvalue) for p in self.values())
 
-  def dumps(self, **kws):
+
+
+  def dumps(self, **kwargs):
     """
     Prepare a JSON string of Parameters.
     """
     params = {p.name:p.__getstate__() for p in self.values()}
-    return hjson.dumps(params, **kws)
+    return hjson.dumps(params, **kwargs)
 
-  def loads(self, s, **kws):
+
+
+  def loads(self, s, **kwargs):
     """
     Load Parameters from a JSON string (aka dict).
     """
     self.clear()
-    #print(s)
     self.add(*tuple(s.values()))
     return self
 
-  def dump(self, path, **kws):
+
+
+  def dump(self, path, **kwargs):
     """
     Write JSON representation of Parameters to file given in path.
     """
     if path[:-4] != '.json': path += '.json'
-    open(path,'w').write(self.dumps(**kws))
-    return 0#open(path,'w').write(self.dumps(**kws))
+    open(path,'w').write(self.dumps(**kwargs))
+
+
+
+  def lock(self,*args):
+    if args:
+      for par in args:
+        self[par].free = False
+    else:
+      for par in self:
+        self[par].free = False
+
+
+
+  def unlock(self,*args):
+    if args:
+      for par in args:
+        self[par].free = True
+    else:
+      for par in self:
+        self[par].free = True
+
+
 
   @classmethod
-  def load(cls, path, **kws):
+  def load(cls, path, **kwargs):
     """
     Load JSON representation of Parameters from a file given in path.
     """
     c = cls()
-    c.loads(hjson.load(open(path,'r'), **kws))
+    c.loads(hjson.load(open(path,'r'), **kwargs))
     return c
 
+
+
   def update_constraints(self):
-      """Update all constrained parameters, checking that dependencies are
-      evaluated as needed."""
+      """
+      Update all constrained parameters, checking that dependencies are
+      evaluated as needed.
+      """
       requires_update = {name for name, par in self.items() if par._expr is
                          not None}
       updated_tracker = set(requires_update)
 
-      def _update_param(name):
-          """Update a parameter value, including setting bounds.
+      def _update_param_(name):
+          """
+          Update a parameter value, including setting bounds.
 
           For a constrained parameter (one with an `expr` defined),
           this first updates (recursively) all parameters on which the
           parameter depends (using the 'deps' field).
-
           """
           par = self.__getitem__(name)
           if par._expr_eval is None:
               par._expr_eval = self._asteval
           for dep in par._expr_deps:
               if dep in updated_tracker:
-                  _update_param(dep)
+                  _update_param_(dep)
           self._asteval.symtable[name] = par.value
           updated_tracker.discard(name)
 
       for name in requires_update:
-          _update_param(name)
+          _update_param_(name)
 
-  def latex_dumps(self, cols=['latex', 'value', 'stdev', 'min', 'max', 'free'],
-                        col_offset = 3,
-                        split=False):
+
+
+  def dump_latex(self, cols=['latex','value','stdev'], col_offset=3,
+                       verbose=False):
     """
     Print LaTeX parameters
     """
-    par_dict, len_dict = self.__params_to_string(cols, col_offset)
+    par_dict, len_dict = self._params_to_string_(cols, col_offset)
+
     # Formating line (will be used to print)
     line = '${:'+str(len_dict['latex'])+'}$   '
     for col in cols[1:]:
@@ -356,16 +371,12 @@ class Parameters(OrderedDict):
     for name, par in zip(par_dict.keys(),par_dict.values()):
       table += line.format(*list(par.values())[1:])
     table += "\hline\n"
-    table += "\end{tabular}\n\end{table}"
-    print(table)
+    table += "\end{tabular}\n\end{table}\n"
+    if verbose:
+      print(table)
+    return table
+
 ################################################################################
-
-
-
-
-
-
-
 
 
 
@@ -503,11 +514,15 @@ class Parameter(object):
       self._val = self.min
     self.setup_bounds()
 
+
+
   def __getstatepickle__(self):
       """Get state for pickle."""
       return (self.name, self.value, self.free, self.expr, self.min,
               self.max, self.brute_step, self.stdev, self.correl,
               self.init_value, self.user_data)
+
+
 
   def __getstate__(self):
     """
@@ -651,7 +666,7 @@ class Parameter(object):
         if self._expr_eval is not None:
             if not self._delay_asteval:
                 self.value = self._expr_eval(self._expr_ast)
-                check_ast_errors(self._expr_eval)
+                _check_ast_errors_(self._expr_eval)
 
     if self._val is not None:
         if self._val > self.max:
@@ -662,11 +677,15 @@ class Parameter(object):
         self._expr_eval.symtable[self.name] = self._val
     return self._val
 
+
+
   def set_expr_eval(self, evaluator):
     """
     Set expression evaluator instance.
     """
     self._expr_eval = evaluator
+
+
 
   @property
   def value(self):
@@ -731,8 +750,9 @@ class Parameter(object):
 
 
 
-  def dumps_latex(self):
+  def dump_latex(self):
     return self.name + ' = ' + '{:.2uL}'.format(self.uvalue)
+
 
 
   @property
@@ -740,13 +760,13 @@ class Parameter(object):
     par_str = '{:.2uL}'.format(self.uvalue)
     #par_str = "\left(2.00 \pm 0.10\right) \times 10^{6}"
     #par_str = "2.00 \pm 0.10"
-    if len(par_str.split('\times 10^')) > 1:
-      expr, pow = par_str.split('\times 10^')
-      expr = expr.split('\left(')[1].split('\right)')[0]
+    if len(par_str.split(r'\times 10^')) > 1:
+      expr, pow = par_str.split(r'\times 10^')
+      expr = expr.split(r'\left(')[1].split(r'\right)')[0]
       pow = pow.split('{')[1].split('}')[0]
     else:
       expr = par_str; pow = '0'
-    return expr.split(' \\pm ')+[pow]
+    return expr.split(r' \pm ')+[pow]
 
 
 
@@ -764,7 +784,7 @@ class Parameter(object):
       self._expr_eval.error = []
       self._expr_eval.error_msg = None
       self._expr_ast = self._expr_eval.parse(val)
-      check_ast_errors(self._expr_eval)
+      _check_ast_errors_(self._expr_eval)
       self._expr_deps = get_ast_names(self._expr_ast)
 
 

@@ -31,22 +31,14 @@ Main functionalities:
     to explicitly explore parameter space to determine confidence levels
     even for the most difficult cases.
 
-  * Improved curve-fitting with the Model class. This extends the
-    capabilities of scipy.optimize.curve_fit(), allowing you to turn a
-    function that models your data into a Python class that helps you
-    parametrize and fit data with that model.
-
-  * Many built-in models for common lineshapes are included and ready
-    to use.
-
-Copyright (c) 2020 Ipanema Developers ; MIT License ; see LICENSE
+Copyright (c) 2020 Ipanema Developers ; GNU AFFERO GENERAL PUBLIC LICENSE
 
 """
 
 
 
 setup(name='ipanema',
-      version='0.2',
+      version='0.3',
       author='Marcos Romero',
       author_email='marcos.romero.lamas@cern.ch',
       url='https://github.com/marromlam/ipanema.git',
@@ -64,24 +56,26 @@ setup(name='ipanema',
                         'reikna',
                         'iminuit',
                         'matplotlib',
+<<<<<<< HEAD
+                        'tqdm',
+                        'corner'],
+      python_requires='>=3.5',
+      license='GNU AFFERO GENERAL PUBLIC LICENSE',
+=======
                         'pyopencl'],
       python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
       license='MIT',
+>>>>>>> master
       description="Fitting Tool for High Energy Physics",
       long_description=long_desc,
-      platforms=['Linux', 'Mac OS X', 'Windows'],
+      platforms=['Linux', 'macOS', 'Windows'],
       classifiers=['Development Status :: 0 - Production/Unstable',
                    'Intended Audience :: Science/Research',
                    'License :: OSI Approved :: BSD License',
                    'Operating System :: OS Independent',
-                   'Programming Language :: Python :: 2.7',
-                   'Programming Language :: Python :: 3.4',
-                   'Programming Language :: Python :: 3.5',
-                   'Programming Language :: Python :: 3.6',
-                   'Programming Language :: Python :: 3.7',
                    'Topic :: Scientific/Engineering',
                    ],
-      keywords='curve-fitting, minimization',
+      keywords='curve-fitting, optimization, hyperthreading',
       #tests_require=['pytest'],
       package_dir={'ipanema': 'ipanema'},
       packages=['ipanema'],

@@ -1,10 +1,18 @@
+################################################################################
+#                                                                              #
+#                        BACKEND SELECTOR & INITIALIZE                         #
+#                                                                              #
+################################################################################
 
 import os
 import builtins
 from reikna import cluda
 import atexit
+<<<<<<< HEAD
+=======
 #os.path.dirname(os.path.abspath(__file__))
 
+>>>>>>> master
 
 
 # Backends ---------------------------------------------------------------------
@@ -30,16 +38,11 @@ builtins.THREAD = None
 
 # Initial ALLOCATION
 builtins.ALLOCATION = None
+MAX_LOCAL_SIZE = 100
 
 class manipulate_array(type):
-  '''
-  Metaclass to hold the operations.
-  '''
-  #@with_backend
   def __getattr__(cls, name):
     return getattr(builtins.ALLOCATION, name)
-
-
 
 class ristra(metaclass=manipulate_array):
   pass
@@ -63,7 +66,7 @@ def fetch_devices():
 
 
 
-def initialize_device(device = None):
+def initialize_device(device = None, verbose=False):
   '''
   get device ready
   '''
@@ -88,18 +91,48 @@ def initialize_device(device = None):
     # Create the context and THREAD
     if builtins.BACKEND == CUDA:
       builtins.CONTEXT = builtins.DEVICE.make_context()
+<<<<<<< HEAD
+      def clear_cuda_context():
+          from pycuda.tools import clear_context_caches
+          builtins.CONTEXT.pop()
+          clear_context_caches()
+      atexit.register(clear_cuda_context)
+=======
       # def clear_cuda_context():
       #     from pycuda.tools import clear_context_caches
       #     builtins.CONTEXT.pop()
       #     clear_context_caches()
       # atexit.register(clear_cuda_context)
+>>>>>>> master
     else:
       import pyopencl
       builtins.CONTEXT = pyopencl.Context([DEVICE])
 
     builtins.THREAD = API.Thread(builtins.CONTEXT)
-    print(f'Selected device <{platform.name}> : {device.name}')
+    if verbose: print(f'Selected device <{platform.name}> : {device.name}')
 
+
+
+def get_sizes(size):
+  '''
+  Return the standard sizes for a given array.
+
+  :param size: size of the arrays to work.
+  :type: int
+  :returns: global and local sizes.
+  :rtype: int, int or tuple(int, ...), tuple(int, ...)
+  '''
+  a = size % MAX_LOCAL_SIZE
+  if a == 0:
+    gs, ls = size, MAX_LOCAL_SIZE
+  elif size < MAX_LOCAL_SIZE:
+    gs, ls = size, 1
+  else:
+    a = np.arange(1, min(MAX_LOCAL_SIZE, math.ceil(math.sqrt(size))))
+    a = a[size % a == 0]
+    ls = int(a[np.argmin(np.abs(a - MAX_LOCAL_SIZE))])
+    gs = size
+  return int(gs), int(ls)
 
 
 # Initialization ---------------------------------------------------------------
@@ -122,22 +155,29 @@ def initialize(backend=PYTHON, device=None, verbose=False):
     pass
   elif builtins.BACKEND != "python" and (device is None or device == 0):
     builtins.BACKEND = None
-    print(builtins.BACKEND)
-    initialize_device(device)
+    initialize_device(device, verbose=verbose)
     return
 
   builtins.BACKEND = backend
-  #print(os.getcwd())
 
   if builtins.BACKEND == PYTHON:
     if verbose: print(f'Using backend "{builtins.BACKEND}"')
-    from . import cpu
-    builtins.ALLOCATION = cpu
+    from . import python
+    builtins.ALLOCATION = python
   elif builtins.BACKEND == CUDA or builtins.BACKEND == OPENCL:
     if verbose: print(f'Using backend "{builtins.BACKEND}"')
-    # We need to initialize the device
-    initialize_device(device)
-    from . import gpu
-    builtins.ALLOCATION = gpu
+    initialize_device(device, verbose=verbose)
+    from . import device
+    builtins.ALLOCATION = device
   else:
     raise ValueError(f'Unknown backend "{BACKEND}"')
+
+
+
+def deinitialize():
+  builtins.BACKEND = None
+  builtins.DEVICE = None
+  builtins.CONTEXT = None
+  builtins.THREAD = None
+  builtins.ALLOCATION = None
+  print('this function is a placeholder...')

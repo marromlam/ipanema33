@@ -2,7 +2,7 @@
 Functions depending on multiple arrays.
 '''
 import functools
-from . import gpu_core
+#from . import gpu_core
 
 CACHE = {}
 

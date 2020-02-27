@@ -25,32 +25,12 @@ OPENCL = 'opencl'
 CUDA = 'cuda'
 
 # Maximum value for the local size
-MAX_LOCAL_SIZE = 100
+
 
 
 logger = logging.getLogger(__name__)
 
 
-def get_sizes(size):
-    '''
-    Return the standard sizes for a given array.
-
-    :param size: size of the arrays to work.
-    :type: int
-    :returns: global and local sizes.
-    :rtype: int, int or tuple(int, ...), tuple(int, ...)
-    '''
-    a = size % MAX_LOCAL_SIZE
-    if a == 0:
-        gs, ls = size, MAX_LOCAL_SIZE
-    elif size < MAX_LOCAL_SIZE:
-        gs, ls = size, 1
-    else:
-        a = np.arange(1, min(MAX_LOCAL_SIZE, math.ceil(math.sqrt(size))))
-        a = a[size % a == 0]
-        ls = int(a[np.argmin(np.abs(a - MAX_LOCAL_SIZE))])
-        gs = size
-    return int(gs), int(ls)
 
 
 def device_lookup(devices, device=None, interactive=False):

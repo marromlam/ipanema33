@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os, sys
 #sys.path.append(os.environ['PHIS_SCQ']+'tools')
-import importlib
-#importlib.import_module('phis-scq-style')
+
+from .ezaro_style import *
 
 class ipo(object):
   """docstring for ipanema-plot-object (ipo)."""

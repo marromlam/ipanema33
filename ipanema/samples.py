@@ -3,48 +3,35 @@ import pandas
 import os
 import json
 import uproot
-#import pycuda.driver as cuda
-#import pycuda.cumath
-#import pycuda.autoinit
-#import pycuda.gpuarray as cu_array
 
 from .parameter import Parameters
 from .core.utils import ristra
+
+from .tools.misc import get_vars_from_string
+
+
+
+# WHY THIS IS THE HELL NEEDED !!? ----------------------------------------------
+try:
+  import pycuda.driver as cuda
+  import pycuda.cumath
+  import pycuda.autoinit
+  import pycuda.gpuarray as cu_array
+except:
+  0
+# ---------------------------------------------- WHY THIS IS THE HELL NEEDED !!?
+
+
+
+
 
 
 
 
 ################################################################################
-# move ELSEWHERE
-import ast, math
-class IdentifierExtractor(ast.NodeVisitor):
-  def __init__(self):
-    self.ids = set()
-  def visit_Name(self, node):
-    self.ids.add(node.id)
+# Function to parse config files ###############################################
 
-def getStringVars(FUN):
-  extractor = IdentifierExtractor()
-  extractor.visit(ast.parse(FUN))
-  extractor.ids = extractor.ids - set({**vars(math),**{'alpha':0}})
-  return list(extractor.ids)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def getDataFile(file_path):
+def get_data_file(file_path):
   file = json.load(open(file_path))
   # New Functions
   def alpha(x, y=1):
@@ -54,7 +41,7 @@ def getDataFile(file_path):
   data = uproot.open(file['path'])[file['tree_name']]
   input_vars = data.keys()
   for var in file['branches'].values():
-    new_ones = getStringVars(var)
+    new_ones = get_vars_from_string(var)
     needed_vars += [new for new in new_ones if new.encode() in input_vars]
   data = data.pandas.df(needed_vars)
   #print(needed_vars)
@@ -68,8 +55,13 @@ def getDataFile(file_path):
       #print('@'+file['branches'][var])
       output_df[var] = data.eval('@'+file['branches'][var],engine='python')
   return output_df
+
 ################################################################################
 
+
+
+################################################################################
+################################################################################
 
 class Categories(object):
   """docstring for Categories."""
@@ -78,7 +70,12 @@ class Categories(object):
     super(Categories, self).__init__()
     self.arg = arg
 
+################################################################################
 
+
+
+################################################################################
+################################################################################
 
 class Sample(object):
   """
@@ -110,16 +107,29 @@ class Sample(object):
     return self.df.shape()
 
   @classmethod
-  def from_file(cls, filename, name = None, cuts = None, params = None):
+  def from_file(cls, filename, name = None, cuts = None, params = None,
+                copy=True, convert=True, trim=False):
     if filename[-5:] != '.json': filename += '.json'
     if not name:
       namewithextension = os.path.basename(os.path.normpath(filename))
       name = os.path.splitext(namewithextension)[0]
-    return cls(getDataFile(filename), name, cuts = cuts, params = params)
+    return cls(get_data_file(filename), name, cuts = cuts, params = params,
+               copy=True, convert=True, trim=False)
 
   @classmethod
   def from_pandas(cls, df, name = None, cuts = None, params = None,
                   copy=True, convert=True, trim=False):
+    return cls(df, name, cuts=cuts, params=params,
+               copy=copy, convert=convert, trim=trim)
+
+  @classmethod
+  def from_root(cls, filename, treename = 'DecayTree', name = None, cuts = None,
+                params = None, copy=True, convert=True, trim=False):
+    if filename[-5:] != '.root': filename += '.root'
+    if not name:
+      namewithextension = os.path.basename(os.path.normpath(filename))
+      name = os.path.splitext(namewithextension)[0]
+    df = uproot.open(filename)[treename].pandas.df()
     return cls(df, name, cuts=cuts, params=params,
                copy=copy, convert=convert, trim=trim)
 
@@ -142,6 +152,8 @@ class Sample(object):
     """
     if self.__backup:
       self.df = self.__df
+    else:
+      print('There is no avaliable backup. DataFrame remains the same.')
 
   def allocate(self, **branches):
     """
@@ -163,3 +175,5 @@ class Sample(object):
   def assoc_params(self, params):
     self.params = Parameters()
     self.params.copy(params)
+
+################################################################################
