@@ -13,7 +13,7 @@ b  = Parameter('b',201.1,stdev=0.1,min=1,max=20.3,latex='b')
 
 c1 = Parameter('c1',11,stdev=0.1,min=7,max=12.3,latex='c_1')
 c2 = Parameter('c2',0.2,stdev=0.1,min=-0.5,max=1.3,latex='c_2')
-b  = Parameter('b',201.1,stdev=0.1,min=1,max=20.3,latex='b')
+d  = Parameter('d',101.1,stdev=0.1,min=1,max=20.3,latex='b')
 
 # One can operate on these parameters
 print(f"a1 + a2 = {a1+a2}")
