@@ -13,7 +13,7 @@ others like emcc, ampgo and the so-calle Minuit.
 Main functionalities:
 
   * Despite the comon use of plain float as fitting variables, Ipanema relies on
-    the Parameter class.  A Parameter has a value that can be varied in the fit,
+    the Parameter class. A Parameter has a value that can be varied in the fit,
     fixed, have upper and/or lower bounds. It can even have a value that is
     constrained by an algebraic expression of other Parameter values.
 
@@ -25,11 +25,8 @@ Main functionalities:
     is large, then better rewrite your code in cuda or opencl, and Ipanema can
     take care of that cost function. That's simple.
 
-  * Improved estimation of confidence intervals. While
-    scipy.optimize.leastsq() will automatically calculate uncertainties
-    and correlations from the covariance matrix, lmfit also has functions
-    to explicitly explore parameter space to determine confidence levels
-    even for the most difficult cases.
+  * Estimation of confidence intervals usin ANOVA instead of calculating 
+    uncertainties and correlations from the covariance matrix.
 
 Copyright (c) 2020 Ipanema Developers ; GNU AFFERO GENERAL PUBLIC LICENSE
 

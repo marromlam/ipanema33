@@ -1,6 +1,10 @@
 '''
-Functions depending on multiple arrays.
+Functions depending on multiple arrays.     GET RID OF THIS FILE
 '''
+
+
+
+
 import functools
 #from . import gpu_core
 

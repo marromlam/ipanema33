@@ -5,12 +5,6 @@
 ################################################################################
 
 import builtins
-from . import multi_par
-#from . import rfuncs
-from . import types
-from .utils import get_sizes
-THREAD = builtins.THREAD
-
 import reikna
 from reikna.cluda import functions
 from reikna.fft import FFT
@@ -20,6 +14,11 @@ import os
 import sys
 import threading
 
+from . import multi_par
+from . import types
+from .utils import get_sizes
+
+THREAD = builtins.THREAD
 
 ################################################################################
 # CACHE ########################################################################
@@ -274,9 +273,9 @@ KERNEL void interpolate( GLOBAL_MEM double *out, GLOBAL_MEM double *in, int n, G
     else {
 
       if ( x == xp[i] )
-	out[idx] = yp[i];
+  out[idx] = yp[i];
       else
-	out[idx] = (yp[i - 1]*(xp[i] - x) + yp[i]*(x - xp[i - 1])) / (xp[i] - xp[i - 1]);
+  out[idx] = (yp[i - 1]*(xp[i] - x) + yp[i]*(x - xp[i - 1])) / (xp[i] - xp[i - 1]);
 
       break;
     }

@@ -47,8 +47,8 @@ class ristra(metaclass=manipulate_array):
 
 
 # Device functions -------------------------------------------------------------
-#   Here several functions are declared in order to find and initialize the
-#   selected from the avaliable devices
+#    Here several functions are declared in order to find and initialize the
+#    selected from the avaliable devices
 
 def fetch_devices():
   API = cluda.ocl_api()
@@ -64,10 +64,6 @@ def fetch_devices():
 
 
 def initialize_device(device = None, verbose=False):
-  '''
-  get device ready
-  '''
-
   if not device:
     fetch_devices()
     return
@@ -103,14 +99,6 @@ def initialize_device(device = None, verbose=False):
 
 
 def get_sizes(size):
-  '''
-  Return the standard sizes for a given array.
-
-  :param size: size of the arrays to work.
-  :type: int
-  :returns: global and local sizes.
-  :rtype: int, int or tuple(int, ...), tuple(int, ...)
-  '''
   a = size % MAX_LOCAL_SIZE
   if a == 0:
     gs, ls = size, MAX_LOCAL_SIZE
@@ -130,10 +118,6 @@ def get_sizes(size):
 #    all the needed ingredients to ipanema work
 
 def initialize(backend=PYTHON, device=None, verbose=False):
-  '''
-  select backend and initialize device
-  '''
-
   if builtins.BACKEND is not None and backend != builtins.BACKEND:
     print(f'Unable to set backend to "{backend}". It is already "{BACKEND}".')
     return
