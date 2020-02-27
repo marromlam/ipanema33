@@ -56,10 +56,16 @@ setup(name='ipanema',
                         'reikna',
                         'iminuit',
                         'matplotlib',
+<<<<<<< HEAD
                         'tqdm',
                         'corner'],
       python_requires='>=3.5',
       license='GNU AFFERO GENERAL PUBLIC LICENSE',
+=======
+                        'pyopencl'],
+      python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
+      license='MIT',
+>>>>>>> master
       description="Fitting Tool for High Energy Physics",
       long_description=long_desc,
       platforms=['Linux', 'macOS', 'Windows'],
