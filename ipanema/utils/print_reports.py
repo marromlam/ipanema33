@@ -1,7 +1,9 @@
-"""Functions to display fitting results and confidence intervals."""
-# from math import log10
-# import re
-# import warnings
+################################################################################
+#                                                                              #
+#                                   REPORTs                                    #
+#                                                                              #
+################################################################################
+
 import numpy as np
 
 
