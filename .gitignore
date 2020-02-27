@@ -55,7 +55,4 @@ ipanema.egg-info/
 .fuse_*
 .pytest_cache
 ipanema/__pycache__/*
-<<<<<<< HEAD
 ipanema/core/__pycache__/*
-=======
->>>>>>> master

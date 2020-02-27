@@ -27,7 +27,6 @@ before_script:
 
 test:
   script:
-<<<<<<< HEAD
     - python -c "import ipanema"
 
 
@@ -35,27 +34,3 @@ run:
   script:
     - python examples/parameters_test.py
     - python examples/simple_fit_test.py
-=======
-    - python examples/parameters_test.py
-
-run:
-  script:
-    - python setup.py bdist_wheel
-    # an alternative approach is to install and run:
-    - pip install dist/*
-    # run the command here
-  artifacts:
-    paths:
-      - dist/*.whl
->>>>>>> master
-
-pages:
-  script:
-    - pip install sphinx sphinx-rtd-theme
-    - cd doc ; make html
-    - mv build/html/ ../public/
-  artifacts:
-    paths:
-      - public
-  only:
-    - master
