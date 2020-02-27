@@ -690,29 +690,3 @@ mpl.rcParams['savefig.facecolor'] 		= "white"
 #animation.convert_args:           ## Additional arguments to pass to convert
 #animation.embed_limit : 20.0
 
-
-#import tikzplotlib
-
-"""
-import numpy as np
-import matplotlib.pyplot as plt
-t = np.linspace(0,4,500)
-y1 = (np.cos(17.757*t) + np.cosh(0.041*t))/(2.*np.exp(0.6622516556291391*t))
-y2 = (-np.cos(17.757*t) + np.cosh(0.041*t))/(2.*np.exp(0.6622516556291391*t))
-y3 = (pow(-np.cos(17.757*t) + np.cosh(0.041*t),2)/(4.*np.exp(1.3245033112582782*t)) +
-   pow(np.cos(17.757*t) + np.cosh(0.041*t),2)/(4.*np.exp(1.3245033112582782*t)))
-
-#plt.plot(t,y1,label=r"$\mathrm{Probabilidad\, B{}_s^0}$", color = 'C1')
-#plt.plot(t,y2,label=r"$\mathrm{Probabilidad\, \overline{B}{}_s^0}$", color = 'C2')
-plt.plot(t,y3, color = 'C0')
-#plt.xlabel(r"$t/\tau \mathrm{(m)}$")
-plt.xlabel(r"$t/\tau$")
-plt.ylabel(r"$P(t)$" )
-#plt.savefig("adfd.pdf")
-#plt.legend()
-
-
-#tikzplotlib.save("test.tex")
-
-plt.show()
-"""
