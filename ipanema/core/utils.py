@@ -9,6 +9,7 @@ import builtins
 from reikna import cluda
 import atexit
 import numpy as np
+import math
 
 
 # Backends ---------------------------------------------------------------------
