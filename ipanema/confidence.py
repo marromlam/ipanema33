@@ -41,11 +41,9 @@ def fisher_test(ndata, nfree, new_chi, best_chi2, nfix=1):
                 float
 
   """
-  #nparas = nparas + nfix
   nfree = ndata - ( nfree + nfix )
-  nfix = 1.0*nfix
-  dchi = new_chi / best_chi2 - 1.0
-  return f.cdf(dchi * nfree / nfix, nfix, nfree)
+  diff_chi = new_chi / best_chi2 - 1.0
+  return f.cdf(diff_chi * nfree/nfix, nfix, nfree)
 
 
 def backup_vals(params):
@@ -70,6 +68,9 @@ def map_trace_to_names(trace, params):
     out[name] = tmp_dict
   return out
 
+from collections import namedtuple
+
+shit = namedtuple('shit', ['value', 'prob'])
 
 ################################################################################
 
@@ -92,7 +93,7 @@ def confidence_interval(minimizer, result, param_names=None, sigmas=[1, 2, 3],
                 ipanema.Optimizer
        result:  The result.
                 ipanema.MinimizerResult
-      param_names:  List of names of the parameters for which the confidence
+  param_names:  List of names of the parameters for which the confidence
                 interval is computes
                 list, optional (default=None, all are computed)
        sigmas:  The sigma-levels to find list.
@@ -108,7 +109,7 @@ def confidence_interval(minimizer, result, param_names=None, sigmas=[1, 2, 3],
             0:  Dictionary with list of name: (sigma, values)-tuples.
                 dict
             1:  Dictionary with fixed_param: ()
-                dict, only if trace=True
+                dict
 
   """
   ci = CI(minimizer, result, param_names, tester, sigmas, verbose, maxiter)
@@ -157,8 +158,6 @@ class CI(object):
 
 
     self.footprints = {i: [] for i in self.param_names}
-
-    self.trace = True
     self.maxiter = maxiter
     self.min_rel_change = 1e-5
 
@@ -187,123 +186,137 @@ class CI(object):
 
 
 
-  def get_conficence_interval(self, para, direction):
-      """Calculate the ci for a single parameter in a single direction.
+  def get_conficence_interval(self, param, direction):
+    """
+    Get the confidence interval for a parameter, in one direction.
 
-      Direction is either positive or negative 1.
+    In:
+    0.123456789:
+          param:  Parameter which the confidence interval is being
+                  calculated for.
+                  str or ipanema.Parameter
+      direction:  Left (-1) or right (+1) to look for the limit.
+                  int or float
 
-      """
-      if isinstance(para, str):
-          para = self.params[para]
+    Out:
+              0:  Limit of the parameter confidence interval in the given
+                  direction.
+    """
+    # If param is str get it from Parameters object, then fix it
+    if isinstance(param, str): param = self.params[param]
+    param.free = False
 
-      # function used to calculate the probability
-      calc_prob = lambda val, prob: self.calc_prob(para, val, prob)
-      x = [i.value for i in self.params.values()]
-      self.footprints[para.name].append(x + [0])
+    # function used to calculate the probability
+    get_prob = lambda val, prob: self.get_prob(param, val, prob)
+    x = [i.value for i in self.params.values()]
+    self.footprints[param.name].append(x + [0])
 
-      para.free = False
-      limit, max_prob = self.find_limit(para, direction)
-      start_val = a_limit = float(para.value)
-      ret = []
-      orig_warn_settings = np.geterr()
-      np.seterr(all='ignore')
-      for prob in self.probs:
-          if prob > max_prob:
-              ret.append((prob, direction*np.inf))
-              continue
+    limit, max_prob = self.find_limit(param, direction)
+    start_val = a_limit = float(param.value)
 
+    ret = []
+
+
+    # removing numpy warnings for a while
+    np.seterr(all='ignore'); orig_warn_settings = np.geterr()
+
+    for prob in self.probs:
+      if prob > max_prob:
+          ret.append((prob, direction*np.inf))
+          continue
+
+      try:
+          val = brentq(get_prob, a_limit,
+                       limit, rtol=.5e-4, args=prob)
+
+      except ValueError:
+          self.reset_vals()
           try:
-              val = brentq(calc_prob, a_limit,
+              val = brentq(get_prob, start_val,
                            limit, rtol=.5e-4, args=prob)
-
           except ValueError:
-              self.reset_vals()
-              try:
-                  val = brentq(calc_prob, start_val,
-                               limit, rtol=.5e-4, args=prob)
-              except ValueError:
-                  val = np.nan
+              val = np.nan
 
-          a_limit = val
-          ret.append((prob, val))
+      a_limit = val
+      ret.append((prob, val))
 
-      para.free = True
-      self.reset_vals()
-      np.seterr(**orig_warn_settings)
-      return ret
+    param.free = True
+    self.reset_vals()
+    # restoring numpy warnings
+    np.seterr(**orig_warn_settings)
+    return ret
 
 
 
   def reset_vals(self):
-      """Reset parameter values to best-fit values."""
-      restore_vals(self.params_, self.params)
+    restore_vals(self.params_, self.params)
 
 
 
   def find_limit(self, para, direction):
-      """Find a value for a given parameter so that prob(val) > sigmas."""
-      if self.verbose:
-          print('Calculating CI for ' + para.name)
-      self.reset_vals()
+    """Find a value for a given parameter so that prob(val) > sigmas."""
+    self.reset_vals()
 
-      # determine starting step
-      if para.stdev > 0 and para.stdev < abs(para.value):
-          step = para.stdev
-      else:
-          step = max(abs(para.value) * 0.2, 0.001)
-      para.free = False
-      start_val = para.value
+    # determine starting step
+    if param.stdev > 0 and param.stdev < abs(param.value):
+      step = param.stdev
+    else:
+      step = max(abs(param.value) * 0.2, 0.001)
+    param.free = False
+    start_val = param.value
 
-      old_prob = 0
-      limit = start_val
-      i = 0
+    old_prob = 0
+    limit = start_val
+    i = 0
 
-      while old_prob < max(self.probs):
-          i = i + 1
-          limit += step * direction
+    while old_prob < max(self.probs):
+      i = i + 1
+      limit += step * direction
 
-          new_prob = self.calc_prob(para, limit)
-          rel_change = (new_prob - old_prob) / max(new_prob, old_prob, 1.e-12)
-          old_prob = new_prob
+      new_prob = self.get_prob(para, limit)
+      rel_change = (new_prob - old_prob) / max(new_prob, old_prob, 1.e-12)
+      old_prob = new_prob
 
-          # check for convergence
-          if i > self.maxiter:
-              errmsg = "maxiter={} reached ".format(self.maxiter)
-              errmsg += ("and prob({}={}) = {} < "
-                         "max(sigmas).".format(para.name, limit, new_prob))
-              warn(errmsg)
-              break
+      # check for convergence
+      if i > self.maxiter:
+          errmsg = "maxiter={} reached ".format(self.maxiter)
+          errmsg += ("and prob({}={}) = {} < "
+                     "max(sigmas).".format(param.name, limit, new_prob))
+          warn(errmsg)
+          break
 
-          if rel_change < self.min_rel_change:
-              errmsg = "rel_change={} < {} ".format(rel_change,
-                                                    self.min_rel_change)
-              errmsg += ("at iteration {} and prob({}={}) = {} < max"
-                         "(sigmas).".format(i, para.name, limit, new_prob))
-              warn(errmsg)
-              break
+      if rel_change < self.min_rel_change:
+          errmsg = "rel_change={} < {} ".format(rel_change,
+                                                self.min_rel_change)
+          errmsg += ("at iteration {} and prob({}={}) = {} < max"
+                     "(sigmas).".format(i, param.name, limit, new_prob))
+          warn(errmsg)
+          break
 
-      self.reset_vals()
+    self.reset_vals()
 
-      return limit, new_prob
+    return limit, new_prob
 
 
 
-  def calc_prob(self, para, val, offset=0., restore=False):
-      """Calculate the probability for given value."""
-      if restore:
-          restore_vals(self.params_, self.params)
-      para.value = val
-      save_para = self.params[para.name]
-      self.params[para.name] = para
-      self.minimizer.prepare_fit(self.params)
-      out = self.minimizer.levenberg_marquardt()
-      prob = self.tester(out.ndata, out.ndata - out.nfree,
-                            out.chi2, self.best_chi2)
+  def get_prob(self, para, val, offset=0.0, restore=False):
+    """
+    Calculate the probability for given value.
+    """
+    if restore:
+      restore_vals(self.params_, self.params)
+    param.value = val
+    save_para = self.params[param.name]
+    self.params[param.name] = para
+    self.minimizer.prepare_fit(self.params)
+    out = self.minimizer.levenberg_marquardt()
+    prob = self.tester(out.ndata, out.ndata - out.nfree,
+                          out.chi2, self.best_chi2)
 
-      x = [i.value for i in out.params.values()]
-      self.footprints[para.name].append(x + [prob])
-      self.params[para.name] = save_para
-      return prob - offset
+    x = [i.value for i in out.params.values()]
+    self.footprints[param.name].append(x + [prob])
+    self.params[param.name] = save_para
+    return prob - offset
 
 
 def confidence_interval2d(minimizer, result, x_name, y_name, nx=10, ny=10,
@@ -376,7 +389,7 @@ def confidence_interval2d(minimizer, result, x_name, y_name, nx=10, ny=10,
     x.free = False
     y.free = False
 
-    def calc_prob(vals, restore=False):
+    def get_prob(vals, restore=False):
         """Calculate the probability."""
         if restore:
             restore_vals(org, result.params)
@@ -394,7 +407,7 @@ def confidence_interval2d(minimizer, result, x_name, y_name, nx=10, ny=10,
         result.params[y.name] = save_y
         return prob
 
-    out = x_points, y_points, np.apply_along_axis(calc_prob, -1, grid)
+    out = x_points, y_points, np.apply_along_axis(get_prob, -1, grid)
 
     x.free, y.free = True, True
     restore_vals(org, result.params)
