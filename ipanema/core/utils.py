@@ -8,6 +8,7 @@ import os
 import builtins
 from reikna import cluda
 import atexit
+import numpy as np
 
 
 # Backends ---------------------------------------------------------------------
