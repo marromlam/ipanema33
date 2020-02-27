@@ -1,3 +1,9 @@
+################################################################################
+#                                                                              #
+#                                   SAMPLES                                    #
+#                                                                              #
+################################################################################
+
 import numpy as np
 import pandas
 import os
@@ -11,7 +17,7 @@ from .tools.misc import get_vars_from_string
 
 
 
-# WHY THIS IS THE HELL NEEDED !!? ----------------------------------------------
+# WHY IS THIS THE HELL NEEDED !!? ----------------------------------------------
 try:
   import pycuda.driver as cuda
   import pycuda.cumath
@@ -19,7 +25,7 @@ try:
   import pycuda.gpuarray as cu_array
 except:
   0
-# ---------------------------------------------- WHY THIS IS THE HELL NEEDED !!?
+# ---------------------------------------------- WHY IS THIS THE HELL NEEDED !!?
 
 
 
