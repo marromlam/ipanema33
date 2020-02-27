@@ -1,7 +1,12 @@
+################################################################################
+#                                                                              #
+#                          PLOTTING HELPERS & AXES                             #
+#                                                                              #
+################################################################################
+
 import numpy as np
 import matplotlib.pyplot as plt
 import os, sys
-#sys.path.append(os.environ['PHIS_SCQ']+'tools')
 
 from .ezaro_style import *
 

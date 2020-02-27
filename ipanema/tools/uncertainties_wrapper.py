@@ -1,3 +1,9 @@
+################################################################################
+#                                                                              #
+#                           UNCERTANTIES WRAPPER                               #
+#                                                                              #
+################################################################################
+
 from uncertainties import *
 import numpy as np
 from uncertainties import unumpy as unp

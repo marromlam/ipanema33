@@ -1,3 +1,9 @@
+################################################################################
+#                                                                              #
+#                             MATPLOTLIB STYLE SHEET                           #
+#                                                                              #
+################################################################################
+
 #import matplotlib.pyplot as plt
 #import numpy as np
 import matplotlib as mpl
