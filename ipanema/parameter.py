@@ -6,21 +6,21 @@
 
 from collections import OrderedDict
 import hjson
-from asteval import Interpreter, get_ast_names, valid_symbol_name
 from numpy import arcsin, array, cos, inf, isclose, nan, sin, sqrt
 from numpy import inf as Infinite
-import scipy.special
-import uncertainties
 import uncertainties as unc
 
-# Get some functions from scipy to be handled by asteval
-SCIPY_FUNCTIONS = {}
+# Parameter formula stuff
+from asteval import Interpreter, get_ast_names, valid_symbol_name
+import scipy.special
+
+SCIPY_FUNCTIONS = {} # Get some functions from scipy to be handled by asteval
 for name in ['gamma', 'erf', 'erfc', 'wofz']:
   SCIPY_FUNCTIONS['sc_'+name] = getattr(scipy.special, name)
 
 # Asteval error checker
-def _check_ast_errors_(expr_eval):
-  if len(expr_eval.error) > 0: expr_eval.raise_exception(None)
+def _check_ast_errors_(formula_eval):
+  if len(formula_eval.error) > 0: formula_eval.raise_exception(None)
 
 
 
@@ -34,33 +34,27 @@ class Parameters(OrderedDict):
   * Parameters() is made only of Parameter() items
   """
 
-  def __init__(self, asteval=None, usersyms=None, *args, **kwds):
-    """
-    ---
-    """
+  def __init__(self, asteval=None, usersyms=None, *args, **kwargs):
     super(Parameters, self).__init__(self)
 
     self._asteval = asteval
     if self._asteval is None:
-        self._asteval = Interpreter()
-
+      self._asteval = Interpreter()
     _syms = {}
     _syms.update(SCIPY_FUNCTIONS)
     if usersyms is not None:
-        _syms.update(usersyms)
+      _syms.update(usersyms)
     for key, val in _syms.items():
-        self._asteval.symtable[key] = val
-
-    self.update(*args, **kwds)
+      self._asteval.symtable[key] = val
+    self.update(*args, **kwargs)
 
 
 
   def copy(self, params_in):
     """
-    Parameters.copy() should always be a deepcopy.
+    Alias of __copy__.
     """
     return self.__copy__(params_in)
-
 
 
   @classmethod
@@ -78,9 +72,6 @@ class Parameters(OrderedDict):
 
 
   def __setitem__(self, key, par):
-    """
-    Set a parameter by key
-    """
     if key not in self:
       if not valid_symbol_name(key):
         raise KeyError("'%s' has not a valid Parameter name" % key)
@@ -88,14 +79,14 @@ class Parameters(OrderedDict):
       raise ValueError("'%s' is not a Parameter" % par)
     OrderedDict.__setitem__(self, key, par)
     par.name = key
-    par._expr_eval = self._asteval
+    par._formula_eval_ = self._asteval
     self._asteval.symtable[key] = par.value
 
 
 
   def __add__(self, friend):
     """
-    Add Parameters objects.
+    Merge Parameters objects.
     """
     if not isinstance(friend, Parameters):
       raise ValueError("'%s' is not a Parameters object" % friend)
@@ -117,27 +108,34 @@ class Parameters(OrderedDict):
 
 
 
-  def eval(self, expr):
+  def eval(self, formula):
     """
     Evaluate a statement using the asteval Interpreter. Takes an expression
     containing parameter names and friend symbols recognizable by the asteval
     Interpreter.
     """
-    return self._asteval.eval(expr)
+    return self._asteval.eval(formula)
 
 
 
-  def __print__(self, oneline=False):
+  def __print__(self, cols=['value', 'stdev', 'min', 'max', 'free'],col_offset = 2):
     """
     Return a pretty representation of a Parameters class.
     """
-    if oneline:
-      return super(Parameters, self).__repr__()
-    s = "Parameters({\n"
-    for key in self.keys():
-      s += "    '%s': %s, \n" % (key, self[key])
-    s += "    })\n"
-    return s
+    par_dict, len_dict = self._params_to_string_(cols, col_offset)
+
+    # Formating line (will be used to print)
+    line = '{:'+str(len_dict['name'])+'}'
+    for col in cols[:-1]:
+      line += ' {:>'+str(len_dict[col])+'}'
+    line += '  {:'+str(len_dict[cols[-1]])+'}\n'
+
+    # Build the table
+    all_cols = ['name'] + cols
+    table = line.format(*all_cols).title()
+    for name, par in zip(par_dict.keys(),par_dict.values()):
+      table += line.format(*list(par.values()))
+    return table
 
 
 
@@ -173,11 +171,6 @@ class Parameters(OrderedDict):
             par_dict[name][col] = f"({abs(par.stdev/par.value):.2%})"
           else:
             par_dict[name][col] = 'None'
-        elif col == 'brute_step':
-          if getattr(par, 'stdev'):
-            par_dict[name][col] = ".8f" % getattr(par, 'stdev')
-          else:
-            par_dict[name][col] = 'None'
         elif col == 'free':
           par_dict[name][col] = str(True == getattr(par, 'free'))
         elif col == 'min':
@@ -195,27 +188,11 @@ class Parameters(OrderedDict):
 
 
 
-  def print(self, oneline=False,
-                  cols=['value', 'stdev', 'min', 'max', 'free', 'latex'],
-                  col_offset = 2, as_string = False):
+  def print(self, cols=['value', 'stdev', 'min', 'max', 'free', 'latex'], col_offset = 2, as_string = False):
     """
     Print parameters table
     """
-    if oneline: print(self.__print__(oneline=oneline)); return
-
-    par_dict, len_dict = self._params_to_string_(cols, col_offset)
-
-    # Formating line (will be used to print)
-    line = '{:'+str(len_dict['name'])+'}'
-    for col in cols[:-1]:
-      line += ' {:>'+str(len_dict[col])+'}'
-    line += '  {:'+str(len_dict[cols[-1]])+'}\n'
-
-    # Build the table
-    all_cols = ['name'] + cols
-    table = line.format(*all_cols).title()
-    for name, par in zip(par_dict.keys(),par_dict.values()):
-      table += line.format(*list(par.values()))
+    table = self.__print__(cols,col_offset)
     if as_string:
       return table
     print(table)
@@ -224,7 +201,7 @@ class Parameters(OrderedDict):
 
   def _add_parameter_(self, param):
     """
-    Add a Parameter. If param is a Paramter then it will be directly stored in
+    Add a Parameter. If param is a Parameter then it will be directly stored in
     Parameters. If param is a dict, then a Parameter will be created and then
     stored.
     """
@@ -247,7 +224,7 @@ class Parameters(OrderedDict):
 
   def valuesdict(self):
     """
-    Dictionary (ordered one) of parameter values.
+    OrderedDict of parameter values.
     """
     return OrderedDict((p.name, p.value) for p in self.values())
 
@@ -255,9 +232,29 @@ class Parameters(OrderedDict):
 
   def uvaluesdict(self):
     """
-    Dictionary (ordered one) of parameter values.
+    OrderedDict of parameter values.
     """
     return OrderedDict((p.name, p.uvalue) for p in self.values())
+
+
+
+  def lock(self,*args):
+    if args:
+      for par in args:
+        self[par].free = False
+    else:
+      for par in self:
+        self[par].free = False
+
+
+
+  def unlock(self,*args):
+    if args:
+      for par in args:
+        self[par].free = True
+    else:
+      for par in self:
+        self[par].free = True
 
 
 
@@ -288,27 +285,6 @@ class Parameters(OrderedDict):
     open(path,'w').write(self.dumps(**kwargs))
 
 
-
-  def lock(self,*args):
-    if args:
-      for par in args:
-        self[par].free = False
-    else:
-      for par in self:
-        self[par].free = False
-
-
-
-  def unlock(self,*args):
-    if args:
-      for par in args:
-        self[par].free = True
-    else:
-      for par in self:
-        self[par].free = True
-
-
-
   @classmethod
   def load(cls, path, **kwargs):
     """
@@ -321,40 +297,41 @@ class Parameters(OrderedDict):
 
 
   def update_constraints(self):
+    """
+    Update all constrained parameters, checking that dependencies are
+    evaluated as needed.
+    """
+    requires_update = {name for name, par in self.items() if par._formula is not None}
+    updated_tracker = set(requires_update)
+
+    def _update_param_(name):
       """
-      Update all constrained parameters, checking that dependencies are
-      evaluated as needed.
+      Update a parameter value, including setting bounds.
+
+      For a constrained parameter (one with an `formula` defined),
+      this first updates (recursively) all parameters on which the
+      parameter depends (using the 'deps' field).
       """
-      requires_update = {name for name, par in self.items() if par._expr is
-                         not None}
-      updated_tracker = set(requires_update)
+      par = self.__getitem__(name)
+      if par._formula_eval_ is None:
+        par._formula_eval_ = self._asteval
+      for dep in par._formula_deps:
+        if dep in updated_tracker:
+            _update_param_(dep)
+      self._asteval.symtable[name] = par.value
+      updated_tracker.discard(name)
 
-      def _update_param_(name):
-          """
-          Update a parameter value, including setting bounds.
-
-          For a constrained parameter (one with an `expr` defined),
-          this first updates (recursively) all parameters on which the
-          parameter depends (using the 'deps' field).
-          """
-          par = self.__getitem__(name)
-          if par._expr_eval is None:
-              par._expr_eval = self._asteval
-          for dep in par._expr_deps:
-              if dep in updated_tracker:
-                  _update_param_(dep)
-          self._asteval.symtable[name] = par.value
-          updated_tracker.discard(name)
-
-      for name in requires_update:
-          _update_param_(name)
+    for name in requires_update:
+      _update_param_(name)
 
 
 
-  def dump_latex(self, cols=['latex','value','stdev'], col_offset=3,
-                       verbose=False):
+  def dump_latex(self, cols=['latex','value','stdev'], col_offset=3, verbose=False):
     """
     Print LaTeX parameters
+
+    TODO: I think when some parameter value has 10^exp will be represented as
+          1eexp. Some mod is needed to rewrite that e into \times 10^exp. :)
     """
     par_dict, len_dict = self._params_to_string_(cols, col_offset)
 
@@ -393,12 +370,11 @@ class Parameter(object):
     * free: True or False where the parameter if free or fixed (default: True)
     * min: Minimum value of the parameters (default:-inf)
     * max: Maximum value of the parameters (default:+inf)
-    * expr: Mathematical expression used to constrain the value during the fit
-    * brute_step: Step size for grid points in the (default: None)
-    * init_value: Initial value for the fit (default: value),
+    * formula: Mathematical formula used to constrain the value during the fit
+    * init: Initial value for the fit (default: value),
     * correl: None,
     * stdev: None,
-    * latex: LaTeX expression of the parameter name (default: name)
+    * latex: LaTeX formula of the parameter name (default: name)
 
   Those atributes should be static they must exist always not depending of \
   the method used in the minimization.
@@ -406,48 +382,71 @@ class Parameter(object):
 
 
   def __init__(self, name=None, value=0, free=True, min=-inf, max=inf,
-               expr=None, brute_step=None, user_data=None, init_value=None,
+               formula=None, casket=None, init=None,
                correl=None, stdev=None, latex=None):
     """
-    ---
+    Object that controls a model
+
+    In:
+    0.123456789:
+           name:  Parameter's name.
+                  string
+          value:  Parameter's value.
+                  float (default: 0)
+           free:  Whether the Parameter can vary or not during a fit.
+                  bool (default: True)
+            min:  Minimum value of the Parameter's range.
+                  float (default:-inf)
+            max:  Maximum value of the Parameter's range.
+                  float (default:+inf)
+        formula:  Mathematical formula used to constrain the value during the fit.
+                  string (default=None)
+           init:  Initial value for the fit,
+                  float (default: value)
+         correl:  Correlation
+                  float (default=None)
+          stdev:  Parameter standard deviation.
+                  float, (default=None)
+          latex:  LaTeX expression of Parameter's name.
+                  string, (default: name)
+
+    Out:
+           void
+
     """
     self.name           = name
     self.latex          = name
-    self.user_data      = user_data
-    self.init_value     = value
+
+
+    self.init           = value
     self.min            = min
     self.max            = max
-    self.brute_step     = brute_step
     self.free           = free
     self.stdev          = stdev
-    self._expr          = expr
     self.correl         = correl
 
-    self._val           = value
-    self._expr_ast      = None
-    self._expr_eval     = None
-    self._expr_deps     = []
+    self._formula       = formula
+    self._value           = value
+    self._formula_ast   = None
+    self._formula_eval_ = None
+    self._formula_deps  = []
     self._delay_asteval = False
     self._uvalue        = unc.ufloat(0,0)
 
+    self.casket         = casket
     self.uncl           = self.stdev
     self.uncr           = self.stdev
 
     self.from_internal  = lambda val: val
 
     if latex: self.latex = latex
-    if init_value: self.init_value = init_value
+    if init: self.init = init
 
-    self._init_bounds()
+    self._check_init_bounds_()
 
 
 
-  def set(self, value=None,
-                free=None,
-                min=None,
-                max=None,
-                expr=None,
-                brute_step=None):
+  def set(self, value=None, free=None, min=None, max=None, formula=None):
     """
     Update Parameter attributes.
 
@@ -457,24 +456,51 @@ class Parameter(object):
            free:  True or False
             min:  To remove limits use '-inf', not 'None'
             max:  To remove limits use '+inf', not 'None'
-           expr:  To remove a constraint you must supply an empty string ''
-     brute_step:  To remove the step size you must use '0'
-     init_value:  Initial value for the fit (default: value),
+        formula:  To remove a constraint you must supply an empty string ''
+           init:  Initial value for the fit (default: value),
          correl:  None,
           stdev:  None,
-          latex:  LaTeX expression of the parameter name (default: name)
+          latex:  LaTeX formula of the parameter name (default: name)
 
     Out:
            void
     """
+    self.__setstate__(self, value, free, min, max, formula)
+
+
+
+  def _check_init_bounds_(self):
+    """
+    Make sure initial bounds are self-consistent.
+    """
+    # _value is None means - infinity.
+    if self.max is None:
+      self.max = inf
+    if self.min is None:
+      self.min = -inf
+    if self.min > self.max:
+      self.min, self.max = self.max, self.min
+    if isclose(self.min, self.max, atol=1e-14, rtol=1e-14):
+      self.free = False
+    if self._value is None:
+      self._value = self.min
+    if self._value > self.max:
+      self._value = self.max
+    if self._value < self.min:
+      self._value = self.min
+    self.setup_bounds()
+
+
+
+  def __setstate__(self, value=None, free=None, min=None, max=None, formula=None):
     if value is not None:
       self.value = value
-      self.__set_expression('')
+      self._set_formula_('')
 
     if free is not None:
       self.free = free
       if free:
-        self.__set_expression('')
+        self._set_formula_('')
 
     if min is not None:
       self.min = min
@@ -482,46 +508,8 @@ class Parameter(object):
     if max is not None:
       self.max = max
 
-    if expr is not None:
-      self.__set_expression(expr)
-
-    if brute_step is not None:
-      if brute_step == 0.0:
-        self.brute_step = None
-      else:
-        self.brute_step = brute_step
-
-
-
-  def _init_bounds(self):
-    """
-    Make sure initial bounds are self-consistent.
-    """
-    # _val is None means - infinity.
-    if self.max is None:
-      self.max = inf
-    if self.min is None:
-      self.min = -inf
-    if self._val is None:
-      self._val = -inf
-    if self.min > self.max:
-      self.min, self.max = self.max, self.min
-    if isclose(self.min, self.max, atol=1e-13, rtol=1e-13):
-      raise ValueError("Parameter '%s' has min == max" % self.name)
-    if self._val > self.max:
-      self._val = self.max
-    if self._val < self.min:
-      self._val = self.min
-    self.setup_bounds()
-
-
-
-  def __getstatepickle__(self):
-      """Get state for pickle."""
-      return (self.name, self.value, self.free, self.expr, self.min,
-              self.max, self.brute_step, self.stdev, self.correl,
-              self.init_value, self.user_data)
-
+    if formula is not None:
+      self._set_formula_(formula)
 
 
   def __getstate__(self):
@@ -529,25 +517,9 @@ class Parameter(object):
     Get state for json.
     """
     return {"name":self.name, "value":self.value, "free":self.free,
-            "expr":self.expr, "min":self.min, "max": self.max,
-            "brute_step": self.brute_step, "stdev":self.stdev,
-            "correl":self.correl, "init_value":self.init_value,
-            "user_data":self.user_data, "latex":self.latex}
-
-
-
-  def __setstate__(self, state):
-    """
-    Set state for pickle. ¿IS THIS NEEDED?
-    """
-    (self.name, self.value, self.free, self.expr, self.min, self.max,
-     self.brute_step, self.stdev, self.correl, self.init_value,
-     self.user_data) = state
-    self._expr_ast = None
-    self._expr_eval = None
-    self._expr_deps = []
-    self._delay_asteval = False
-    self._init_bounds()
+            "formula":self.formula, "min":self.min, "max": self.max,
+            "stdev":self.stdev, "correl":self.correl, "init":self.init,
+            "casket":self.casket, "latex":self.latex}
 
 
 
@@ -559,7 +531,7 @@ class Parameter(object):
     if self.name is not None:
         s.append("'%s'" % self.name)
     sval = repr(self._getval())
-    if not self.free and self._expr is None:
+    if not self.free and self._formula is None:
       sval = "value=%s (fixed)" % sval
     elif self.stdev is not None:
       sval = "value=%s +/- %.3g (free)" % (sval, self.stdev)
@@ -567,123 +539,121 @@ class Parameter(object):
       sval = "value=%s (free)" % sval
     s.append(sval)
     s.append("limits=[%s:%s]" % (repr(self.min), repr(self.max)))
-    if self._expr is not None:
-        s.append("expr='%s'" % self.expr)
-    if self.brute_step is not None:
-        s.append("brute_step=%s" % (self.brute_step))
+    if self._formula is not None:
+        s.append("formula='%s'" % self.formula)
     return "<Parameter %s>" % ', '.join(s)
 
 
 
   def setup_bounds(self):
-      """Set up Minuit-style internal/external parameter transformation of
-      min/max bounds.
+    """
+    Set up Minuit-style internal/external parameter transformation of
+    min/max bounds. This was taken from JJ Helmus' leastsqbound.py
 
-      As a side-effect, this also defines the self.from_internal method
-      used to re-calculate self.value from the internal value, applying
-      the inverse Minuit-style transformation. This method should be
-      called prior to passing a Parameter to the user-defined objective
-      function.
+    As a side-effect, this also defines the self.from_internal method
+    used to re-calculate self.value from the internal value, applying
+    the inverse Minuit-style transformation. This method should be
+    called prior to passing a Parameter to the user-defined objective
+    function.
 
-      This code borrows heavily from JJ Helmus' leastsqbound.py
-
-      Returns
-      -------
-      _val : float
-          The internal value for parameter from self.value (which holds
-          the external, user-expected value). This internal value should
-          actually be used in a fit.
-
-      """
-      if self.min is None:
-          self.min = -inf
-      if self.max is None:
-          self.max = inf
-      if self.min == -inf and self.max == inf:
-          self.from_internal = lambda val: val
-          _val = self._val
-      elif self.max == inf:
-          self.from_internal = lambda val: self.min - 1.0 + sqrt(val*val + 1)
-          _val = sqrt((self._val - self.min + 1.0)**2 - 1)
-      elif self.min == -inf:
-          self.from_internal = lambda val: self.max + 1 - sqrt(val*val + 1)
-          _val = sqrt((self.max - self._val + 1.0)**2 - 1)
-      else:
-          self.from_internal = lambda val: self.min + (sin(val) + 1) * \
-                               (self.max - self.min) / 2.0
-          _val = arcsin(2*(self._val - self.min)/(self.max - self.min) - 1)
-      return _val
-
-
-
-  def scale_gradient(self, val):
-    """Return scaling factor for gradient.
-
-    Parameters
-    ----------
-    val: float
-        Numerical Parameter value.
+    This code borrows heavily from JJ Helmus' leastsqbound.py
 
     Returns
     -------
-    float
-        Scaling factor for gradient the according to Minuit-style
-        transformation.
+    _value : float
+        The internal value for parameter from self.value (which holds
+        the external, user-expected value). This internal value should
+        actually be used in a fit.
+
+    """
+    if self.min is None:
+      self.min = -inf
+    if self.max is None:
+      self.max = inf
+    if self.min == -inf and self.max == inf:
+      self.from_internal = lambda val: val
+      _value = self._value
+    elif self.max == inf:
+      self.from_internal = lambda val: self.min - 1.0 + sqrt(val*val + 1)
+      _value = sqrt((self._value - self.min + 1.0)**2 - 1)
+    elif self.min == -inf:
+      self.from_internal = lambda val: self.max + 1 - sqrt(val*val + 1)
+      _value = sqrt((self.max - self._value + 1.0)**2 - 1)
+    else:
+      self.from_internal = lambda val: self.min + (sin(val) + 1) * \
+                            (self.max - self.min) / 2.0
+      _value = arcsin(2*(self._value - self.min)/(self.max - self.min) - 1)
+    return _value
+
+
+
+  def scale_gradient(self, value):
+    """
+    Minuit-style transformation for the gradient scaling factor.
+
+    In:
+    0.123456789:
+          value:  Value
+                  float
+
+    Out:
+              0:  Scaling factor
+                  float
 
     """
     if self.min == -inf and self.max == inf:
-        return 1.0
+      return 1.0
     elif self.max == inf:
-        return val / sqrt(val*val + 1)
+      return value / sqrt(value*value + 1)
     elif self.min == -inf:
-        return -val / sqrt(val*val + 1)
-    return cos(val) * (self.max - self.min) / 2.0
+      return -value / sqrt(value*value + 1)
+    return cos(value) * (self.max - self.min) / 2.0
 
 
 
   def _getval(self):
     """Get value, with bounds applied."""
-    # Note assignment to self._val has been changed to self.value
+    # Note assignment to self._value has been changed to self.value
     # The self.value property setter makes sure that the
-    # _expr_eval.symtable is kept updated.
-    # If you just assign to self._val then
-    # _expr_eval.symtable[self.name]
-    # becomes stale if parameter.expr is not None.
-    if (isinstance(self._val, uncertainties.core.Variable) and
-            self._val is not nan):
+    # _formula_eval_.symtable is kept updated.
+    # If you just assign to self._value then
+    # _formula_eval_.symtable[self.name]
+    # becomes stale if parameter.formula is not None.
+    if (isinstance(self._value, unc.core.Variable) and
+            self._value is not nan):
 
         try:
-            self.value = self._val.nominal_value
+            self.value = self._value.nominal_value
         except AttributeError:
             pass
-    if not self.free and self._expr is None:
-        return self._val
+    if not self.free and self._formula is None:
+        return self._value
 
-    if self._expr is not None:
-        if self._expr_ast is None:
-            self.__set_expression(self._expr)
+    if self._formula is not None:
+        if self._formula_ast is None:
+            self._set_formula_(self._formula)
 
-        if self._expr_eval is not None:
+        if self._formula_eval_ is not None:
             if not self._delay_asteval:
-                self.value = self._expr_eval(self._expr_ast)
-                _check_ast_errors_(self._expr_eval)
+                self.value = self._formula_eval_(self._formula_ast)
+                _check_ast_errors_(self._formula_eval_)
 
-    if self._val is not None:
-        if self._val > self.max:
-            self._val = self.max
-        elif self._val < self.min:
-            self._val = self.min
-    if self._expr_eval is not None:
-        self._expr_eval.symtable[self.name] = self._val
-    return self._val
+    if self._value is not None:
+        if self._value > self.max:
+            self._value = self.max
+        elif self._value < self.min:
+            self._value = self.min
+    if self._formula_eval_ is not None:
+        self._formula_eval_.symtable[self.name] = self._value
+    return self._value
 
 
 
-  def set_expr_eval(self, evaluator):
+  def set_formula_eval_(self, evaluator):
     """
-    Set expression evaluator instance.
+    Set formula evaluator instance.
     """
-    self._expr_eval = evaluator
+    self._formula_eval_ = evaluator
 
 
 
@@ -701,34 +671,34 @@ class Parameter(object):
     """
     Set the numerical Parameter value.
     """
-    self._val = val
-    if not hasattr(self, '_expr_eval'):
-      self._expr_eval = None
-    if self._expr_eval is not None:
-      self._expr_eval.symtable[self.name] = val
+    self._value = val
+    if not hasattr(self, '_formula_eval_'):
+      self._formula_eval_ = None
+    if self._formula_eval_ is not None:
+      self._formula_eval_.symtable[self.name] = val
 
 
 
   @property
-  def expr(self):
+  def formula(self):
     """
-    Return the mathematical expression used to constrain the value
+    Return the mathematical formula used to constrain the value
     during the fit.
     """
-    return self._expr
+    return self._formula
 
 
 
-  @expr.setter
-  def expr(self, val):
+  @formula.setter
+  def formula(self, val):
     """
-    Set the mathematical expression used to constrain the value during
+    Set the mathematical formula used to constrain the value during
     the fit.
 
     To remove a constraint you must supply an empty string.
 
     """
-    self.__set_expression(val)
+    self._set_formula_(val)
 
 
 
@@ -751,41 +721,40 @@ class Parameter(object):
 
 
   def dump_latex(self):
-    return self.name + ' = ' + '{:.2uL}'.format(self.uvalue)
+    # Return a parameter.latex = value+/-stdev
+    return self.latex + ' = ' + '{:.2uL}'.format(self.uvalue)
 
 
 
   @property
   def unc_round(self):
     par_str = '{:.2uL}'.format(self.uvalue)
-    #par_str = "\left(2.00 \pm 0.10\right) \times 10^{6}"
-    #par_str = "2.00 \pm 0.10"
     if len(par_str.split(r'\times 10^')) > 1:
-      expr, pow = par_str.split(r'\times 10^')
-      expr = expr.split(r'\left(')[1].split(r'\right)')[0]
+      formula, pow = par_str.split(r'\times 10^')
+      formula = formula.split(r'\left(')[1].split(r'\right)')[0]
       pow = pow.split('{')[1].split('}')[0]
     else:
-      expr = par_str; pow = '0'
-    return expr.split(r' \pm ')+[pow]
+      formula = par_str; pow = '0'
+    return formula.split(r' \pm ')+[pow]
 
 
 
-  def __set_expression(self, val):
+  def _set_formula_(self, val):
     if val == '':
       val = None
-    self._expr = val
+    self._formula = val
     if val is not None:
       self.free = False
-    if not hasattr(self, '_expr_eval'):
-      self._expr_eval = None
+    if not hasattr(self, '_formula_eval_'):
+      self._formula_eval_ = None
     if val is None:
-      self._expr_ast = None
-    if val is not None and self._expr_eval is not None:
-      self._expr_eval.error = []
-      self._expr_eval.error_msg = None
-      self._expr_ast = self._expr_eval.parse(val)
-      _check_ast_errors_(self._expr_eval)
-      self._expr_deps = get_ast_names(self._expr_ast)
+      self._formula_ast = None
+    if val is not None and self._formula_eval_ is not None:
+      self._formula_eval_.error = []
+      self._formula_eval_.error_msg = None
+      self._formula_ast = self._formula_eval_.parse(val)
+      _check_ast_errors_(self._formula_eval_)
+      self._formula_deps = get_ast_names(self._formula_ast)
 
 
 
@@ -853,12 +822,13 @@ class Parameter(object):
   def __rsub__(self, friend): return friend - self.uvalue
 
 
-# Paramter-ness checher --------------------------------------------------------
+# Parameter-ness checher -------------------------------------------------------
+
 def isParameter(x):
-    """
-    Check if an object belongs to Parameter-class.
-    """
-    return (isinstance(x, Parameter) or x.__class__.__name__ == 'Parameter')
+  """
+  Check if an object belongs to Parameter-class.
+  """
+  return (isinstance(x, Parameter) or x.__class__.__name__ == 'Parameter')
 
 
 
