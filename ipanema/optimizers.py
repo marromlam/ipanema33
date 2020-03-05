@@ -236,7 +236,7 @@ def _lnpost_(value, fcn_call, params, param_vary, bounds, fcn_args=(),
     elif behavior == 'chi2':
       lnprob *= -0.5
     else:
-      raise ValueError("float_behaviour must be either 'likelihood' or 'chi2'.")
+      raise ValueError("behaviour must be either 'likelihood' or 'chi2'.")
 
   return lnprob
 
@@ -394,7 +394,7 @@ class Optimizer(object):
   def __init__(self, fcn_call, params,
                fcn_args=None, fcn_kwgs=None,
                model_call=None, scale_covar=True, policy='raise',
-               residual_reduce=None, calc_covar=True,
+               residual_reduce='likelihood', calc_covar=True,
                **method_kwgs):
     """
     Initialize the Optimizer class.
@@ -469,8 +469,16 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     self.chi2red = None
     self.covar = None
     self.residual = None
-    self.residual_reduce = self._residual_sum_
-    if residual_reduce: self.residual_reduce = residual_reduce
+    if isinstance(residual_reduce,str):
+      self.behavior = residual_reduce
+    else:
+      self.behavior = 'custom'
+    if residual_reduce == 'chi2':
+      self.residual_reduce = self._residual_squared_sum_
+    if residual_reduce == 'likelihood':
+      self.residual_reduce = self._residual_likelihood_
+    else:
+      self.residual_reduce = residual_reduce
     self.params = params
     self.policy = policy
 
@@ -495,6 +503,14 @@ residual_reduce:  Function to convert a residual array to a scalar value,
 
 
   def _residual_squared_sum_(self,array):
+    """
+    Reduce residual array to scalar with the squared sum.
+    """
+    out = _nan_handler_(array*array).sum()
+    return out
+
+
+  def _residual_likelihood_(self,array):
     """
     Reduce residual array to scalar with the squared sum.
     """
@@ -673,8 +689,9 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     np.seterr(all='ignore'); orig_warn_settings = np.geterr()
     self.result.errorbars = True
 
-    #scaled_cov = self.result.cov * self.result.residual.sum() / self.result.nfree
-    scaled_cov = self.result.cov * 1
+    scaled_cov = self.result.cov
+    if self.behavior == 'chi2':
+      scaled_cov *= self.result.residual.sum() / self.result.nfree
 
 
     fvar = [self.result.params[var].value for var in self.result.param_vary]
@@ -1008,7 +1025,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
 
   def emcee(self, params=None, steps=1000, nwalkers=100, burn=0, thin=1,
             ntemps=1, pos=None, reuse_sampler=False, workers=1,
-            behavior='posterior', is_weighted=True, seed=None,
+            behavior='likelihood', is_weighted=True, seed=None,
             verbose=False, progress=True):
     """
     Bayesian sampling of the posterior distribution using emcee, a well known
@@ -1054,7 +1071,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
                   bool, optional (default=False)
         workers:  For parallelization of sampling.
                   pool-like or int, optional (default=1)
- behavior:  Whether the function-call method returns a log-posterior
+       behavior:  Whether the function-call method returns a log-posterior
                   probability ('posterior') or a chi2 ('chi2')
                   str, optional (default='posterior').
     is_weighted:  If True, emcee will supose that residuals have been
@@ -1266,7 +1283,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
 
     # Handle special case unique to emcee:
     # This should eventually be moved into result._compute_statistics_.
-    elif behavior == 'posterior':
+    elif behavior == 'likelihood':
         result.ndata = 1
         result.nfree = 1
 
