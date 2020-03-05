@@ -210,11 +210,11 @@ KERNEL_CODE = """
  * Reikna does not seem to handle very well complex numbers. Setting
  * "vmin" as a complex results in undefined behaviour some times.
  */
-KERNEL void arange_complex( GLOBAL_MEM double2 *out, double vmin )
+KERNEL void arange_complex( GLOBAL_MEM double *out, double vmin )
 {
   SIZE_T idx = get_global_id(0);
-  out[idx].x = vmin + idx;
-  out[idx].y = 0.;
+  out[idx][0] = vmin + idx;
+  out[idx][1] = 0.;
 }
 
 /// Arange
