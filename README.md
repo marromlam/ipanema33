@@ -26,9 +26,13 @@ minimization easier, handier and more user-friendly.
 ## Installation
 
 This package is very easy to install. First we simply clone this repo:
-```git clone ssh://git@gitlab.cern.ch:7999/mromerol/ipanema3.git```
+```
+git clone ssh://git@gitlab.cern.ch:7999/mromerol/ipanema3.git
+```
 and then we can install it with pip,
-```pip install -e /path/to/ipanema3/```
+```
+pip install -e /path/to/ipanema3/
+```
 
 ### Setup with CUDA
 ```
