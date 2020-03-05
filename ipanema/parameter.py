@@ -548,22 +548,7 @@ class Parameter(object):
   def setup_bounds(self):
     """
     Set up Minuit-style internal/external parameter transformation of
-    min/max bounds. This was taken from JJ Helmus' leastsqbound.py
-
-    As a side-effect, this also defines the self.from_internal method
-    used to re-calculate self.value from the internal value, applying
-    the inverse Minuit-style transformation. This method should be
-    called prior to passing a Parameter to the user-defined objective
-    function.
-
-    This code borrows heavily from JJ Helmus' leastsqbound.py
-
-    Returns
-    -------
-    _value : float
-        The internal value for parameter from self.value (which holds
-        the external, user-expected value). This internal value should
-        actually be used in a fit.
+    min/max bounds. This was taken from JJ Helmus' leastsqbound.py.
 
     """
     if self.min is None:

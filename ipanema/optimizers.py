@@ -49,45 +49,35 @@ from .utils.print_reports import fit_report
 
 
 def asteval_with_uncertainties(*vals, **kwgs):
-    """Calculate object value, given values for variables.
-
-    This is used by the uncertainties package to calculate the
-    uncertainty in an object even with a complicated formulaession.
-
-    """
-    _obj = kwgs.get('_obj', None)
-    _pars = kwgs.get('_pars', None)
-    _names = kwgs.get('_names', None)
-    _asteval = _pars._asteval
-    if (_obj is None or _pars is None or _names is None or
-            _asteval is None or _obj._formula_ast is None):
-        return 0
-    for val, name in zip(vals, _names):
-        _asteval.symtable[name] = val
-    return _asteval.eval(_obj._formula_ast)
+  """
+  Calculate object value, given values for variables.
+  """
+  _obj = kwgs.get('_obj', None)
+  _pars = kwgs.get('_pars', None)
+  _names = kwgs.get('_names', None)
+  _asteval = _pars._asteval
+  if (_obj is None or _pars is None or _names is None or
+          _asteval is None or _obj._formula_ast is None):
+    return 0
+  for val, name in zip(vals, _names):
+    _asteval.symtable[name] = val
+  return _asteval.eval(_obj._formula_ast)
 
 
 wrap_ueval = unc.wrap(asteval_with_uncertainties)
 
 
 def eval_stdev(obj, uvars, _names, _pars):
-    """Evaluate uncertainty and set .stdev for a parameter `obj`.
-
-    Given the uncertain values `uvars` (a list of unc.ufloats), a
-    list of parameter names that matches uvars, and a dict of param objects,
-    keyed by name.
-
-    This uses the uncertainties package wrapped function to evaluate the
-    uncertainty for an arbitrary formulaession (in obj._formula_ast) of parameters.
-
-    """
-    if not isinstance(obj, Parameter) or getattr(obj, '_formula_ast', None) is None:
-        return
-    uval = wrap_ueval(*uvars, _obj=obj, _names=_names, _pars=_pars)
-    try:
-        obj.stdev = uval.std_dev
-    except Exception:
-        obj.stdev = 0
+  """
+  Evaluate uncertainty and set .stdev for a parameter `obj`.
+  """
+  if not isinstance(obj, Parameter) or getattr(obj, '_formula_ast', None) is None:
+    return
+  uval = wrap_ueval(*uvars, _obj=obj, _names=_names, _pars=_pars)
+  try:
+    obj.stdev = uval.std_dev
+  except Exception:
+    obj.stdev = 0
 
 
 
@@ -175,96 +165,78 @@ def _lnprior_(value, bounds):
 
   """
   if np.any(value > bounds[:, 1]) or np.any(value < bounds[:, 0]):
-     return -np.inf
+    return -np.inf
   return 0
 
 # REVISIT
-def _lnpost_(value, fcn_call, params, param_vary, bounds, fcn_args=(), userkws=None, float_behavior='posterior', is_weighted=True, policy='raise'):
-   """Calculate the log-posterior probability.
+def _lnpost_(value, fcn_call, params, param_vary, bounds, fcn_args=(),
+             fcn_kwgs=None, behavior='likelihood', is_weighted=True,
+             policy='raise'):
+  """
+  Calculate the log-posterior probability.
 
-   See the `Optimizer.emcee` method for more details.
+  See the `Optimizer.emcee` method for more details.
 
-   Parameters
-   ----------
-   value : sequence
-       Float parameter values (only those being varied).
-   fcn_call : callable
-       User objective function.
-   params : :class:`~lmfit.parameters.Parameters`
-       The entire set of Parameters.
-   param_vary : list
-       The names of the parameters that are freeing.
-   bounds : numpy.ndarray
-       Lower and upper bounds of parameters. Has shape (nvary, 2).
-   fcn_args : tuple, optional
-       Extra positional arguments required for user objective function.
-   userkws : dict, optional
-       Extra keyword arguments required for user objective function.
-   float_behavior : str, optional
-       Specifies meaning of objective when it returns a float. One of:
+  In:
+  0.123456789:
+        value:  List of varied parameters values.
+                list of floats
+     fcn_call:  Cost function.
+                callable
+       params:  All parameters.
+                ipanema.Parameters
+   param_vary:  List of varied parameters names.
+                list of strings
+       bounds:  Array with (min, max) range
+                np.ndarray
+     fcn_args:  Tuple with fcn arguments
+                tuple, optional
+     fcn_kwgs:  Dict with fcn Keyword arguments.
+                dict, optional
+     behavior:  Whether the fcn is 'likelihood' based or 'chi2' based.
+                str, optional
+  is_weighted:  Whether the residuals are already weithted or not.
+                bool, optional
+       policy:  Whether to raise or filter the nan value during a fit.
+                str, optional (default='raise')
+  Out:
+            0:  Log posterior probability.
 
-       'posterior' - objective function returnins a log-posterior
-                     probability
-       'chi2' - objective function returns a chi2 value
+  """
+  # the comparison has to be done on value and bounds. DO NOT inject value
+  # values into Parameters, then compare Parameters values to the bounds.
+  # Parameters values are clipped to stay within bounds.
+  if np.any(value > bounds[:, 1]) or np.any(value < bounds[:, 0]):
+    return -np.inf
+  for name, val in zip(param_vary, value):
+    params[name].value = val
 
-   is_weighted : bool
-       If `fcn_call` returns a vector of residuals then `is_weighted`
-       specifies if the residuals have been weighted by data unc.
-   policy : str, optional
-       Specifies action if `fcn_call` returns NaN values. One of:
+  userkwgs = {}
+  if fcn_kwgs is not None:
+    userkwgs = fcn_kwgs
 
-           'raise' - a `ValueError` is raised
-           'propagate' - the values returned from `fcn_call` are un-altered
-           'filter' - the non-finite values are filtered
+  # update the constraints
+  params.update_constraints()
 
+  # now calculate the log-likelihood
+  out = fcn_call(params, *fcn_args, **userkwgs)
+  out = _nan_handler_(out, policy=policy)
+  lnprob = np.asarray(out).ravel()
 
-   Returns
-   -------
-   lnprob : float
-       Log posterior probability.
-
-   """
-   # the comparison has to be done on value and bounds. DO NOT inject value
-   # values into Parameters, then compare Parameters values to the bounds.
-   # Parameters values are clipped to stay within bounds.
-   if np.any(value > bounds[:, 1]) or np.any(value < bounds[:, 0]):
-       return -np.inf
-
-   for name, val in zip(param_vary, value):
-       params[name].value = val
-
-   userkwgs = {}
-   if userkws is not None:
-       userkwgs = userkws
-
-   # update the constraints
-   params.update_constraints()
-
-   # now calculate the log-likelihood
-   out = fcn_call(params, *fcn_args, **userkwgs)
-   out = _nan_handler_(out, policy=policy)
-
-   lnprob = np.asarray(out).ravel()
-
-   if lnprob.size > 1:
-       # objective function returns a vector of residuals
-       if 'lnsigma' in params and not is_weighted:
-           # marginalise over a constant data uncertainty
-           lnsigma = params['lnsigma'].value
-           c = np.log(2 * np.pi) + 2 * lnsigma
-           lnprob = -0.5 * np.sum((lnprob / np.exp(lnsigma)) ** 2 + c)
-       else:
-           lnprob = -0.5 * (lnprob * lnprob).sum()
-   else:
-       # objective function returns a single value.
-       # use float_behaviour to figure out if the value is posterior or chi2
-       if float_behavior == 'posterior':
-           pass
-       elif float_behavior == 'chi2':
-           lnprob *= -0.5
-       else:
-           raise ValueError("float_behaviour must be either 'posterior' or"
-                            " 'chi2' " + float_behavior)
+  if lnprob.size > 1:
+    if 'log_fcn' in params and not is_weighted:
+      log_fcn = params['log_fcn'].value
+      c = np.log(2 * np.pi) + 2 * log_fcn
+      lnprob = -0.5 * np.sum((lnprob / np.exp(log_fcn)) ** 2 + c)
+    else:
+      lnprob = -0.5 * (lnprob * lnprob).sum()
+  else:
+    if behavior == 'likelihood':
+      pass
+    elif behavior == 'chi2':
+      lnprob *= -0.5
+    else:
+      raise ValueError("float_behaviour must be either 'likelihood' or 'chi2'.")
 
    return lnprob
 
@@ -303,8 +275,7 @@ def _nan_handler_(ary, policy='raise'):
   0.123456789:
           ary:  Array, tipically or residuals.
                 np.ndarray
-       policy:  Where to raise or filter the nan value
-                during a fit.
+       policy:  Where to raise or filter the nan value during a fit.
                 string (default=raise)
 
   Out:
@@ -501,7 +472,6 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     self.residual_reduce = self._residual_sum_
     if residual_reduce: self.residual_reduce = residual_reduce
     self.params = params
-    self.jacfcn = None
     self.policy = policy
 
   @property
@@ -1038,7 +1008,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
 
   def emcee(self, params=None, steps=1000, nwalkers=100, burn=0, thin=1,
             ntemps=1, pos=None, reuse_sampler=False, workers=1,
-            float_behavior='posterior', is_weighted=True, seed=None,
+            behavior='posterior', is_weighted=True, seed=None,
             verbose=False, progress=True):
     """
     Bayesian sampling of the posterior distribution using emcee, a well known
@@ -1084,7 +1054,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
                   bool, optional (default=False)
         workers:  For parallelization of sampling.
                   pool-like or int, optional (default=1)
- float_behavior:  Whether the function-call method returns a log-posterior
+ behavior:  Whether the function-call method returns a log-posterior
                   probability ('posterior') or a chi2 ('chi2')
                   str, optional (default='posterior').
     is_weighted:  If True, emcee will supose that residuals have been
@@ -1093,7 +1063,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
                   In this second case `emcee` will employ a positive
                   measurement uncertainty during the sampling. This
                   measurement uncertainty will be present in the output
-                  params and output chain with the name `lnsigma`.
+                  params and output chain with the name `log_fcn`.
                   bool, optional (default=True)
            seed:  Seed for numpy random generator.
                   int or `numpy.random.RandomState`, optional (default=None)
@@ -1128,10 +1098,10 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     out = np.asarray(out).ravel()
     if out.size > 1 and is_weighted is False:
         # we need to marginalise over a constant data uncertainty
-        if 'lnsigma' not in params:
-            # lnsigma should already be in params if is_weighted was
+        if 'log_fcn' not in params:
+            # log_fcn should already be in params if is_weighted was
             # previously set to True.
-            params.add({'name':'lnsigma', 'value':0.01, 'min':-np.inf, 'max':np.inf, 'free':True})
+            params.add({'name':'log_fcn', 'value':0.01, 'min':-np.inf, 'max':np.inf, 'free':True})
             # have to re-prepare the fit
             result = self.prepare_fit(params)
             params = result.params
@@ -1178,9 +1148,9 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     # these values are sent to the log-probability functions by the sampler.
     lnprob_args = (self.fcn_call, params, result.param_vary, bounds)
     lnprob_kwgs = {'is_weighted': is_weighted,
-                     'float_behavior': float_behavior,
+                     'behavior': behavior,
                      'fcn_args': self.fcn_args,
-                     'userkws': self.fcn_kwgs,
+                     'fcn_kwgs': self.fcn_kwgs,
                      'policy': self.policy}
 
     if ntemps > 1:
@@ -1287,16 +1257,16 @@ residual_reduce:  Function to convert a residual array to a scalar value,
 
     # If uncertainty was automatically estimated, weight the residual properly
     if (not is_weighted) and (result.residual.size > 1):
-        if 'lnsigma' in params:
-            result.residual = result.residual/np.exp(params['lnsigma'].value)
+        if 'log_fcn' in params:
+            result.residual = result.residual/np.exp(params['log_fcn'].value)
 
     # Calculate statistics for the two standard cases:
-    if isinstance(result.residual, ndarray) or (float_behavior == 'chi2'):
+    if isinstance(result.residual, ndarray) or (behavior == 'chi2'):
       result._compute_statistics_()
 
     # Handle special case unique to emcee:
     # This should eventually be moved into result._compute_statistics_.
-    elif float_behavior == 'posterior':
+    elif behavior == 'posterior':
         result.ndata = 1
         result.nfree = 1
 
@@ -1386,43 +1356,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
 
   def levenberg_marquardt(self, params=None, verbose=False, **kws):
         """
-        Use Levenberg-Marquardt minimization to perform a fit.
-
-        It assumes that the input Parameters have been initialized, and
-        a function to optimize has been properly set up.
-        When possible, this calculates the estimated uncertainties and
-        variable correlations from the covariance matrix.
-
-        This method calls :scipydoc:`optimize.leastsq`.
-        By default, numerical derivatives are used, and the following
-        arguments are set:
-
-        +------------------+----------------+------------------------------------------------------------+
-        | :meth:`leastsq`  |  Default Value | Description                                                |
-        | arg              |                |                                                            |
-        +==================+================+============================================================+
-        |   xtol           |  1.e-7         | Relative error in the approximate solution                 |
-        +------------------+----------------+------------------------------------------------------------+
-        |   ftol           |  1.e-7         | Relative error in the desired sum of squares               |
-        +------------------+----------------+------------------------------------------------------------+
-        |   maxfev         | 2000*(nvar+1)  | Maximum number of function calls (nvar= # of variables)    |
-        +------------------+----------------+------------------------------------------------------------+
-        |   Dfun           | None           | Function to call for Jacobian calculation                  |
-        +------------------+----------------+------------------------------------------------------------+
-
-        Parameters
-        ----------
-        In:
-        0.123456789:
-             params:  Set of parameters.
-                      ipanema.parameter.Parameters, optional
-              **kws:  Keyword-arguments passed to the minimization algorithm.
-                      dict, optional
-
-        Out:
-                  0:  Optimizer result object that in general include all info
-                      that the selected method provides.
-
+        merge this with least squares...
         """
         result = self.prepare_fit(params=params)
         result.method = 'Levenberg-Marquardt (lm)'
@@ -1430,17 +1364,13 @@ residual_reduce:  Function to convert a residual array to a scalar value,
         variables = result.param_init
         nvars = len(variables)
         lskws = dict(full_output=1, xtol=1.e-7, ftol=1.e-7, col_deriv=False,
-                     gtol=1.e-7, maxfev=2000*(nvars+1), Dfun=None)
+                     gtol=1.e-7, maxfev=2000*(nvars+1))
 
         lskws.update(self.miner_kwgs)
         lskws.update(kws)
 
 
         self.col_deriv = False
-        if lskws['Dfun'] is not None:
-            self.jacfcn = lskws['Dfun']
-            self.col_deriv = lskws['col_deriv']
-            lskws['Dfun'] = self.__jacobian
 
         # suppress runtime warnings during fit and error analysis
         orig_warn_settings = np.geterr()
