@@ -5,44 +5,191 @@ import numpy as np
 import ipanema
 import matplotlib.pyplot as plt
 
-x = np.linspace(1, 10, 250)
-np.random.seed(0)
 
-y = 3.0*np.exp(-x/2) - 5.0*np.exp(-(x-0.1)/10.) + 0.1*np.random.randn(x.size)
+
+def residual(pars,x,y=None):
+  p = pars.valuesdict()
+  model = p['a'] + p['b']*x
+  if y is None:
+    return model
+  return (1/(0.05)**2)*(model - y)**2
 
 p = ipanema.Parameters()
-p.add({'name':'a1','value': 3},
-      {'name':'a2','value': 5},
-      {'name':'t1','value': 2},
-      {'name':'t2','value': 10})
+p.add({'name':'a','value':  0.071},
+      {'name':'b','value':  0.026})
+
+
+x = np.array([10,20,30,40,50,60,70,80,90])
+y = np.array([0.37,0.58,0.83,1.15,1.36,1.62,1.90,2.18,2.45])
+
+
+plt.plot(x,y,'.')
+
+
+help(mini.emcee)
+res_emcee = mini.optimize(method='emcee', steps=100000, is_weighted=False)
+res_emcee.params.print()
+
+import corner
+corner.corner(res_emcee.flatchain)
+
+
+mini = ipanema.Optimizer(residual, params=p, fcn_kwgs={'x':x,'y':y})
+res_nelder = mini.optimize(method='nelder')
+res_nelder.params.print()
+
+res_lm = mini.optimize(method='lm', params = p)
+res_lm.params.print()
+res_bfgs = mini.optimize(method='bfgs', params = p)
+res_bfgs.params.print()
+
+res_minuit = mini.optimize(method='minuit', params = p, strategy=2)
+res_minuit.params.print()
+
+
+
+
+################################################################################
+
+from scipy.optimize import curve_fit
+import uncertainties as unc
+def f(x, A, B): # this is your 'straight line' y=f(x)
+    return A*x + B
+
+popt, pcov = curve_fit(f, x, y)
+unc.correlated_values(popt,pcov)
+
+################################################################################
+
+
+################################################################################
+
+from scipy.optimize import minimize, fsolve, brentq, fmin_bfgs
+res = minimize(lambda p : np.sum( (100*y-f(x,p[0],p[1]))**2 ), [0,0])
+unc.correlated_values(res.x,res.hess_inv*(res.fun/7)*2)
+res.fun
+res_bfgs.nfree
+################################################################################
+
+import uproot
+f = uproot.recreate('shit.root')
+f["t"] = uproot.newtree({"z": "float64"})
+f["t"].extend({'z':np.array(z)})
+f.close()
+################################################################################
+
+import iminuit
+min = iminuit.Minuit(lambda a,b : np.sum( (y-f(x,a,b))**2 ), print_level=-1, pedantic=False, errordef=0.125)
+min.migrad(); min.hesse();
+unc.correlated_values(np.array(list(min.args)),np.array(min.matrix()))
+
+################################################################################
+z
+
+x
+y*100
+# Get parameter uncertanties from ANOVA
+z = []
+for i, item in enumerate(x):
+  z.append([item]*int(100*y[i]))
+z = np.array(sum(z, [])).ravel()
+z
+plt.hist(z)
+def fisher_test(ndata, nfree, new_chi, best_chi2, nfix=1):
+
+  nfree = ndata - ( nfree + nfix )
+  diff_chi = new_chi / best_chi2 - 1.0
+  return f.cdf(diff_chi * nfree/nfix, nfix, nfree)
+
+
+
+def shit_f(nfree, ndata, cl = 0.6827):
+  from scipy.stats import f
+  f_stat = f.isf(1-cl, nfree, ndata-nfree)
+  ss_cl = (f_stat*nfree/(ndata-nfree) +1 )
+  return ss_cl
+
+
+
+ss_reach = res_bfgs.residual.sum() * shit_f(2,9,0.95)
+
+ss_reach
+
+from scipy.optimize import root
+lim_left  = root( lambda p : ((y-f(x,p,popt[1]) )**2 ).sum() - np.float64(ss_reach), popt[0]-0.05*0.00034).x[0]
+lim_left-popt[0]
+lim_right = root( lambda p : ((y-f(x,p,popt[1]) )**2 ).sum() - np.float64(ss_reach), popt[0]+0.05*0.00034).x[0]
+lim_right-popt[0]
+
+lim_left  = root( lambda p : ((y-f(x,popt[0],p) )**2 ).sum() - np.float64(ss_reach), popt[1]-0.05*0.00034).x[0]
+lim_left-popt[1]
+lim_right = root( lambda p : ((y-f(x,popt[0],p) )**2 ).sum() - np.float64(ss_reach), popt[1]+0.05*0.00034).x[0]
+lim_right-popt[1]
+
+
+"""
+0.02621666666454281+/-0.00034065376578640
+0.07138888888685735+/-0.01916965685065158
+"""
+res_bfgs.params
+
+
+
+# Ejplo del colector
+
+p_est = np.array([59,47,52,60,67,48,44,58,76,58])
+p_real = np.array([61,42,50,58,67,45,39,57,71,53])
+
+
+popt, pcov = curve_fit(f, p_est, p_real)
+unc.correlated_values(popt,pcov)
 
 
 
 
 
-def residual(pars,x,y):
-  p = pars.valuesdict()
-  return (p['a1']*np.exp(-x/p['t1']) + p['a2']*np.exp(-(x-0.1)/p['t2']) - y)**2
-
-mini = ipanema.Optimizer(residual, params=p,
-                         fcn_kwgs={'x':x,'y':y}, nan_policy='propagate')
-
-
-
-result1 = mini.optimize(method='nelder')
-result2 = mini.optimize(method='lm', params = result1.params)
-
-print(result2)
 
 
 
 
-ci, trace = ipanema.confidence_interval(mini, result2, sigmas=[2,1])
-
-print(result2.params)
 
 
-trace['a1'].keys()
+
+
+
+
+
+
+
+ci, trace = ipanema.confidence_interval(mini, res_bfgs)
+
+
+
+
+
+
+ci['a'][-1]-ci['a'][0], res_bfgs.params['a'].stdev
+ci['a'][+1]-ci['a'][0], res_bfgs.params['a'].stdev
+ci['b'][-1]-ci['b'][0], res_bfgs.params['b'].stdev
+ci['b'][+1]-ci['b'][0], res_bfgs.params['b'].stdev
+
+
+
+
+
+
+
+
+
+
+ci['a2'][-1]-ci['a2'][0], res_minuit.params['a2'].stdev
+ci['a2'][+1]-ci['a2'][0], res_minuit.params['a2'].stdev
+
+ci['t2'][-1]-ci['t2'][0], res_minuit.params['t2'].stdev
+ci['t2'][+1]-ci['t2'][0], res_minuit.params['t2'].stdev
+
+
+
 
 #%%
 plt.close()
