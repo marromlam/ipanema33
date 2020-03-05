@@ -13,8 +13,7 @@ from timeit import default_timer as timer
 #    This line will create a THREAD variable that handles the kernel compilers
 #    and allocation of memort in backend if it is different from python.
 
-ipanema.core.utils.fetch_devices() # just to have a quick lookup
-ipanema.initialize('opencl',1,verbose=True)
+ipanema.initialize('python')
 
 
 
@@ -29,37 +28,21 @@ pars.add({'name':'sigma', "value":5, 'latex':'\sigma'})
 #%% Prepare kernel model ------------------------------------------------------
 #    This should be writen in reikna syntax...
 
-kernel = THREAD.compile("""
-KERNEL
-void gaussian(GLOBAL_MEM double *x, GLOBAL_MEM double *y,
-              float mu,  float sigma, int N )
-{
-  const SIZE_T i = get_global_id(0);
-  if (i < N)
-  {
-    y[i] = exp( -0.5 * ((x[i]-mu)*(x[i]-mu)) / (sigma*sigma) );
-    y[i] *= 1/sqrt(2*3.1415*sigma*sigma);
-    //printf("%lf, %lf\\n", x[i], y[i]);
-  }
-}""")
-
-
 # Wrap the kerner in a python function
+#@np.vectorize
 def model(data, lkhd, mu, sigma):
-  kernel.gaussian(data, lkhd, np.float32(mu), np.float32(sigma),
-                  np.int32(data.shape[0]),
-                  local_size=256,
-                  global_size=int(256*np.ceil(data.shape[0]/256)))
+  lkhd  = np.exp(-0.5*((data-mu)**2)/(sigma*sigma))
+  lkhd *= 1/np.sqrt(2*3.1415*sigma**2)
+  return lkhd
 
 # Create cost function, in this example we will proccedd with a likelihod one
 def likelihood(pars, x, prob=None):
   p = pars.valuesdict()
   if prob is None:
     prob = ipanema.ristra.allocate(0*x.get())
-    return model(x,prob,p['mu'],p['sigma']).get()
-  model(x,prob,p['mu'],p['sigma'])
-  return -2*ipanema.ristra.log(prob).get() + 2*x.shape[0]
-
+    return ipanema.ristra.get(model(x,prob,p['mu'],p['sigma']))
+  lkhd = model(x,prob,p['mu'],p['sigma'])
+  return -2*ipanema.ristra.get(ipanema.ristra.log(lkhd)) + 2*x.shape[0]
 
 
 #%% Prepare arrays ------------------------------------------------------------

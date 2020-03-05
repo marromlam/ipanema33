@@ -1,161 +1,94 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-
+# [ipanema example]: opencl
 
 # Imports ----------------------------------------------------------------------
-import sys
-sys.path.append("../")
-from ipanema import Parameters, fit_report, minimize
-import pycuda.driver as cuda
-import pycuda.autoinit
-import pycuda.gpuarray as gpuarray
-from pycuda.compiler import SourceModule
+import ipanema
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import corner
 from timeit import default_timer as timer
 
 
-# %% Prepare context: were OpenCL function should run --------------------------
-# Nothing to be done here
+# %% Prepare context -----------------------------------------------------------
+#    This line will create a THREAD variable that handles the kernel compilers
+#    and allocation of memort in backend if it is different from python.
+
+ipanema.core.utils.fetch_devices() # just to have a quick lookup
+ipanema.initialize('cuda',1,verbose=True)
 
 
 
-# %% Nature says... ------------------------------------------------------------
-p_true = Parameters()
-p_true.add('amp', value=14.0)
-p_true.add('period', value=5.46)
-p_true.add('shift', value=0.123)
-p_true.add('decay', value=0.032)
+#%% Create a set of ipanema parameters ----------------------------------------
+#    bla bla bla
+pars = ipanema.Parameters()
+pars.add({'name':'mu', "value":3, 'latex':'\mu'})
+pars.add({'name':'sigma', "value":5, 'latex':'\sigma'})
 
 
 
-# %% Prepare CUDA model --------------------------------------------------------
-cudaModel = SourceModule("""
-#include <stdio.h>
-#include <math.h>
-__global__
-void shitModel(const float *data, float *lkhd,
-                   float amp,  float period,  float shift,  float decay,
-                   int N )
+#%% Prepare kernel model ------------------------------------------------------
+#    This should be writen in reikna syntax...
+
+kernel = THREAD.compile("""
+KERNEL
+void gaussian(GLOBAL_MEM double *x, GLOBAL_MEM double *y,
+              float mu,  float sigma, int N )
 {
-  int i = threadIdx.x + blockDim.x * blockIdx.x;
+  const SIZE_T i = get_global_id(0);
   if (i < N)
   {
-    lkhd[i] = amp*sin(shift + data[i]/period) * exp(-data[i]*data[i]*decay*decay);
-    //printf("%f\\n",lkhd[i]);
+    y[i] = exp( -0.5 * ((x[i]-mu)*(x[i]-mu)) / (sigma*sigma) );
+    y[i] *= 1/sqrt(2*3.1415*sigma*sigma);
+    //printf("%lf, %lf\\n", x[i], y[i]);
   }
-}
-
-""")  # Create the CUDA program
-
-shitModel = cudaModel.get_function("shitModel")
-
-def model(data, lkhd, amp, period, shift, decay):
-    shitModel(data, lkhd,
-                  np.float32(amp), np.float32(period), np.float32(shift),
-                  np.float32(decay), np.int32(len(data)),
-                  block=(256,1,1),
-                  grid=(1,1,1))
-    return lkhd.get()
+}""")
 
 
+# Wrap the kerner in a python function
+def model(data, lkhd, mu, sigma):
+  kernel.gaussian(data, lkhd, np.float32(mu), np.float32(sigma),
+                  np.int32(data.shape[0]),
+                  local_size=256,
+                  global_size=int(256*np.ceil(data.shape[0]/256)))
 
-def chi2FCN(pars, x, data=None):
-    """Model a decaying sine wave and subtract data."""
-    vals = pars.valuesdict()
-    amp = vals['amp']
-    per = vals['period']
-    shift = vals['shift']
-    decay = vals['decay']
-
-    if abs(shift) > np.pi/2:
-        shift = shift - np.sign(shift)*np.pi
-    model(x, lkhd_d, amp, per, shift, decay)
-    if data is None:
-        return lkhd_d.get()
-    # FCN = np.sum((lkhd_d.get() - data.get())**2)
-    # if FCN is np.nan or np.inf:
-    #    return 1e12
-    return lkhd_d.get() - data.get()
+# Create cost function, in this example we will proccedd with a likelihod one
+def likelihood(pars, x, prob=None):
+  p = pars.valuesdict()
+  if prob is None:
+    prob = ipanema.ristra.allocate(0*x.get())
+    return model(x,prob,p['mu'],p['sigma']).get()
+  model(x,prob,p['mu'],p['sigma'])
+  return -2*ipanema.ristra.log(prob).get() + 2*x.shape[0]
 
 
 
-def residual(pars, x, data=None):
-    """Model a decaying sine wave and subtract data."""
-    vals = pars.valuesdict()
-    amp = vals['amp']
-    per = vals['period']
-    shift = vals['shift']
-    decay = vals['decay']
+#%% Prepare arrays ------------------------------------------------------------
 
-    if abs(shift) > np.pi/2:
-        shift = shift - np.sign(shift)*np.pi
-    model = amp * np.sin(shift + x/per) * np.exp(-x*x*decay*decay)
-    if data is None:
-        return model
-    return model - data
+# Create a random variable
+m, s = pars['mu'].value, pars['sigma'].value
+np.random.seed(0)
+x_h = np.random.normal(loc=m, scale=s, size=1000000)
+pandas_host = pd.DataFrame({'x':x_h})
 
+# Create an ipanema sample from p
+sample = ipanema.Sample.from_pandas(pandas_host)
+
+# Allocate x and prob in device
+sample.allocate(x='x',prob='0*x')
 
 
+#%% Fit and get the results ---------------------------------------------------
 
-# %% Prepare arrays ------------------------------------------------------------
-x_h = np.linspace(-5.0, 5.0, 100000).astype(np.float32)
-x_d = gpuarray.to_gpu(x_h).astype(np.float32)
-lkhd_h = 0*x_h
-lkhd_d = gpuarray.to_gpu(0*x_h).astype(np.float32)
+# Create an instance of ipanema.Optimizer
+result = ipanema.Optimizer(likelihood,
+                           params=pars,
+                           fcn_args = (sample.x,sample.prob),
+                           policy='filter'
+                          )
 
-noise = np.random.normal(scale=0.5215, size=x_h.size)
-data_h = (chi2FCN(p_true, x_d) + noise).astype(np.float32)
-data_d  = gpuarray.to_gpu(data_h).astype(np.float32)
+# Minimize likelihood using given method
+#print(result.optimize(method='emcee'))  # Markov Chain MC optimizer
+print(result.optimize(method='minuit')) # Minuit optimizer (hesse)
+print(result.optimize(method='bfgs'))   # scipy Broyden optimizer
 
-
-
-
-
-
-
-
-# %% Fitting -------------------------------------------------------------------
-
-fit_params = Parameters()
-fit_params.add('amp', value=14.0, min=12, max = 15)
-fit_params.add('period', value=5.5, min=0, max = 10)
-fit_params.add('shift', value=0.1, min=0, max = 0.5)
-fit_params.add('decay', value=0.02, min=0, max = 0.1)
-
-
-out = minimize(chi2FCN, method="powell",params=fit_params, args=(x_d,), kws={'data': data_d})
-#out = minimize(chi2FCN, params=fit_params, args=(x_d,), kws={'data': data_d})
-#out = minimize(residual, params=fit_params, args=(x_h,), kws={'data': data_h})
-out.params.add('__lnsigma', value=np.log(0.1), min=np.log(0.001), max=np.log(2))
-
-t0 = timer()
-out = minimize(chi2FCN, method='emcee', nan_policy='omit', burn=300, steps=2000, thin=20, params=fit_params, is_weighted=False, args=(x_d,), kws={'data': data_d})
-t_gpu = timer()-t0
-
-
-t0 = timer()
-out = minimize(residual, method='emcee', nan_policy='omit', burn=300, steps=2000, thin=20, params=fit_params, is_weighted=False, args=(x_h,), kws={'data': data_h})
-t_cpu = timer()-t0
-
-print(" CPU: %.4f s\n GPU: %.4f s\nGAIN: %.4f s\n" % (t_cpu,t_gpu,t_cpu/t_gpu))
-
-#%% Fit plot
-# plt.plot(x_h, data_h, 'b.');
-# plt.plot(x_h, chi2FCN(p_true, x_d), 'r', label='best fit');
-# plt.legend(loc='best');
-# plt.show()
-
-
-
-# %% some other shit
-
-
-
-#emcee_plot = corner.corner(out.flatchain)
-
-
-
-#print(fit_report(out))
+#ipanema.all_optimize_methods # all ipanema optimize methods are here
