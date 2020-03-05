@@ -238,7 +238,7 @@ def _lnpost_(value, fcn_call, params, param_vary, bounds, fcn_args=(),
     else:
       raise ValueError("float_behaviour must be either 'likelihood' or 'chi2'.")
 
-   return lnprob
+  return lnprob
 
 
 
