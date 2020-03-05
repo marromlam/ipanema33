@@ -2,34 +2,37 @@
 
 IPANEMA: Hyperthread Curve-Fitting Module for Python
 
-Ipanema provides a high-level interface to non-linear for Python.
+Ipanema provides a high-level interface to non-linear fitting for Python.
 It supports most of the optimization methods from scipy.optimize jointly with
-others like emcc, ampgo and the so-calle Minuit.
+others like emcc, ampgo and the so-called CERN Minuit.
 
 Main functionalities:
 
-  * Despite the comon use of plain float as fitting variables, Ipanema relies on
-    the Parameter class.  A Parameter has a value that can be varied in the fit,
-    fixed, have upper and/or lower bounds. It can even have a value that is
+  * Despite the common use of plain float as fitting variables, ipanema relies
+    on the Parameter class. A Parameter has a value that can be varied in the
+    fit, fixed, have upper and/or lower bounds. It can even have a value
     constrained by an algebraic expression of other Parameter values.
 
   * Multiple fitting algorithms working out-of-the-box without any change in
     the cost function to minimize.
 
-  * Hyperthreading is avaliable and models can be compilead against different
+  * Hyperthreading is avaliable and models can be compiled against different
     backends. One can use python for fits as usual, but if the amount of data
-    is large, then better rewrite your code in cuda or opencl, and Ipanema can
+    is large, then better rewrite your code in cuda or opencl, and ipanema can
     take care of that cost function. That's simple.
 
-  * Improved estimation of confidence intervals. While
-    scipy.optimize.leastsq() will automatically calculate uncertainties
-    and correlations from the covariance matrix, lmfit also has functions
-    to explicitly explore parameter space to determine confidence levels
-    even for the most difficult cases.
+  * Improved estimation of confidence intervals. While most methods in
+    ipanema can automatically estimate uncertainties and correlations from the
+    covariance matrix (that is, the hessian), ipanema also provides functions
+    to explore the parameter space and calculate confidence intervals.
+    [ALMOST, BUT NOT YET!]
 
 Copyright (c) 2020 Ipanema Developers ; GNU AFFERO GENERAL PUBLIC LICENSE
 
 """
+
+## WARNING: make sure the following imports make that all necessary code is
+##          avaliable for the final user
 
 from asteval import Interpreter
 
@@ -41,7 +44,7 @@ from .core.utils import initialize
 from .core.utils import ristra
 
 # Optimize
-from .optimizers import Optimizer, OptimizerException, optimize
+from .optimizers import Optimizer, optimize
 
 # Parameters
 from .parameter import Parameter, Parameters, isParameter
