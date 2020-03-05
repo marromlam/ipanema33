@@ -465,7 +465,7 @@ class Parameter(object):
     Out:
            void
     """
-    self.__setstate__(self, value, free, min, max, formula)
+    self.__setstate__(value, free, min, max, formula)
 
 
 
