@@ -209,14 +209,14 @@ KERNEL_CODE = """
  *
  * Reikna does not seem to handle very well complex numbers. Setting
  * "vmin" as a complex results in undefined behaviour some times.
- */
+
 KERNEL void arange_complex( GLOBAL_MEM double *out, double vmin )
 {
   SIZE_T idx = get_global_id(0);
   out[idx][0] = vmin + idx;
   out[idx][1] = 0.;
 }
-
+*/
 /// Arange
 KERNEL void arange_int( GLOBAL_MEM int *out, int vmin )
 {
@@ -239,6 +239,7 @@ KERNEL void assign_bool( GLOBAL_MEM unsigned *out, GLOBAL_MEM unsigned *in, int 
 }
 
 /// Exponential (complex)
+/*
 KERNEL void exponential_complex( GLOBAL_MEM double *out, GLOBAL_MEM double *in )
 {
   SIZE_T idx = get_global_id(0);
@@ -249,6 +250,7 @@ KERNEL void exponential_complex( GLOBAL_MEM double *out, GLOBAL_MEM double *in )
   out[idx][0] = d * cos(v[1]);
   out[idx][1] = d * sin(v[1]);
 }
+*/
 
 /// Exponential (double)
 KERNEL void exponential_double( GLOBAL_MEM double *out, GLOBAL_MEM double *in )
@@ -354,12 +356,13 @@ KERNEL void ones_double( GLOBAL_MEM double *out )
 }
 
 /// Take the real part of an array
+/*
 KERNEL void real( GLOBAL_MEM double *out, GLOBAL_MEM double *in )
 {
   SIZE_T idx = get_global_id(0);
   out[idx] = in[idx][0];
 }
-
+*/
 /// Get elements from an array by indices
 KERNEL void slice_from_integer( GLOBAL_MEM double *out, GLOBAL_MEM double *in, GLOBAL_MEM int *indices )
 {
@@ -398,12 +401,14 @@ KERNEL void zeros_double( GLOBAL_MEM double *out )
 FUNCS_BY_ELEMENT = THREAD.compile(KERNEL_CODE)
 
 # These functions take an array of doubles and return another array of doubles
+"""
 for function in ('exponential_complex',):
   setattr(FUNCS_BY_ELEMENT, function, RETURN_COMPLEX(
     getattr(FUNCS_BY_ELEMENT, function)))
-
+"""
 # These functions take an array of doubles and return another array of doubles
-for function in ('exponential_double', 'logarithm', 'real'):
+#for function in ('exponential_double', 'logarithm', 'real'):
+for function in ('exponential_double', 'logarithm'):
     setattr(FUNCS_BY_ELEMENT, function, RETURN_DOUBLE(
         getattr(FUNCS_BY_ELEMENT, function)))
 
@@ -443,9 +448,11 @@ CREATE_INT = creating_array_dtype(types.cpu_int)
 CREATE_BOOL = creating_array_dtype(types.cpu_bool)
 
 # These functions create e new array of complex numbers
+"""
 for function in ('arange_complex',):
   setattr(FUNCS_BY_ELEMENT, function, CREATE_COMPLEX(
     getattr(FUNCS_BY_ELEMENT, function)))
+"""
 
 # These functions create e new array of doubles
 for function in ('interpolate', 'linspace', 'ones_double', 'slice_from_integer', 'zeros_double'):
@@ -708,10 +715,10 @@ def random_uniform(vmin, vmax, size):
     return THREAD.to_device(np.random.uniform(vmin, vmax, size))
 
 
-
+"""
 def real(a):
     return FUNCS_BY_ELEMENT.real(a)
-
+"""
 
 
 def shuffling_index(n):
@@ -782,4 +789,4 @@ def zeros(n, dtype=types.cpu_type):
   elif dtype == types.cpu_bool:
     return FUNCS_BY_ELEMENT.zeros_bool(n)
   else:
-    raise NotImplementedError(f'Not implemented for data type "{dtype
+    raise NotImplementedError(f'Not implemented for data type "{dtype}"')
