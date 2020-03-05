@@ -46,14 +46,17 @@ def fisher_test(ndata, nfree, new_chi, best_chi2, nfix=1):
   return f.cdf(diff_chi * nfree/nfix, nfix, nfree)
 
 
+
 def backup_vals(params):
   temp = {k:(p.value,p.stdev) for k,p in params.items()}
   return temp
 
 
+
 def restore_vals(temp, params):
   for k in temp.keys():
     params[k].value, params[k].stdev = temp[k]
+
 
 
 def map_trace_to_names(trace, params):
@@ -67,6 +70,8 @@ def map_trace_to_names(trace, params):
       tmp_dict[para_name] = values
     out[name] = tmp_dict
   return out
+
+
 
 from collections import namedtuple
 
@@ -156,7 +161,6 @@ class CI(object):
     if tester is None:
       self.tester = fisher_test
 
-
     self.footprints = {i: [] for i in self.param_names}
     self.maxiter = maxiter
     self.min_rel_change = 1e-5
@@ -174,14 +178,12 @@ class CI(object):
     """
     Search all confidence intervals.
     """
-    result = OrderedDict()
+    result = {}
     for p in self.param_names:
-      result[p] = (self.get_conficence_interval(p, -1)[::-1] +
-                  [(0., self.params[p].value)] +
-                  self.get_conficence_interval(p, 1)
-                )
+      result[p] = {0:self.params[p].value}
+      result[p].update( self.get_conficence_interval(p, -1) )
+      result[p].update( self.get_conficence_interval(p, +1) )
     self.footprints = map_trace_to_names(self.footprints, self.params)
-
     return result
 
 
@@ -214,36 +216,31 @@ class CI(object):
     limit, max_prob = self.find_limit(param, direction)
     start_val = a_limit = float(param.value)
 
-    ret = []
+    ret = {}
 
 
     # removing numpy warnings for a while
     np.seterr(all='ignore'); orig_warn_settings = np.geterr()
 
-    for prob in self.probs:
+    for i, prob in enumerate(self.probs):
       if prob > max_prob:
-          ret.append((prob, direction*np.inf))
-          continue
-
-      try:
-          val = brentq(get_prob, a_limit,
-                       limit, rtol=.5e-4, args=prob)
-
-      except ValueError:
+        val = direction*np.inf
+      else:
+        try:
+          val = brentq(get_prob, a_limit,  limit, rtol=.5e-4, args=prob)
+        except ValueError:
           self.reset_vals()
           try:
-              val = brentq(get_prob, start_val,
-                           limit, rtol=.5e-4, args=prob)
+            val = brentq(get_prob, start_val, limit, rtol=.5e-4, args=prob)
           except ValueError:
-              val = np.nan
-
+            val = np.nan
       a_limit = val
-      ret.append((prob, val))
+      ret[direction*self.sigmas[i]] = val
 
     param.free = True
     self.reset_vals()
-    # restoring numpy warnings
-    np.seterr(**orig_warn_settings)
+    np.seterr(**orig_warn_settings)                   # restoring numpy warnings
+    print(param,ret)
     return ret
 
 
@@ -253,7 +250,7 @@ class CI(object):
 
 
 
-  def find_limit(self, para, direction):
+  def find_limit(self, param, direction):
     """Find a value for a given parameter so that prob(val) > sigmas."""
     self.reset_vals()
 
@@ -273,7 +270,7 @@ class CI(object):
       i = i + 1
       limit += step * direction
 
-      new_prob = self.get_prob(para, limit)
+      new_prob = self.get_prob(param, limit)
       rel_change = (new_prob - old_prob) / max(new_prob, old_prob, 1.e-12)
       old_prob = new_prob
 
@@ -299,24 +296,23 @@ class CI(object):
 
 
 
-  def get_prob(self, para, val, offset=0.0, restore=False):
+  def get_prob(self, param, val, offset=0.0, restore=False):
     """
     Calculate the probability for given value.
     """
     if restore:
       restore_vals(self.params_, self.params)
     param.value = val
-    save_para = self.params[param.name]
-    self.params[param.name] = para
+    save_param = self.params[param.name]
+    self.params[param.name] = param
     self.minimizer.prepare_fit(self.params)
-    out = self.minimizer.levenberg_marquardt()
-    prob = self.tester(out.ndata, out.ndata - out.nfree,
-                          out.chi2, self.best_chi2)
-
+    out = self.minimizer.optimize(method='bfgs')
+    prob = self.tester(out.ndata, out.ndata-out.nfree, out.chi2, self.best_chi2)
     x = [i.value for i in out.params.values()]
     self.footprints[param.name].append(x + [prob])
-    self.params[param.name] = save_para
+    self.params[param.name] = save_param
     return prob - offset
+
 
 
 def confidence_interval2d(minimizer, result, x_name, y_name, nx=10, ny=10,
@@ -400,7 +396,7 @@ def confidence_interval2d(minimizer, result, x_name, y_name, nx=10, ny=10,
         result.params[x.name] = x
         result.params[y.name] = y
         minimizer.prepare_fit(params=result.params)
-        out = minimizer.levenberg_marquardt()
+        out = minimizer.minuit()
         prob = tester(out.ndata, out.ndata - out.nfree, out.chi2,
                          best_chi2, nfix=2.)
         result.params[x.name] = save_x
