@@ -20,7 +20,7 @@ from ipanema import Parameter, Parameters, optimize
 #%% Building the dataset to fit ------------------------------------------------
 #    We create a ipanema.Parameters object with the true parameters.
 p_true = Parameters()
-amp = Parameter('amp', value=11.0, init_value=12, latex='A')
+amp = Parameter('amp', value=11.0, init=12, latex='A')
 period = Parameter('period', value=6)
 shift = Parameter('shift', value=0.1)
 decay = Parameter('decay', value=0.52)
