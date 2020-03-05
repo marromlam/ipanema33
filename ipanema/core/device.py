@@ -213,8 +213,8 @@ KERNEL_CODE = """
 KERNEL void arange_complex( GLOBAL_MEM double *out, double vmin )
 {
   SIZE_T idx = get_global_id(0);
-  out[idx][0] = vmin + idx;
-  out[idx][1] = 0.;
+  out[idx,0] = vmin + idx;
+  out[idx,1] = 0.;
 }
 
 /// Arange
@@ -246,8 +246,8 @@ KERNEL void exponential_complex( GLOBAL_MEM double *out, GLOBAL_MEM double *in )
 
   double d = exp(v[0]);
 
-  out[idx][0] = d * cos(v[1]);
-  out[idx][1] = d * sin(v[1]);
+  out[idx,0] = d * cos(v[1]);
+  out[idx,1] = d * sin(v[1]);
 }
 
 /// Exponential (double)
@@ -357,7 +357,7 @@ KERNEL void ones_double( GLOBAL_MEM double *out )
 KERNEL void real( GLOBAL_MEM double *out, GLOBAL_MEM double *in )
 {
   SIZE_T idx = get_global_id(0);
-  out[idx] = in[idx][0];
+  out[idx] = in[idx,0];
 }
 
 /// Get elements from an array by indices
