@@ -354,10 +354,10 @@ KERNEL void ones_double( GLOBAL_MEM double *out )
 }
 
 /// Take the real part of an array
-KERNEL void real( GLOBAL_MEM double *out, GLOBAL_MEM double2 *in )
+KERNEL void real( GLOBAL_MEM double *out, GLOBAL_MEM double *in )
 {
   SIZE_T idx = get_global_id(0);
-  out[idx] = in[idx].x;
+  out[idx] = in[idx][0];
 }
 
 /// Get elements from an array by indices
