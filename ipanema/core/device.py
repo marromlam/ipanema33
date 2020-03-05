@@ -239,15 +239,15 @@ KERNEL void assign_bool( GLOBAL_MEM unsigned *out, GLOBAL_MEM unsigned *in, int 
 }
 
 /// Exponential (complex)
-KERNEL void exponential_complex( GLOBAL_MEM double2 *out, GLOBAL_MEM double2 *in )
+KERNEL void exponential_complex( GLOBAL_MEM double *out, GLOBAL_MEM double *in )
 {
   SIZE_T idx = get_global_id(0);
-  double2 v = in[idx];
+  double v = in[idx];
 
-  double d = exp(v.x);
+  double d = exp(v[0]);
 
-  out[idx].x = d * cos(v.y);
-  out[idx].y = d * sin(v.y);
+  out[idx][0] = d * cos(v[1]);
+  out[idx][1] = d * sin(v[1]);
 }
 
 /// Exponential (double)
