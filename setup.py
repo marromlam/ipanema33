@@ -25,7 +25,7 @@ Main functionalities:
     is large, then better rewrite your code in cuda or opencl, and Ipanema can
     take care of that cost function. That's simple.
 
-  * Estimation of confidence intervals usin ANOVA instead of calculating 
+  * Estimation of confidence intervals usin ANOVA instead of calculating
     uncertainties and correlations from the covariance matrix.
 
 Copyright (c) 2020 Ipanema Developers ; GNU AFFERO GENERAL PUBLIC LICENSE
@@ -35,7 +35,7 @@ Copyright (c) 2020 Ipanema Developers ; GNU AFFERO GENERAL PUBLIC LICENSE
 
 
 setup(name='ipanema',
-      version='0.4',
+      version='0.5',
       author='Marcos Romero',
       author_email='marcos.romero.lamas@cern.ch',
       url='https://github.com/marromlam/ipanema.git',
