@@ -14,9 +14,9 @@ import uncertainties as unc
 from asteval import Interpreter, get_ast_names, valid_symbol_name
 import scipy.special
 
-SCIPY_FUNCTIONS = {} # Get some functions from scipy to be handled by asteval
+AST_FUNCTIONS_DICT = {} # Get some functions from scipy to be handled by asteval
 for name in ['gamma', 'erf', 'erfc', 'wofz']:
-  SCIPY_FUNCTIONS['sc_'+name] = getattr(scipy.special, name)
+  AST_FUNCTIONS_DICT['sc_'+name] = getattr(scipy.special, name)
 
 # Asteval error checker
 def _check_ast_errors_(formula_eval):
@@ -41,7 +41,7 @@ class Parameters(OrderedDict):
     if self._asteval is None:
       self._asteval = Interpreter()
     _syms = {}
-    _syms.update(SCIPY_FUNCTIONS)
+    _syms.update(AST_FUNCTIONS_DICT)
     if usersyms is not None:
       _syms.update(usersyms)
     for key, val in _syms.items():
@@ -118,7 +118,7 @@ class Parameters(OrderedDict):
 
 
 
-  def __print__(self, cols=['value', 'stdev', 'min', 'max', 'free'],col_offset = 2):
+  def __str__(self, cols=['value', 'stdev', 'min', 'max', 'free'], col_offset = 2):
     """
     Return a pretty representation of a Parameters class.
     """
@@ -192,7 +192,7 @@ class Parameters(OrderedDict):
     """
     Print parameters table
     """
-    table = self.__print__(cols,col_offset)
+    table = self.__str__(cols,col_offset)
     if as_string:
       return table
     print(table)

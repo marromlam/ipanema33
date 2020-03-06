@@ -37,12 +37,12 @@ A = ipanema.Parameters()
 B = ipanema.Parameters()
 A.add(a1,a2,b)
 B.add(c1,c2,d)
-A.print()
-B.print()
+print(A)
+print(B)
 
 # Merge ipanema.Parameters dictionary
 C = A+B
-A.print()
-B.print()
-C.print()
+print(A)
+print(B)
+print(C)
 C.dump_latex()
