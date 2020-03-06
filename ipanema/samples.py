@@ -31,9 +31,6 @@ except:
 
 
 
-
-
-
 ################################################################################
 # Function to parse config files ###############################################
 
@@ -174,8 +171,6 @@ class Sample(object):
           this_branch.append(np.array(self.df.eval(item).values))
         this_branch = tuple(this_branch)
         this_branch = np.ascontiguousarray(np.stack(this_branch, axis=-1))
-      #self.add(var+'_h',this_branch)
-      #self.add(var+'_d',cu_array.to_gpu(this_branch).astype(np.float64))
       self.add(var, ristra.allocate(this_branch).astype(np.float64))
 
   def assoc_params(self, params):
