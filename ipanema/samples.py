@@ -144,10 +144,10 @@ class Sample(object):
     Place cuts on df and return it with them applied!
     """
     if cuts:
-      df = self.df.query(cuts)
+      self.df = self.df.query(cuts)
     else:
-      df = self.df
-    return df
+      self.df = self.df
+    return self.df
 
   def back_to_original(self):
     """
