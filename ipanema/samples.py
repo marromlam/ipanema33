@@ -127,12 +127,12 @@ class Sample(object):
 
   @classmethod
   def from_root(cls, filename, treename = 'DecayTree', name = None, cuts = None,
-                params = None, copy=True, convert=True, trim=False):
+                params = None, copy=True, convert=True, trim=False, **up_kwgs):
     if filename[-5:] != '.root': filename += '.root'
     if not name:
       namewithextension = os.path.basename(os.path.normpath(filename))
       name = os.path.splitext(namewithextension)[0]
-    df = uproot.open(filename)[treename].pandas.df()
+    df = uproot.open(filename)[treename].pandas.df(**up_kwgs)
     return cls(df, name, cuts=cuts, params=params,
                copy=copy, convert=convert, trim=trim)
 
