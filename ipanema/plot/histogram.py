@@ -114,7 +114,7 @@ def compare_hist(data, weights = [None, None], density = False, **kwargs):
   ref = hist(data[0], density = False, **kwargs, weights=weights[0])
   obj = hist(data[1], density = False, **kwargs, weights=weights[1])
   ref_norm = 1; obj_norm = 1;
-  if norm:
+  if density:
     ref_norm = 1/ref.counts.sum(); obj_norm = 1/obj.counts.sum();
   ref.counts = ref.counts*ref_norm; ref.errl *= ref_norm; ref.errh *= ref_norm
   obj.counts = obj.counts*obj_norm; obj.errl *= obj_norm; obj.errh *= obj_norm
