@@ -36,4 +36,4 @@ run:
     #- python examples/simple_fit_test.py
     #- python examples/test_cuda.py
     #- python examples/test_opencl.py
-    - python examples/test_python.py
+    - python examples/fit_python_test.py
