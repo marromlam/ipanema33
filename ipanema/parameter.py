@@ -326,13 +326,15 @@ class Parameters(OrderedDict):
 
 
 
-  def dump_latex(self, cols=['latex','value','stdev'], col_offset=3, verbose=False):
+  def dump_latex(self, cols=['value','stdev'], col_offset=3, caption='None',
+                 verbose=False):
     """
     Print LaTeX parameters
 
     TODO: I think when some parameter value has 10^exp will be represented as
           1eexp. Some mod is needed to rewrite that e into \times 10^exp. :)
     """
+    cols = ['latex'] + cols
     par_dict, len_dict = self._params_to_string_(cols, col_offset)
 
     # Formating line (will be used to print)
@@ -344,11 +346,14 @@ class Parameters(OrderedDict):
     # Build the table
     table  = "\\begin{table}\n\centering\n\\begin{tabular}{"+len(cols)*"c"+"}\n"
     table += "\hline\n"
-    table += line.format(*cols).title() + '\hline\n'
+    table += line.format(*cols).title().replace('$',' ') + '\hline\n'
     for name, par in zip(par_dict.keys(),par_dict.values()):
       table += line.format(*list(par.values())[1:])
-    table += "\hline\n"
-    table += "\end{tabular}\n\end{table}\n"
+    table += "\hline\n\end{tabular}\n"
+    table += f"\caption{{{caption}}}\n"
+    table += "\end{table}\n"
+    table = table.replace('None','    ')
+    table = table.replace('Latex    ','Parameter')
     if verbose:
       print(table)
     return table
