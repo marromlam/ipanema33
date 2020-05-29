@@ -263,6 +263,10 @@ class Parameters(OrderedDict):
     Prepare a JSON string of Parameters.
     """
     params = {p.name:p.__getstate__() for p in self.values()}
+    for p in params:
+      filter = {k: v for k, v in params[p].items() if v is not None}
+      params[p].clear()
+      params[p].update(filter)
     return hjson.dumps(params, **kwargs)
 
 
@@ -281,7 +285,8 @@ class Parameters(OrderedDict):
     """
     Write JSON representation of Parameters to file given in path.
     """
-    if path[:-4] != '.json': path += '.json'
+    if path[-5:] != '.json':
+      path += '.json'
     open(path,'w').write(self.dumps(**kwargs))
 
 
