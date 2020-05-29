@@ -9,6 +9,7 @@ import pandas
 import os
 import json
 import uproot
+import re
 
 from .parameter import Parameters
 from .core.utils import ristra
@@ -107,7 +108,12 @@ class Sample(object):
 
   @property
   def shape(self):
-    return self.df.shape()
+    return self.df.shape
+
+  def find(self, word):
+    branches = self.branches
+    regex = re.compile(word)
+    return [ b for b in branches if regex.match(b) ]
 
   @classmethod
   def from_file(cls, filename, name = None, cuts = None, params = None,
@@ -174,7 +180,8 @@ class Sample(object):
       self.add(var, ristra.allocate(this_branch).astype(np.float64))
 
   def assoc_params(self, params):
-    self.params = Parameters()
-    self.params.copy(params)
+    self.params = Parameters.load(params)
+    #self.params = Parameters()
+    #self.params.copy(params)
 
 ################################################################################
