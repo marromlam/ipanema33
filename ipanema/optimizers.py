@@ -267,7 +267,7 @@ def _random_instance_(seed=None):
 
 
 
-def _nan_handler_(ary, policy='raise'):
+def _nan_handler_(ary, policy='filter'):
   """
   Specify behaviour when an array contains numpy.nan or numpy.inf.
 
@@ -286,7 +286,7 @@ def _nan_handler_(ary, policy='raise'):
     raise ValueError("policy must be filter', or 'raise'.")
 
   if policy == 'filter':
-    return np.nan_to_num(ary, nan=1e12, posinf=1e12, neginf=-1e12)
+    return np.nan_to_num(ary, nan=1e12, posinf=1e12, neginf=1e12)
   elif policy == 'raise':
     if np.where(np.isfinite(ary),0,1).sum():
       raise ValueError("""
@@ -393,7 +393,7 @@ class Optimizer(object):
 
   def __init__(self, fcn_call, params,
                fcn_args=None, fcn_kwgs=None,
-               model_call=None, scale_covar=True, policy='raise',
+               model_call=None, scale_covar=True, policy='filter',
                residual_reduce='likelihood', calc_covar=True,
                **method_kwgs):
     """
@@ -497,7 +497,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     """
     Reduce residual array to scalar with the sum.
     """
-    out = _nan_handler_(array).sum()
+    out = _nan_handler_(array,self.policy).sum()
     return out
 
 
@@ -506,7 +506,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     """
     Reduce residual array to scalar with the squared sum.
     """
-    out = _nan_handler_(array*array).sum()
+    out = _nan_handler_(array*array, self.policy).sum()
     return out
 
 
@@ -514,7 +514,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     """
     Reduce residual array to scalar with the squared sum.
     """
-    out = _nan_handler_(array*array).sum()
+    out = _nan_handler_(array*array, self.policy).sum()
     return out
 
 
