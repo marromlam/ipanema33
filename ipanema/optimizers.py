@@ -549,7 +549,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
       for name, val in zip(self.result.param_vary, fvars):
         params[name].value = val
 
-    #print(f'params = {params} BEFORE')
+    #print(params)
     params.update_constraints()
     #print(f'params = {params} AFTER')
 
@@ -808,7 +808,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     Configure minuit things
     """
     def parameter_minuit_config(par):
-      out = {par.name: par.init_value}
+      out = {par.name: par.init}
       lims = [None,None]
       if abs(par.min) != np.inf: lims[0] = par.min
       if abs(par.max) != np.inf: lims[1] = par.max
@@ -837,7 +837,6 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     result.method = f'Minuit ({method})'
     if not maxiter:
       maxiter = 1000 * (len(result.param_init)+1)
-
     if verbose:
       print(f"{'method':>25} : {method}")
       print(f"{'maxiter':>25} : {maxiter}")
