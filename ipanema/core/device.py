@@ -590,7 +590,10 @@ def exp(a):
 
 
 def get(a):
-  return a.get()
+  try:
+    return a.get()
+  except:
+    return a
 
 
 
