@@ -9,6 +9,8 @@ import hjson
 from numpy import arcsin, array, cos, inf, isclose, nan, sin, sqrt
 from numpy import inf as Infinite
 import uncertainties as unc
+import re
+import numpy as np
 
 # Parameter formula stuff
 from asteval import Interpreter, get_ast_names, valid_symbol_name
@@ -104,7 +106,12 @@ class Parameters(OrderedDict):
     """
     Convert Parameters to array.
     """
-    return array([float(k) for k in self.values()])
+    try:
+      arr = array([float(k) for k in self.values()])
+    except:
+      arr = array([float(k.value) for k in self.values()])
+    finally:
+      return arr
 
 
 
@@ -236,6 +243,19 @@ class Parameters(OrderedDict):
     """
     return OrderedDict((p.name, p.uvalue) for p in self.values())
 
+
+  def correl_mat(self):
+    pars = list(self.keys())
+    corr_mat = np.zeros((len(pars),len(pars)))
+    for i in range(0,len(pars)):
+      p = pars[i]
+      corr = self[p].correl
+      for j in range(0,len(pars)):
+        if pars[j] in corr:
+          corr_mat[i][j] = corr[pars[j]]
+        else:
+          corr_mat[i][j] = np.nan
+    return corr_mat
 
 
   def lock(self,*args):
