@@ -87,7 +87,7 @@ class Sample(object):
   """
 
   def __init__(self, df, name='untitled', cuts = None, params = None,
-               copy=True, convert=True, trim=False, backup=False):
+               copy=True, convert=True, trim=False, backup=False, path=None):
     self.name = name
     self.__backup = backup
     if self.__backup:
@@ -97,6 +97,7 @@ class Sample(object):
     else:
       self.df = df
     self.params = params
+    self.path = path
 
   def __get_name(self, filename):
     namewithextension = os.path.basename(os.path.normpath(filename))
@@ -123,13 +124,13 @@ class Sample(object):
       namewithextension = os.path.basename(os.path.normpath(filename))
       name = os.path.splitext(namewithextension)[0]
     return cls(get_data_file(filename), name, cuts = cuts, params = params,
-               copy=True, convert=True, trim=False)
+               copy=True, convert=True, trim=False, path=filename)
 
   @classmethod
   def from_pandas(cls, df, name = None, cuts = None, params = None,
                   copy=True, convert=True, trim=False):
     return cls(df, name, cuts=cuts, params=params,
-               copy=copy, convert=convert, trim=trim)
+               copy=copy, convert=convert, trim=trim, path=None)
 
   @classmethod
   def from_root(cls, filename, treename = 'DecayTree', name = None, cuts = None,
@@ -140,7 +141,7 @@ class Sample(object):
       name = os.path.splitext(namewithextension)[0]
     df = uproot.open(filename)[treename].pandas.df(**up_kwgs)
     return cls(df, name, cuts=cuts, params=params,
-               copy=copy, convert=convert, trim=trim)
+               copy=copy, convert=convert, trim=trim, path=filename)
 
   def add(self, name, attribute):
     self.__setattr__(name,attribute)
