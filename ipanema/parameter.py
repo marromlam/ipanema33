@@ -133,6 +133,32 @@ class Parameters(OrderedDict):
 
 
 
+  def find(self, word):
+    regex = re.compile(word)
+    list_parameters = list( self.keys() )
+    return [ key for key in list_parameters if regex.match(key) ]
+
+
+  def fetch(self, params):
+    if isinstance(params,str):
+      params = self.find(params)
+    return { k:self[k] for k in params }
+
+
+
+  @classmethod
+  def build(cls, params, params_list):
+    c = cls(); temp = cls()
+    for k in params_list:
+      temp.add(params[k])
+    return c.__deepcopy__(temp)
+
+  # @classmethod
+  # def __deepcopy__(cls, params_in):
+  #   c = cls()
+  #   c.loads(hjson.loads(params_in.dumps()))
+  #   return c
+
   def __str__(self, cols=['value', 'stdev', 'min', 'max', 'free'], col_offset = 2):
     """
     Return a pretty representation of a Parameters class.
@@ -589,6 +615,7 @@ class Parameter(object):
     min/max bounds. This was taken from JJ Helmus' leastsqbound.py.
 
     """
+    #print(self)
     if self.min is None:
       self.min = -inf
     if self.max is None:
@@ -606,6 +633,7 @@ class Parameter(object):
       self.from_internal = lambda val: self.min + (sin(val) + 1) * \
                             (self.max - self.min) / 2.0
       _value = arcsin(2*(self._value - self.min)/(self.max - self.min) - 1)
+      _value = self.init
     return _value
 
 
