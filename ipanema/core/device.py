@@ -261,6 +261,16 @@ KERNEL void exponential_double( GLOBAL_MEM double *out, GLOBAL_MEM double *in )
   out[idx] = exp(x);
 }
 
+
+/// Sqrt (double)
+KERNEL void sqrt_double( GLOBAL_MEM double *out, GLOBAL_MEM double *in )
+{
+  SIZE_T idx = get_global_id(0);
+  double x = in[idx];
+
+  out[idx] = sqrt(x);
+}
+
 /// Linear interpolation
 KERNEL void interpolate( GLOBAL_MEM double *out, GLOBAL_MEM double *in, int n, GLOBAL_MEM double *xp, GLOBAL_MEM double *yp )
 {
@@ -408,7 +418,7 @@ for function in ('exponential_complex',):
 """
 # These functions take an array of doubles and return another array of doubles
 #for function in ('exponential_double', 'logarithm', 'real'):
-for function in ('exponential_double', 'logarithm'):
+for function in ('exponential_double', 'sqrt_double', 'logarithm'):
     setattr(FUNCS_BY_ELEMENT, function, RETURN_DOUBLE(
         getattr(FUNCS_BY_ELEMENT, function)))
 
