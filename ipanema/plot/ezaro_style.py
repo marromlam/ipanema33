@@ -359,10 +359,13 @@ mpl.rcParams['text.latex.preamble'] = "\\usepackage{mathpazo}"
 #axes.unicode_minus  : True    ## use unicode for the minus symbol
                                ## rather than hyphen.  See
                                ## http://en.wikipedia.org/wiki/Plus_and_minus_signs#Character_codes
-mpl.rcParams['axes.prop_cycle'] 		=  cycler('color', ['#3e81fd', '#72b127', '#eb6235', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'])
+# Old color set
+#mpl.rcParams['axes.prop_cycle'] 		=  cycler('color', ['#3e81fd', '#72b127', '#eb6235', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'])
+# New beamer-compostela color set
+mpl.rcParams['axes.prop_cycle'] 		=  cycler('color', ['#007aff', '#34c759', '#5860d6', '#ff9500', '#ff2d55', '#af52de', '#ff3b30', '#5ac8fa', '#ffcc00', '#bcbd22'])
                       ## color cycle for plot lines  as list of string
                       ## colorspecs: single letter, long name, or web-style hex
-					  ## Note the use of string escapes here ('1f77b4', instead of 1f77b4)
+    ## Note the use of string escapes here ('1f77b4', instead of 1f77b4)
                       ## as opposed to the rest of this file.
 #axes.autolimit_mode : data ## How to scale axes limits to the data.
                             ## Use "data" to use data limits, plus some margin
@@ -371,9 +374,9 @@ mpl.rcParams['axes.prop_cycle'] 		=  cycler('color', ['#3e81fd', '#72b127', '#eb
 #axes.ymargin        : .05  ## y margin See `axes.Axes.margins`
 #polaraxes.grid      : True    ## display grid on polar axes
 #axes3d.grid         : True    ## display grid on 3d axes
-mpl.rcParams['axes.xmargin'] 		= 0.01
-mpl.rcParams['axes.ymargin'] 		= 0.02
-mpl.rcParams['axes.spines.top'] 		= True
+mpl.rcParams['axes.xmargin'] = 0.0#0.01
+mpl.rcParams['axes.ymargin'] = 0.0#0.02
+mpl.rcParams['axes.spines.top'] = True
 
 #### DATES
 ## These control the default format strings used in AutoDateFormatter.
@@ -456,9 +459,14 @@ mpl.rcParams['ytick.minor.visible'] = True
 #grid.linewidth   :   0.8       ## in points
 #grid.alpha       :   1.0       ## transparency, between 0.0 and 1.0
 
-#### Legend
-#legend.loc           : best
+# Legend -----------------------------------------------------------------------
+mpl.rcParams['legend.loc'] = 'best'
 mpl.rcParams['legend.frameon'] = False
+# mpl.rcParams['legend.framealpha'] = 0.8
+# mpl.rcParams['legend.facecolor'] = 'inherit'
+# mpl.rcParams['legend.edgecolor'] = 0.0
+# mpl.rcParams['legend.fancybox'] = True
+#legend.loc           : best
 #legend.frameon       : True     ## if True, draw the legend on a background patch
 #legend.framealpha    : 0.8      ## legend patch transparency
 #legend.facecolor     : inherit  ## inherit from axes.facecolor; or color spec
@@ -482,10 +490,10 @@ mpl.rcParams['legend.frameon'] = False
 
 #### FIGURE
 ## See http://matplotlib.org/api/figure_api.html#matplotlib.figure.Figure
-mpl.rcParams['figure.titlesize'] 		= 'medium'
-mpl.rcParams['figure.titleweight'] 		= "normal"
-mpl.rcParams['figure.figsize'] 		= 6, 4
-mpl.rcParams['figure.autolayout'] 		= True
+mpl.rcParams['figure.titlesize'] = 'medium'
+mpl.rcParams['figure.titleweight'] = "normal"
+mpl.rcParams['figure.figsize'] = 6, 4
+mpl.rcParams['figure.autolayout'] = True
 #figure.titlesize : large      ## size of the figure title (Figure.suptitle())
 #figure.titleweight : normal   ## weight of the figure title
 #figure.figsize   : 6.4, 4.8   ## figure size in inches
@@ -647,9 +655,9 @@ mpl.rcParams['savefig.bbox']  		    = 'tight'
 #pgf.rcfonts : True
 #pgf.preamble :            ## see text.latex.preamble for documentation
 #pgf.texsystem : xelatex
-mpl.rcParams['pgf.rcfonts'] 		= True
-mpl.rcParams['pgf.preamble'] 		= "\\usepackage{mathpazo}"
-mpl.rcParams['savefig.facecolor'] 		= "white"
+mpl.rcParams['pgf.rcfonts']	= True
+mpl.rcParams['pgf.preamble'] = "\\usepackage{mathpazo}"
+mpl.rcParams['savefig.facecolor'] = "white"
 ### docstring params
 ##docstring.hardcopy = False  ## set this when you want to generate hardcopy docstring
 
@@ -695,4 +703,3 @@ mpl.rcParams['savefig.facecolor'] 		= "white"
                                    ## is also the name of a system tool.
 #animation.convert_args:           ## Additional arguments to pass to convert
 #animation.embed_limit : 20.0
-

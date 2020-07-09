@@ -34,7 +34,16 @@ def axes_plot():
                     bottom=True, top=True, left=True, right=True)
   return fig, axplot
 
-
+def axes_square():
+  fig, (axplot) = plt.subplots(1, 1)
+  axplot.yaxis.set_major_locator(plt.MaxNLocator(8))
+  #axplot.set_xticks(axplot.get_yticks()[1:-1])
+  axplot.tick_params(which='major', length=8, width=1, direction='in',
+                    bottom=True, top=True, left=True, right=True)
+  axplot.tick_params(which='minor', length=6, width=1, direction='in',
+                    bottom=True, top=True, left=True, right=True)
+  axplot.set_aspect(1)
+  return fig, axplot
 
 def axes_plotpull():
   fig, (axplot,axpull) = plt.subplots(2, 1,
