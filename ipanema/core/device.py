@@ -598,6 +598,15 @@ def exp(a):
     raise NotImplementedError(f'Not implemented for data type "{a.dtype}"')
 
 
+def sqrt(a):
+  if a.dtype == types.cpu_complex:
+    return FUNCS_BY_ELEMENT.sqrt_double(a)
+  elif a.dtype == types.cpu_type:
+    return FUNCS_BY_ELEMENT.sqrt_double(a)
+  else:
+    raise NotImplementedError(f'Not implemented for data type "{a.dtype}"')
+
+
 
 def get(a):
   try:
