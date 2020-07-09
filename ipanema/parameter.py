@@ -60,6 +60,14 @@ class Parameters(OrderedDict):
 
 
   @classmethod
+  def clone(cls, params_in):
+    """
+    Alias of __copy__.
+    """
+    return cls().__deepcopy__(params_in)
+
+
+  @classmethod
   def __deepcopy__(cls, params_in):
     c = cls()
     c.loads(hjson.loads(params_in.dumps()))

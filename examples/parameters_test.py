@@ -40,6 +40,11 @@ B.add(c1,c2,d)
 print(A)
 print(B)
 
+
+D = ipanema.Parameters.clone(A)
+
+D['a1'].set(value=7.65432)
+print(A)
 # Merge ipanema.Parameters dictionary
 C = A+B
 print(A)
