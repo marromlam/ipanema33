@@ -60,6 +60,7 @@ def fit_report(result, show_correl=True, min_correl=0.05, as_string=False):
     add(f"{'chi2:':>30} {__parse_attr(result, 'chi2')}")
     add(f"{'chi2/dof:':>30} {__parse_attr(result, 'chi2red')}")
     add(f"{'-2 logLikelihood:':>30} {__parse_attr(result, 'nll2')}")
+    add(f"{'residual abinito:':>30} {__parse_attr(result, 'init_residual')}")
     add(f"{'Akaike info criterion:':>30} {__parse_attr(result, 'aic')}")
     add(f"{'Bayesian info criterion:':>30} {__parse_attr(result, 'bic')}")
 

@@ -10,6 +10,7 @@ import os
 import json
 import uproot
 import re
+import builtins
 
 from .parameter import Parameters
 from .core.utils import ristra
@@ -17,18 +18,20 @@ from .core.utils import ristra
 from .tools.misc import get_vars_from_string
 
 
-
-# WHY IS THIS THE HELL NEEDED !!? ----------------------------------------------
-try:
-  import pycuda.driver as cuda
-  import pycuda.cumath
-  import pycuda.autoinit
-  import pycuda.gpuarray as cu_array
-except:
-  0
-# ---------------------------------------------- WHY IS THIS THE HELL NEEDED !!?
-
-
+# 
+# # WHY IS THIS THE HELL NEEDED !!? ----------------------------------------------
+# try:
+#   print(builtins.CONTEXT)
+#   if builtins.CONTEXT == 'cuda':
+#     import pycuda.driver as cuda
+#     import pycuda.cumath
+#     import pycuda.autoinit
+#     import pycuda.gpuarray as cu_array
+# except:
+#   0
+# # ---------------------------------------------- WHY IS THIS THE HELL NEEDED !!?
+#
+#
 
 
 

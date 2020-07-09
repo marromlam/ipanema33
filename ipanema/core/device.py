@@ -571,7 +571,7 @@ def count_nonzero(a):
 
 
 
-def allocate(a, copy=True, convert=True):
+def allocate(a, copy=True, convert=True): # Work here to handle dtypes!
     if convert:
         if a.dtype != types.cpu_type:
             a = a.astype(types.cpu_type)
