@@ -171,7 +171,7 @@ def _lnprior_(value, bounds):
 # REVISIT
 def _lnpost_(value, fcn_call, params, param_vary, bounds, fcn_args=(),
              fcn_kwgs=None, behavior='likelihood', is_weighted=True,
-             policy='raise'):
+             policy='raise', lnprob0 = 0):
   """
   Calculate the log-posterior probability.
 
@@ -222,6 +222,7 @@ def _lnpost_(value, fcn_call, params, param_vary, bounds, fcn_args=(),
   out = fcn_call(params, *fcn_args, **userkwgs)
   out = _nan_handler_(out, policy=policy)
   lnprob = np.asarray(out).ravel()
+  lnprob -= lnprob0*np.ones_like(lnprob)/len(lnprob)
 
   if lnprob.size > 1:
     if 'log_fcn' in params and not is_weighted:
@@ -443,6 +444,8 @@ residual_reduce:  Function to convert a residual array to a scalar value,
             void
 
     """
+    print("Optimizer: ", method_kwgs)
+
     self.fcn_call = fcn_call
     self.fcn_args = fcn_args
     self.fcn_kwgs = fcn_kwgs
@@ -493,35 +496,36 @@ residual_reduce:  Function to convert a residual array to a scalar value,
 
   # Residual reductions ------------------------------------------------------
 
-  def _residual_sum_(self,array):
+  def _residual_sum_(self,arr):
     """
     Reduce residual array to scalar with the sum.
     """
-    out = _nan_handler_(array,self.policy).sum()
-    return out
+    #print('_residual_sum_:', _nan_handler_(array, self.policy).sum())
+
+    return _nan_handler_(arr.sum(),self.policy)
 
 
 
-  def _residual_squared_sum_(self,array):
+  def _residual_squared_sum_(self,arr):
     """
     Reduce residual array to scalar with the squared sum.
     """
-    out = _nan_handler_(array*array, self.policy).sum()
+    out = _nan_handler_((arr*arr).sum(), self.policy)
     return out
 
 
-  def _residual_likelihood_(self,array):
+  def _residual_likelihood_(self,arr): #WARNING SHOULD BE MODIFIED
     """
     Reduce residual array to scalar with the squared sum.
     """
-    out = _nan_handler_(array*array, self.policy).sum()
-    return out
+    print('_residual_likelihood_:', _nan_handler_(arr, self.policy).sum())
+    return _nan_handler_(arr.sum(), self.policy)
 
 
 
   # Wrappers around fcn_call -------------------------------------------------
 
-  def _residual_(self, fvars, rebounding=True):
+  def _residual_(self, fvars, reduce=False, rebounding=True):
     """
     This is the all-method-residual-hammer. All fcn are evaluated by this
     method. Wraps arount this exist for minuit and scipy
@@ -576,55 +580,53 @@ residual_reduce:  Function to convert a residual array to a scalar value,
       self.result.success  = False
       raise KeyboardInterrupt("Optimization aborted by user.")
     else:
+      if reduce:
+        #print("out.sum() =", out.sum())
+        return self.residual_reduce(out) - self.result.init_residual #+ 100
+        #return self.residual_reduce(out) - self.result.init_residual
       return _nan_handler_(np.asarray(out).ravel(), policy=self.policy)
 
 
 
-  def _wrapper_minuit_(self, *fvars, reduce = True):
+  def _wrapper_minuit_(self, *fvars, reduce=True):
     """
     Residual function used for minuit methods.
 
     In:
           fvars:  Array of values of parameters
                   array
-         reduce:  Boolean to return FCN or vector of residuals
+         reduce:  Whether to return FCN or vector of residuals
+                  bool
 
     Out:
               0:  Residuals
-                  np.ndarray
+                  float or np.ndarray
     """
-    fcn = self._residual_(list(fvars), rebounding=False)
-    if reduce:
-      return self.residual_reduce(fcn)
-    else:
-      return fcn
+    return self._residual_(list(fvars), reduce=reduce, rebounding=False)
 
 
 
-  def _wrapper_scipy_minimize_(self, fvars, reduce = True):
+  def _wrapper_scipy_minimize_(self, fvars, reduce = True, rebounding = True):
     """
-    Residual function used for minuit methods.
+    Residual function used for scipy methods.
 
     In:
           fvars:  Array of values of parameters
                   array
-         reduce:  Boolean to return FCN or vector of residuals
+         reduce:  Whether to return FCN or vector of residuals
+                  bool
 
     Out:
               0:  Residuals
-                  np.ndarray
+                  float or np.ndarray
     """
+    rebounding = True
     if self.result.method in ('shgo', 'dual_annealing', 'least_squares'):
       rebounding = False
-    else:
-      rebounding = True
     if fvars.shape == ():
       fvars = fvars.reshape((1,))
-    fcn = self._residual_(fvars, rebounding=False)
-    if reduce:
-      return self.residual_reduce(fcn)
-    else:
-      return fcn
+      print(fvars)
+    return self._residual_(list(fvars), reduce=reduce, rebounding=rebounding)
 
 
 
@@ -648,10 +650,12 @@ residual_reduce:  Function to convert a residual array to a scalar value,
       unbound_res_f = lambda x: self.residual_reduce(self._residual_(x, False))
       hessian = ndt.Hessian(unbound_res_f)(fvars)
       cov = 2 * np.linalg.inv(hessian)
+
     except (LinAlgError, ValueError):
       return None
     finally:
       self.result.nfev = nfev # paste it!
+    print(cov)
     return cov
 
 
@@ -771,7 +775,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     result.param_vary = []
     result.param_init = []
     result.params.update_constraints()
-    result.nfev = 0
+    result.nfev = -1
     result.errorbars = False
     result.aborted = False
     for name, par in self.result.params.items():
@@ -791,9 +795,17 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     result.nvary = len(result.param_vary)
     result.init_values = {n: v for n, v in zip(result.param_vary, result.param_init)}
 
+    result.init_residual = 0
+
+
     # Set up reduce function
     if not callable(self.residual_reduce):
       self.residual_reduce = self._residual_sum_
+
+    result.init_residual = self._residual_(result.param_init, reduce=True, rebounding=False)
+    print('residutal at init', result.init_residual)
+    print('params at init', result.param_init)
+
     return result
 
 
@@ -803,9 +815,9 @@ residual_reduce:  Function to convert a residual array to a scalar value,
 
 
 
-  def _configure_minuit_(self, pars, **kwgs):
+  def _configure_minuit_parameters_(self, pars):
     """
-    Configure minuit things
+    Configure minuit paramters
     """
     def parameter_minuit_config(par):
       out = {par.name: par.init}
@@ -813,13 +825,13 @@ residual_reduce:  Function to convert a residual array to a scalar value,
       if abs(par.min) != np.inf: lims[0] = par.min
       if abs(par.max) != np.inf: lims[1] = par.max
       out.update ({"limit_" + par.name: tuple(lims)})
+      out.update ({"error_" + par.name: 1e-6})
       return out
 
     config = {}
     for par in pars.keys():
       if par in self.result.param_vary:
         config.update(parameter_minuit_config(pars[par]))
-    config.update(kwgs)
     return config
 
 
@@ -827,7 +839,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
   # Minuit method ------------------------------------------------------------
 
   def minuit(self, params=None, method='hesse',
-             strategy=1, errordef=1, print_level=-1, pedantic=False,
+             strategy=1, errordef=1, tol = 0.05, print_level=-1, pedantic=False,
              maxiter = False,
              verbose=False, **crap):
     """
@@ -835,6 +847,10 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     """
     result = self.prepare_fit(params=params)
     result.method = f'Minuit ({method})'
+
+    print("here we go", result.init_residual)
+    if verbose:
+      print_level=2
     if not maxiter:
       maxiter = 1000 * (len(result.param_init)+1)
     if verbose:
@@ -847,17 +863,18 @@ residual_reduce:  Function to convert a residual array to a scalar value,
       print(f"{'non-used arguments':>25} : {crap}")
       print(f"{'params':>25} : {result.params.valuesdict()}")
 
-    minuit_kws = {"errordef":errordef, "print_level":print_level,
-                  "pedantic":pedantic}
-    minuit_kws = self._configure_minuit_(result.params, **minuit_kws)
+    minuit_pars = self._configure_minuit_parameters_(result.params)
     try:
       ret = minuit(self._wrapper_minuit_,
-                   forced_parameters=self.result.param_vary, **minuit_kws)
-      ret.set_strategy(strategy);
+                   forced_parameters=self.result.param_vary, **minuit_pars,
+                   print_level=print_level, pedantic=pedantic,
+                   errordef=errordef)
+      ret.strategy = strategy;
+      ret.tol = tol;
       # Call migrad
       ret.migrad(ncall=maxiter)
       _counter = 1; # set a counter
-      while not ret.migrad_ok() and _counter <= 20:
+      while not ret.migrad_ok() and _counter <= 2:
         if _counter == 1:
           print(f"Goddamnit! This function is not well behaved!",\
                 f"Let's give it a another try.")
@@ -867,6 +884,8 @@ residual_reduce:  Function to convert a residual array to a scalar value,
         print(f"Minuit cannot handle this fcn optimization.",
               f"Call other method, ipanema provides a wide variety.")
       if method == 'hesse':
+        ret.migrad()
+        #self.result.init_residual = 0
         ret.hesse()
       elif method == 'minos':
         ret.minos()
@@ -907,7 +926,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
 
 
 
-  # Scipy.optimize methods handler -------------------------------------------
+  # Scipy.optimize methods handler ---------------------------------------------
 
   def scalar_optimize(self, params=None, method='BFGS',
                       maxiter = False, hess = False, updating = 'immediate',
@@ -948,7 +967,9 @@ residual_reduce:  Function to convert a residual array to a scalar value,
         if (par.free and not (np.isfinite(par.min) and np.isfinite(par.max))):
           raise ValueError('differential_evolution requires finite bounds.')
         diff_ev_bounds = [(-np.pi / 2., np.pi / 2.)] * len(variables)
-
+    if verbose:
+      disp = True
+      #iprint = 1
     if verbose:
       print(f"{'method':>25} : {method}")
       print(f"{'maxiter':>25} : {maxiter}")
@@ -971,7 +992,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
 
     variables = result.param_init
     params = result.params
-    variables = [params[par].value for par in params]
+    variables = [params[par].value for par in params if params[par].free]
 
     #scpmin_kws.update(self.miner_kwgs)
     #scpmin_kws.update(method_kwgs)
@@ -979,17 +1000,18 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     scpmin_kws = {"updating":updating, "workers":workers, "strategy":strategy,
                   "popsize":popsize, "disp":disp, "mutation":mutation,
                   "recombination":recombination, "seed":seed, "init":init,
-                  "callback":callback, "polish":polish, "tol":tol, "atol":atol
+                  "callback":callback, "polish":polish, "tol":tol, "atol":atol, "maxiter":maxiter#, "iprint": iprint
                  }
-    scpmin_kws = {k:v for k,v in scpmin_kws.items() if v is not None}
+    scpmin_kws = {k:v for k,v in scpmin_kws.items() if v != None}
+    print("scpmin_kws: ",scpmin_kws)
     if method == 'differential_evolution':
       try:
-        ret = differential_evolution(self._wrapper_scipy_minimize_, diff_ev_bounds, **scpmin_kws)
+        ret = differential_evolution(self._wrapper_scipy_minimize_, diff_ev_bounds, options=scpmin_kws)
       except KeyboardInterrupt:
         pass
     else:
       try:
-        ret = scipy_minimize(self._wrapper_scipy_minimize_, variables, **scpmin_kws)
+        ret = scipy_minimize(self._wrapper_scipy_minimize_, variables, options=scpmin_kws)
       except KeyboardInterrupt:
         pass
 
@@ -1008,9 +1030,16 @@ residual_reduce:  Function to convert a residual array to a scalar value,
       result.nfev -= 1
 
     result._compute_statistics_()
-
+    print(dir(ret))
     # calculate the cov and estimate uncertanties/correlations
     if (not result.aborted and self.calc_covar):
+      print('go for the cov')
+      if 'hess_inv' in dir(ret):
+        cov = 2 * ret.hess_inv
+        print(cov)
+        #print(self._int2ext_cov_(cov,variables))
+      else:
+        cov = self._calculate_covariance_matrix_(result.x)
       cov = self._calculate_covariance_matrix_(result.x)
       if cov is not None:
         result.cov = cov
@@ -1167,7 +1196,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
                      'behavior': behavior,
                      'fcn_args': self.fcn_args,
                      'fcn_kwgs': self.fcn_kwgs,
-                     'policy': self.policy}
+                     'policy': self.policy, 'lnprob0':self.result.init_residual}
 
     if ntemps > 1:
         # the prior and likelihood function args and kwgs are the same
@@ -1671,6 +1700,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     method_kwgs:  Keyword-arguments to be passed to the underlying
                   minimization algorithm (the selected method).
     """
+    print("self.optimize: ", method_kwgs)
     kwgs = {'params': params}
     kwgs.update(self.miner_kwgs)
     kwgs.update(method_kwgs)
@@ -1755,12 +1785,13 @@ def optimize(fcn_call, params, method='lbfgsb',
             0:  Optimizer result object that in general include all info that
                 the selected method provides (at least the most useful one).
   """
+  print("optimize: ", method_kwgs)
   t0 = timer()
   fitter = Optimizer(fcn_call, params, fcn_args=fcn_args, fcn_kwgs=fcn_kwgs,
                      model_call=model_call, scale_covar=scale_covar,
                      policy=policy, residual_reduce=residual_reduce,
-                     calc_covar=calc_covar, **method_kwgs)
-  result = fitter.optimize(method=method)
+                     calc_covar=calc_covar)
+  result = fitter.optimize(method=method, verbose=verbose, **method_kwgs)
   tf = timer()-t0
   if verbose:
     result.params.print()
