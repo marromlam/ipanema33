@@ -812,3 +812,9 @@ def zeros(n, dtype=types.cpu_type):
     return FUNCS_BY_ELEMENT.zeros_bool(n)
   else:
     raise NotImplementedError(f'Not implemented for data type "{dtype}"')
+
+def zeros_like(arr):
+  try:
+    return THREAD.to_device(0*arr.get())
+  except:
+    return THREAD.to_device(0*arr)
