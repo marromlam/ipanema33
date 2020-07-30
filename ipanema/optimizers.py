@@ -146,8 +146,6 @@ ALL_METHODS.update(LIPSCHIZ_METHODS)
 
 
 
-
-
 def _lnprior_(value, bounds):
   """
   Get a log-prior probability
@@ -858,6 +856,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
       print(f"{'maxiter':>25} : {maxiter}")
       print(f"{'strategy':>25} : {strategy}")
       print(f"{'errordef':>25} : {errordef}")
+      print(f"{'tol':>25} : {tol}")
       print(f"{'pedantic':>25} : {pedantic}")
       print(f"{'print_level':>25} : {print_level}")
       print(f"{'non-used arguments':>25} : {crap}")
@@ -874,19 +873,26 @@ residual_reduce:  Function to convert a residual array to a scalar value,
       # Call migrad
       ret.migrad(ncall=maxiter)
       _counter = 1; # set a counter
-      while not ret.migrad_ok() and _counter <= 2:
+      while not ret.migrad_ok() and _counter <= 5:
         if _counter == 1:
           print(f"Goddamnit! This function is not well behaved!",\
-                f"Let's give it a another try.")
+                f"Try:", end="")
         ret.migrad(ncall=1000 * (len(result.param_init)+1))
         _counter += 1
-      if _counter >= 20:
+        print(f"{_counter} ", end="")
+      if _counter >= 5:
         print(f"Minuit cannot handle this fcn optimization.",
               f"Call other method, ipanema provides a wide variety.")
       if method == 'hesse':
-        ret.migrad()
+        #ret.migrad()
         #self.result.init_residual = 0
         ret.hesse()
+        print(ret.get_fmin().hesse_failed)
+        if ret.get_fmin().hesse_failed:
+          print(f"Seems like hesse has problems to find a valid covariance matrix")
+          ret.strategy = 2;
+          ret.migrad()
+          ret.hesse()
       elif method == 'minos':
         ret.minos()
     except KeyboardInterrupt:
