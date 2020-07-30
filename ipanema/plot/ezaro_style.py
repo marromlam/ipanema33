@@ -362,7 +362,7 @@ mpl.rcParams['text.latex.preamble'] = "\\usepackage{mathpazo}"
 # Old color set
 #mpl.rcParams['axes.prop_cycle'] 		=  cycler('color', ['#3e81fd', '#72b127', '#eb6235', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'])
 # New beamer-compostela color set
-mpl.rcParams['axes.prop_cycle'] 		=  cycler('color', ['#007aff', '#34c759', '#5860d6', '#ff9500', '#ff2d55', '#af52de', '#ff3b30', '#5ac8fa', '#ffcc00', '#bcbd22'])
+mpl.rcParams['axes.prop_cycle'] 		=  cycler('color', ['#007aff', '#34c759', '#ff9500', '#ff2d55', '#5860d6', '#af52de', '#ff3b30', '#5ac8fa', '#ffcc00', '#bcbd22'])
                       ## color cycle for plot lines  as list of string
                       ## colorspecs: single letter, long name, or web-style hex
     ## Note the use of string escapes here ('1f77b4', instead of 1f77b4)
