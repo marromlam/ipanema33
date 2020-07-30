@@ -263,11 +263,11 @@ class Parameters(OrderedDict):
 
 
 
-  def valuesdict(self,unblind=False):
+  def valuesdict(self,blind=True):
     """
     OrderedDict of parameter values.
     """
-    return OrderedDict((p.name, p._getval(unblind)) for p in self.values())
+    return OrderedDict((p.name, p._getval(blind)) for p in self.values())
 
 
 
@@ -566,7 +566,7 @@ class Parameter(object):
 
   def __setstate__(self, value=None, free=None, min=None, max=None, formula=None):
     if value is not None:
-      self.value = value
+      self._value = value
       self._set_formula_('')
 
     if free is not None:
@@ -602,7 +602,8 @@ class Parameter(object):
     s = []
     if self.name is not None:
         s.append("'%s'" % self.name)
-    sval = repr(self._getval())
+    #sval = repr(self._getval())
+    sval = repr(self.value)
     if not self.free and self._formula is None:
       sval = "value=%s (fixed)" % sval
     elif self.stdev is not None:
@@ -727,7 +728,7 @@ class Parameter(object):
     Return the numerical value of the Parameter, with bounds applied.
     """
     #print('yeassss')
-    return self._getval()
+    return self._getval(True)
 
 
 

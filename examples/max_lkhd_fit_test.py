@@ -8,7 +8,7 @@
 # Imports ----------------------------------------------------------------------
 #    First we should do some imports
 from ipanema import initialize
-initialize('python',1)
+initialize('python',1)     # python|opencl|cuda this script runs on all backends
 
 import os
 import numpy as np
@@ -45,9 +45,11 @@ def model(x, mu=0, sigma=1):
 
 def loglikelihood(pars, data1, data2):
   """
-  Simultaneous 2 gaussian fcn
+  Simultaneous 2 gaussian fcn.
+  Here one should UNBLIND the parameters so the model function reads them
+  properly, that's why we use pars.valuesdict(blind=False)
   """
-  vals = pars.valuesdict()                       # get parameters as simple dict
+  vals = pars.valuesdict(blind=False)            # get parameters as simple dict
 
   p1 = ristra.get(ristra.log(model(data1, mu=vals['mu'], sigma=vals['sigma1'])))
   p2 = ristra.get(ristra.log(model(data2, mu=vals['mu'], sigma=vals['sigma2'])))
@@ -96,9 +98,13 @@ axplot.fill_between(hdata2.bins, hdata2.counts,
 #   parameters without construction a Parameter object beforehand.
 p_fit = Parameters()
 p_fit.add({'name':'mu', "value":0, "min":0, "max":10, 'latex':r'\mu'})
-p_fit.add({'name':'sigma1',"value":1, "min":0.1, "max":10, 'latex':r'\sigma1'})
+p_fit.add({'name':'sigma1',"value":1, "min":0.1, "max":10, 'latex':r'\sigma1', "blind":"blindstr"})
 p_fit.add({'name':'sigma2',"value":1, "min":0.1, "max":10, 'latex':r'\sigma2'})
 p_fit.print()
+
+print(f"Parameters blinded: {p_fit.valuesdict()}")
+print(f"Parameters unblinded: {p_fit.valuesdict(False)}")
+
 
 # Run the fit with BFGS method
 result_hesse = optimize(fcn_call=loglikelihood,
@@ -107,7 +113,15 @@ result_hesse = optimize(fcn_call=loglikelihood,
                   fcn_kwgs={'data1':data1, 'data2':data2},
                   verbose=False # this is to print step by step iterations
                  )
-print(result_hesse)
+print(result_hesse.params.valuesdict())
+print(result_hesse.params.valuesdict(False))
+print(result_hesse.__str__(corr=0))
+
+print("The fit result shows (hesse)")
+print(f"params = {result_hesse.params.valuesdict()}")
+print("while their actual value is")
+print(f"params = {result_hesse.params.valuesdict(False)}")
+
 
 # Run the fit with BFGS optimization
 result_bfgs = optimize(fcn_call=loglikelihood,
@@ -118,6 +132,11 @@ result_bfgs = optimize(fcn_call=loglikelihood,
                  )
 print(result_bfgs)
 
+print("The fit result shows (bfgs)")
+print(f"params = {result_hesse.params.valuesdict()}")
+print("while their actual value is")
+print(f"params = {result_hesse.params.valuesdict(False)}")
+
 
 #%% Plot the fit over the data
 for dataset, n in zip([data1, data2],['1','2']):
@@ -125,8 +144,8 @@ for dataset, n in zip([data1, data2],['1','2']):
 
   # linspace arrays and eval plot with each result
   x = ristra.allocate(np.linspace(ristra.min(dataset),ristra.max(dataset),200))
-  y_hesse = model(x, result_hesse.params['mu'].value, result_hesse.params[f'sigma{n}'].value)
-  y_bfgs = model(x, result_bfgs.params['mu'].value, result_bfgs.params[f'sigma{n}'].value)
+  y_hesse = model(x, result_hesse.params['mu']._getval(False), result_hesse.params[f'sigma{n}']._getval(False))
+  y_bfgs = model(x, result_bfgs.params['mu']._getval(False), result_bfgs.params[f'sigma{n}']._getval(False))
 
   # move arrays to host, since plt wants them there
   x = ristra.get( x )
