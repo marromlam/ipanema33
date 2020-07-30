@@ -263,11 +263,11 @@ class Parameters(OrderedDict):
 
 
 
-  def valuesdict(self):
+  def valuesdict(self,unblind=False):
     """
     OrderedDict of parameter values.
     """
-    return OrderedDict((p.name, p.value) for p in self.values())
+    return OrderedDict((p.name, p._getval(unblind)) for p in self.values())
 
 
 
@@ -447,7 +447,8 @@ class Parameter(object):
 
   def __init__(self, name=None, value=0, free=True, min=-inf, max=inf,
                formula=None, casket=None, init=None,
-               correl=None, stdev=None, latex=None):
+               correl=None, stdev=None, latex=None,
+               blind=None, blindscale = 1, blindengine='python'):
     """
     Object that controls a model
 
@@ -481,7 +482,6 @@ class Parameter(object):
     self.name           = name
     self.latex          = name
 
-
     self.init           = value
     self.min            = min
     self.max            = max
@@ -490,7 +490,7 @@ class Parameter(object):
     self.correl         = correl
 
     self._formula       = formula
-    self._value           = value
+    self._value         = value
     self._formula_ast   = None
     self._formula_eval_ = None
     self._formula_deps  = []
@@ -505,6 +505,14 @@ class Parameter(object):
 
     if latex: self.latex = latex
     if init: self.init = init
+    self.blind = blind
+    self.__blinding__ = 0
+    if blind:
+      if blindengine=='python':
+        np.random.seed( abs(hash('blindstr')//(2**32-1)) )
+        self.__blinding__ = (value-blindscale)+blindscale*np.random.rand()
+      elif blindengine=='root':
+        print('shit not implemented yet')
 
     self._check_init_bounds_()
 
@@ -583,7 +591,7 @@ class Parameter(object):
     return {"name":self.name, "value":self.value, "free":self.free,
             "formula":self.formula, "min":self.min, "max": self.max,
             "stdev":self.stdev, "correl":self.correl, "init":self.init,
-            "casket":self.casket, "latex":self.latex}
+            "casket":self.casket, "latex":self.latex, "blind":self.blind}
 
 
 
@@ -605,6 +613,8 @@ class Parameter(object):
     s.append("limits=[%s:%s]" % (repr(self.min), repr(self.max)))
     if self._formula is not None:
         s.append("formula='%s'" % self.formula)
+    if self.blind:
+        s.append("blinded")
     return "<Parameter %s>" % ', '.join(s)
 
 
@@ -662,7 +672,7 @@ class Parameter(object):
 
 
 
-  def _getval(self):
+  def _getval(self, unblind=False):
     """Get value, with bounds applied."""
     # Note assignment to self._value has been changed to self.value
     # The self.value property setter makes sure that the
@@ -696,6 +706,9 @@ class Parameter(object):
             self._value = self.min
     if self._formula_eval_ is not None:
         self._formula_eval_.symtable[self.name] = self._value
+    if not unblind:
+        #print('yeah, im unblinded to you')
+        return self._value + self.__blinding__
     return self._value
 
 
@@ -713,6 +726,7 @@ class Parameter(object):
     """
     Return the numerical value of the Parameter, with bounds applied.
     """
+    #print('yeassss')
     return self._getval()
 
 
