@@ -24,7 +24,10 @@ for name in ['gamma', 'erf', 'erfc', 'wofz']:
 def _check_ast_errors_(formula_eval):
   if len(formula_eval.error) > 0: formula_eval.raise_exception(None)
 
-
+try:
+  import ROOT
+except:
+  print("you can't use root (what a pity)")
 
 ################################################################################
 # Parameters ###################################################################
@@ -510,6 +513,8 @@ class Parameter(object):
     if latex: self.latex = latex
     if init: self.init = init
     self.blind = blind
+    self.blindscale = blindscale
+    self.blindengine = blindengine
     self.__blinding__ = 0
     if blind:
       if blindengine=='python':
@@ -519,7 +524,9 @@ class Parameter(object):
         #print(self.__blinding__)
         #        self.__blinding__ = np.random.uniform(value*(1-blindscale),value*(1+blindscale))
       elif blindengine=='root':
-        print('shit not implemented yet')
+        u = ROOT.RooRealVar(f"{self.name}_",f"{self.name}_",2,0,4)
+        b = ROOT.RooUnblindUniform(f"{self.name}", f"{self.name}", self.blind, self.blindscale, u)
+        self.__blinding__ = b.getVal()-u.getVal()
 
     self._check_init_bounds_()
 
