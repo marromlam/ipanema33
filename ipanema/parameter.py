@@ -194,6 +194,8 @@ class Parameters(OrderedDict):
       for col in all_cols:
         if col == 'name':
           par_dict[name][col] = getattr(par, col)
+          if par.blind:
+            par_dict[name][col] += '(*)'
         elif col == 'value':
           if pow != '0':
             par_dict[name][col] = val+'e'+pow
@@ -220,6 +222,8 @@ class Parameters(OrderedDict):
           par_dict[name][col] = str(getattr(par, 'max'))
         elif col == 'latex':
           par_dict[name][col] = str(getattr(par, 'latex'))
+          if par.blind:
+            par_dict[name][col] += '(*)'
 
     for col in all_cols:
       len_dict[col] = len(col) + col_offset
@@ -448,7 +452,7 @@ class Parameter(object):
   def __init__(self, name=None, value=0, free=True, min=-inf, max=inf,
                formula=None, casket=None, init=None,
                correl=None, stdev=None, latex=None,
-               blind=None, blindscale = 1, blindengine='python'):
+               blind=None, blindscale = 1.0, blindengine='python'):
     """
     Object that controls a model
 
@@ -511,6 +515,9 @@ class Parameter(object):
       if blindengine=='python':
         np.random.seed( abs(hash('blindstr')//(2**32-1)) )
         self.__blinding__ = (value-blindscale)+blindscale*np.random.rand()
+        #self.__blinding__ = value*(-blindscale+blindscale*np.random.rand())
+        #print(self.__blinding__)
+        #        self.__blinding__ = np.random.uniform(value*(1-blindscale),value*(1+blindscale))
       elif blindengine=='root':
         print('shit not implemented yet')
 

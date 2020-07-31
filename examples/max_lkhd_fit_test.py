@@ -98,7 +98,7 @@ axplot.fill_between(hdata2.bins, hdata2.counts,
 #   parameters without construction a Parameter object beforehand.
 p_fit = Parameters()
 p_fit.add({'name':'mu', "value":0, "min":0, "max":10, 'latex':r'\mu'})
-p_fit.add({'name':'sigma1',"value":1, "min":0.1, "max":10, 'latex':r'\sigma1', "blind":"blindstr"})
+p_fit.add({'name':'sigma1',"value":2, "min":0.1, "max":10, 'latex':r'\sigma1', "blind":"blindstr"})
 p_fit.add({'name':'sigma2',"value":1, "min":0.1, "max":10, 'latex':r'\sigma2'})
 p_fit.print()
 
