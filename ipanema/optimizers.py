@@ -442,7 +442,6 @@ residual_reduce:  Function to convert a residual array to a scalar value,
             void
 
     """
-    print("Optimizer: ", method_kwgs)
 
     self.fcn_call = fcn_call
     self.fcn_args = fcn_args
@@ -801,8 +800,8 @@ residual_reduce:  Function to convert a residual array to a scalar value,
       self.residual_reduce = self._residual_sum_
 
     result.init_residual = self._residual_(result.param_init, reduce=True, rebounding=False)
-    print('residutal at init', result.init_residual)
-    print('params at init', result.param_init)
+    #print('residutal at init', result.init_residual)
+    #print('params at init', result.param_init)
 
     return result
 
@@ -846,7 +845,6 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     result = self.prepare_fit(params=params)
     result.method = f'Minuit ({method})'
 
-    print("here we go", result.init_residual)
     if verbose:
       print_level=2
     if not maxiter:
@@ -1706,7 +1704,6 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     method_kwgs:  Keyword-arguments to be passed to the underlying
                   minimization algorithm (the selected method).
     """
-    print("self.optimize: ", method_kwgs)
     kwgs = {'params': params}
     kwgs.update(self.miner_kwgs)
     kwgs.update(method_kwgs)
@@ -1791,7 +1788,6 @@ def optimize(fcn_call, params, method='lbfgsb',
             0:  Optimizer result object that in general include all info that
                 the selected method provides (at least the most useful one).
   """
-  print("optimize: ", method_kwgs)
   t0 = timer()
   fitter = Optimizer(fcn_call, params, fcn_args=fcn_args, fcn_kwgs=fcn_kwgs,
                      model_call=model_call, scale_covar=scale_covar,
