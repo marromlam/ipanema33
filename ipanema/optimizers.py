@@ -885,12 +885,15 @@ residual_reduce:  Function to convert a residual array to a scalar value,
         #ret.migrad()
         #self.result.init_residual = 0
         ret.hesse()
-        print(ret.get_fmin().hesse_failed)
         if ret.get_fmin().hesse_failed:
           print(f"Seems like hesse has problems to find a valid covariance matrix")
           ret.strategy = 2;
           ret.migrad()
           ret.hesse()
+          if ret.get_fmin().hesse_failed:
+            print(f"Hesse keeps complaining you may have to change the minimizer...")
+          else:
+            print(f"Ipanema kicked hesse's ass, and now it gives proper cov")
       elif method == 'minos':
         ret.minos()
     except KeyboardInterrupt:
@@ -1752,7 +1755,7 @@ def optimize(fcn_call, params, method='lbfgsb',
              model_call=None,
              scale_covar=True, policy='filter', calc_covar=True,
              residual_reduce=None,
-             verbose=False, **method_kwgs):
+             verbose=False, timeit=False, **method_kwgs):
   """
   Search for the minimum of an objective function with one of the provided
   methods.
@@ -1796,6 +1799,8 @@ def optimize(fcn_call, params, method='lbfgsb',
   result = fitter.optimize(method=method, verbose=verbose, **method_kwgs)
   tf = timer()-t0
   if verbose:
+    timeit = True
+  if timeit:
     result.params.print()
     hours, rem = divmod(tf, 3600)
     minutes, seconds = divmod(rem, 60)
