@@ -800,7 +800,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
       self.residual_reduce = self._residual_sum_
 
     result.init_residual = self._residual_(result.param_init, reduce=True, rebounding=False)
-    #print('residutal at init', result.init_residual)
+    #print('residual at init', result.init_residual)
     #print('params at init', result.param_init)
 
     return result
@@ -1801,7 +1801,6 @@ def optimize(fcn_call, params, method='lbfgsb',
   if verbose:
     timeit = True
   if timeit:
-    result.params.print()
     hours, rem = divmod(tf, 3600)
     minutes, seconds = divmod(rem, 60)
     print(f'Optimization finished in {hours}h {minutes}m {seconds:2.3}s.')
