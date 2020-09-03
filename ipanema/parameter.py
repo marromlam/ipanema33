@@ -197,7 +197,7 @@ class Parameters(OrderedDict):
       for col in all_cols:
         if col == 'name':
           par_dict[name][col] = getattr(par, col)
-          if par.blind:
+          if par._blind:
             par_dict[name][col] += '(*)'
         elif col == 'value':
           if pow != '0':
@@ -225,7 +225,7 @@ class Parameters(OrderedDict):
           par_dict[name][col] = str(getattr(par, 'max'))
         elif col == 'latex':
           par_dict[name][col] = str(getattr(par, 'latex'))
-          if par.blind:
+          if par._blind:
             par_dict[name][col] += '(*)'
 
     for col in all_cols:
@@ -455,7 +455,7 @@ class Parameter(object):
   def __init__(self, name=None, value=0, free=True, min=-inf, max=inf,
                formula=None, casket=None, init=None,
                correl=None, stdev=None, latex=None,
-               blind=None, blindscale = 1.0, blindengine='python'):
+               blind=False, blindstr=None, blindscale = 1.0, blindengine='python'):
     """
     Object that controls a model
 
@@ -512,21 +512,22 @@ class Parameter(object):
 
     if latex: self.latex = latex
     if init: self.init = init
-    self.blind = blind
-    self.blindscale = blindscale
-    self.blindengine = blindengine
-    self.__blinding__ = 0
-    if blind:
+    self._blind = blind if free else False
+    self._blindscale = blindscale
+    self._blindstr = blindstr
+    self._blindengine = blindengine
+    self._blindmask = 0
+    if blind and blindstr:
       if blindengine=='python':
         np.random.seed( abs(hash('blindstr')//(2**32-1)) )
-        self.__blinding__ = (value-blindscale)+blindscale*np.random.rand()
-        #self.__blinding__ = value*(-blindscale+blindscale*np.random.rand())
-        #print(self.__blinding__)
-        #        self.__blinding__ = np.random.uniform(value*(1-blindscale),value*(1+blindscale))
+        self._blindmask = (value-blindscale)+blindscale*np.random.rand()
+        #self._blindmask = value*(-blindscale+blindscale*np.random.rand())
+        #print(self._blindmask)
+        #        self._blindmask = np.random.uniform(value*(1-blindscale),value*(1+blindscale))
       elif blindengine=='root':
         u = ROOT.RooRealVar(f"{self.name}_",f"{self.name}_",2,0,4)
-        b = ROOT.RooUnblindUniform(f"{self.name}", f"{self.name}", self.blind, self.blindscale, u)
-        self.__blinding__ = b.getVal()-u.getVal()
+        b = ROOT.RooUnblindUniform(f"{self.name}", f"{self.name}", self._blindstr, self._blindscale, u)
+        self._blindmask = b.getVal()-u.getVal()
 
     self._check_init_bounds_()
 
@@ -602,12 +603,15 @@ class Parameter(object):
     """
     Get state for json.
     """
-    return {"name":self.name, "value":self.value, "free":self.free,
-            "formula":self.formula, "min":self.min, "max": self.max,
+    return {"name":self.name, "value":self.value,
+            "free":self.free, "min":self.min, "max": self.max,
+            "formula":self.formula,
             "stdev":self.stdev, "correl":self.correl, "init":self.init,
-            "casket":self.casket, "latex":self.latex, "blind":self.blind}
-
-
+            "casket":self.casket, "latex":self.latex,
+            "blind":self._blind,
+            "blindstr":self._blindstr,
+            "blindengine":self._blindengine,
+            "blindscale":self._blindscale}
 
   def __repr__(self):
     """
@@ -723,7 +727,7 @@ class Parameter(object):
         self._formula_eval_.symtable[self.name] = self._value
     if not unblind:
         #print('yeah, im unblinded to you')
-        return self._value + self.__blinding__
+        return self._value + self._blindmask
     return self._value
 
 
