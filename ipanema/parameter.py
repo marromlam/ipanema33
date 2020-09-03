@@ -632,7 +632,7 @@ class Parameter(object):
     s.append("limits=[%s:%s]" % (repr(self.min), repr(self.max)))
     if self._formula is not None:
         s.append("formula='%s'" % self.formula)
-    if self.blind:
+    if self._blind:
         s.append("blinded")
     return "<Parameter %s>" % ', '.join(s)
 
