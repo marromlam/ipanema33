@@ -295,7 +295,7 @@ class Parameters(OrderedDict):
         if pars[j] in corr:
           corr_mat[i][j] = corr[pars[j]]
         else:
-          corr_mat[i][j] = np.nan
+          corr_mat[i][j] = 1#np.nan
     return corr_mat
 
 
