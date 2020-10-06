@@ -869,6 +869,8 @@ residual_reduce:  Function to convert a residual array to a scalar value,
       ret.strategy = strategy;
       ret.tol = tol;
       # Call migrad
+      if verbose:
+        print('Migrad is running')
       ret.migrad(ncall=maxiter)
       _counter = 1; # set a counter
       while not ret.migrad_ok() and _counter <= 5:
@@ -881,7 +883,10 @@ residual_reduce:  Function to convert a residual array to a scalar value,
       if _counter >= 5:
         print(f"Minuit cannot handle this fcn optimization.",
               f"Call other method, ipanema provides a wide variety.")
+
       if method == 'hesse':
+        if verbose:
+          print('Hesse is running')
         #ret.migrad()
         #self.result.init_residual = 0
         ret.hesse()
@@ -895,6 +900,8 @@ residual_reduce:  Function to convert a residual array to a scalar value,
           else:
             print(f"Ipanema kicked hesse's ass, and now it gives proper cov")
       elif method == 'minos':
+        if verbose:
+          print('Minos is running')
         ret.minos()
     except KeyboardInterrupt:
       pass
@@ -902,6 +909,8 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     if not result.aborted:
       # return minuit class (you can keep optimizing, but without ipanema)
       result._minuit = ret
+      if verbose:
+        ret.print_param()
       # calculate fit statistics
       result.x = np.atleast_1d(ret.args)
       result.residual = self._wrapper_minuit_(*result.x, reduce = False)
