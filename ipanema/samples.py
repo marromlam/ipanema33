@@ -70,6 +70,114 @@ class Categories(object):
 ################################################################################
 ################################################################################
 
+class DataSet(object):
+  """docstring for Categories."""
+
+  def __init__(self, cats=None, name='untitled DataSet',
+              cuts = None, params = None,
+               copy=True, convert=True, trim=False, backup=False, path=None,
+               verbose=True):
+    self._name = name
+    self._params = Parameters()
+    self._categories = {}
+
+    if params:
+      self._params = params
+    if cats:
+      for catname,cat in cats.items():
+        self.add_params(catname,cat)
+
+    if verbose:
+      print(f"{'ipanema.sample':>15}: {name}")
+      print(f"{'from':>15}: {path}")
+      print(f"{'categories':>15}: {list(self._categories.keys())}")
+      print(f"{'cuts':>15}: {cuts}")
+
+  def __iter__(self):
+     return iter(self._categories.values())
+
+  def category(self, catname):
+    return self._categories[catname]
+
+
+
+  def add_category(self, *cats):
+    # check if cat is ipanema.Sample object
+    for cat in cats:
+      if isSample(cat):
+        self._categories.update({cat.name:cat})
+      else:
+        raise ValueError("Provided cat is not a valid ipanema.Sample object")
+
+
+
+  def rm_category(self, catname):
+    self._categories.pop(catname)
+
+
+
+  def add_params(self, params):
+    self._params = Parameters.load(params)
+
+
+
+  @property
+  def params(self):
+    return self._params
+
+
+
+  @property
+  def categories(self):
+    return list(self._categories.keys())
+
+  def find_categories(self, word):
+    regex = re.compile(word)
+    all_cats = self._categories.keys()
+    return [ key for key in all_cats if regex.match(key) ]
+
+
+  def split(self, mothercat, cut, mothername=None, childnames=[None,None],
+            copy=True, convert=True, trim=False):
+    name = mothercat
+    if mothername:
+      name = f"{name}_{mothername}"
+      self._categories[mothercat].name = mothername
+
+    if not childnames[0]:
+      childnames[0] = f"{name}_({cut})false"
+    if not childnames[1]:
+      childnames[1] = f"{name}_({cut})true"
+
+    tsample = Sample.from_pandas(self._categories[mothercat].df, cuts = cut,
+                                 name=f"{mothercat}_{childnames[1]}",
+                                 copy=copy, convert=convert, trim=trim)
+    fsample = Sample.from_pandas(self._categories[mothercat].df, cuts = f"~({cut})",
+                                 name=f"{mothercat}_{childnames[0]}",
+                                 copy=copy, convert=convert, trim=trim)
+    dsample = Sample.from_pandas(self._categories[mothercat].df,
+                                 name=f"{name}",
+                                 copy=copy, convert=convert, trim=trim)
+
+
+    self.add_category(tsample,fsample,dsample)
+    if mothername:
+      self.rm_category(mothercat)
+
+
+
+################################################################################
+
+
+
+
+
+
+
+
+################################################################################
+################################################################################
+
 class Sample(object):
   """
   docstring for Sample.
