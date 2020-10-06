@@ -18,20 +18,6 @@ from .core.utils import ristra
 from .tools.misc import get_vars_from_string
 
 
-# 
-# # WHY IS THIS THE HELL NEEDED !!? ----------------------------------------------
-# try:
-#   print(builtins.CONTEXT)
-#   if builtins.CONTEXT == 'cuda':
-#     import pycuda.driver as cuda
-#     import pycuda.cumath
-#     import pycuda.autoinit
-#     import pycuda.gpuarray as cu_array
-# except:
-#   0
-# # ---------------------------------------------- WHY IS THIS THE HELL NEEDED !!?
-#
-#
 
 
 
