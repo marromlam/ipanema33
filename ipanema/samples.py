@@ -184,7 +184,8 @@ class Sample(object):
   """
 
   def __init__(self, df, name='untitled', cuts = None, params = None,
-               copy=True, convert=True, trim=False, backup=False, path=None):
+               copy=True, convert=True, trim=False, backup=False, path=None,
+               verbose=True):
     self.name = name
     self.__backup = backup
     if self.__backup:
@@ -195,6 +196,12 @@ class Sample(object):
       self.df = df
     self.params = params
     self.path = path
+
+    if verbose:
+      print(f"{'ipanema.sample':>15}: {name}")
+      print(f"{'from':>15}: {path}")
+      print(f"{'size':>15}: {self.shape}")
+      print(f"{'cuts':>15}: {cuts}")
 
   def __get_name(self, filename):
     namewithextension = os.path.basename(os.path.normpath(filename))
