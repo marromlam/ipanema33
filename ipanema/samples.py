@@ -298,7 +298,12 @@ class Sample(object):
 
   def assoc_params(self, params):
     self.params = Parameters.load(params)
-    #self.params = Parameters()
-    #self.params.copy(params)
 
 ################################################################################
+
+
+def isSample(x):
+  """
+  Check if an object belongs to Sample-class.
+  """
+  return (isinstance(x, Sample) or x.__class__.__name__ == 'Sample')
