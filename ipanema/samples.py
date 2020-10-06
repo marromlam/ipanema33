@@ -236,13 +236,25 @@ class Sample(object):
     return cls(df, name, cuts=cuts, params=params,
                copy=copy, convert=convert, trim=trim, path=None)
 
+
+  @classmethod
+  def from_numpy(cls, arrdicts, name = None, cuts = None, params = None,
+                  copy=True, convert=True, trim=False):
+    df = pandas.DataFrame.from_dict(arrdicts)
+    return cls(df, name, cuts=cuts, params=params,
+               copy=copy, convert=convert, trim=trim, path=None)
+
   @classmethod
   def from_root(cls, filename, treename = 'DecayTree', name = None, cuts = None,
-                params = None, copy=True, convert=True, trim=False, **up_kwgs):
+                params = None, copy=True, convert=True, trim=False, share=False,
+                **up_kwgs):
     if filename[-5:] != '.root': filename += '.root'
     if not name:
       namewithextension = os.path.basename(os.path.normpath(filename))
       name = os.path.splitext(namewithextension)[0]
+    if share:
+      noe = round(uproot.open(filename)[treename]._fEntries*share/100)
+      up_kwgs.update(entrystop=noe)
     df = uproot.open(filename)[treename].pandas.df(**up_kwgs)
     return cls(df, name, cuts=cuts, params=params,
                copy=copy, convert=convert, trim=trim, path=filename)
