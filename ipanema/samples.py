@@ -18,7 +18,10 @@ from .core.utils import ristra
 from .tools.misc import get_vars_from_string
 
 
-
+def cuts_and(*args):
+  result = list(args)
+  result = [a for a in args if a]
+  return '(' + ') & ('.join(result) + ')'
 
 
 ################################################################################
@@ -80,6 +83,7 @@ class DataSet(object):
     self._name = name
     self._params = Parameters()
     self._categories = {}
+    self._cuts = ""
 
     if params:
       self._params = params
@@ -185,23 +189,30 @@ class Sample(object):
 
   def __init__(self, df, name='untitled', cuts = None, params = None,
                copy=True, convert=True, trim=False, backup=False, path=None,
-               verbose=True):
+               verbose=False):
     self.name = name
     self.__backup = backup
     if self.__backup:
       self.__df = df                               # to maintain an orginal copy
+    self._cuts = ""
+     
+    self.df = df
     if cuts:
-      self.df = df.query(cuts)
-    else:
-      self.df = df
+      self.chop(cuts)
+    
     self.params = params
     self.path = path
 
     if verbose:
-      print(f"{'ipanema.sample':>15}: {name}")
-      print(f"{'from':>15}: {path}")
-      print(f"{'size':>15}: {self.shape}")
-      print(f"{'cuts':>15}: {cuts}")
+      print(self.__str__())
+
+  def __str__(self):
+    table = []
+    table.append(f"{'ipanema.sample':>15}: {self.name}")
+    table.append(f"{'from':>15}: {self.path}")
+    table.append(f"{'size':>15}: {self.shape}")
+    table.append(f"{'cuts':>15}: {self._cuts}")
+    return "\n".join(table)
 
   def __get_name(self, filename):
     namewithextension = os.path.basename(os.path.normpath(filename))
@@ -262,15 +273,20 @@ class Sample(object):
   def add(self, name, attribute):
     self.__setattr__(name,attribute)
 
-  def cut(self, cuts = None):
+  def cut(self, cut = None):
     """
     Place cuts on df and return it with them applied!
     """
-    if cuts:
-      self.df = self.df.query(cuts)
-    else:
-      self.df = self.df
+    if cut:
+      self._cuts = cuts_and(cut, self._cuts)
+      return self.df.query(cut)
     return self.df
+  
+  def chop(self, cut = None):
+    """
+    Place cuts on df and actually cut df
+    """
+    self.df = self.cut(cut)
 
   def back_to_original(self):
     """
