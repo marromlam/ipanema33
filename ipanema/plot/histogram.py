@@ -18,12 +18,12 @@ def errors_poisson(data, a=0.318):
   """
   Uses chisquared info to get the poisson interval.
   """
-  low, high = (chi2.ppf(a/2, 2*data) / 2, chi2.ppf(1-a/2, 2*data + 2) / 2)
+  low, high = chi2.ppf(a/2, 2*data) / 2, chi2.ppf(1-a/2, 2*data + 2) / 2
   return np.array(data-low), np.array(high-data)
 
 
 
-def errors_sW2(x, weights=None, range= None, bins = 60 ):
+def errors_sW2(x, weights=None, range=None, bins=60):
   if weights is not None:
     values = np.histogram(x, bins, range, weights=weights*weights)[0]
   else:
@@ -59,7 +59,7 @@ def pull_pdf(x_pdf, y_pdf, x_hist, y_hist, y_l, y_h):
 
 
 
-def hist(data, bins=60, weights=None, density = False, **kwargs):
+def hist(data, bins=60, weights=None, density=False, **kwargs):
   """
   This function is a wrap arround np.histogram so it behaves similarly to it.
   Besides what np.histogram offers, this function computes the center-of-mass
@@ -68,8 +68,7 @@ def hist(data, bins=60, weights=None, density = False, **kwargs):
   """
 
   # Histogram data
-  counts, edges = np.histogram(data, bins = bins,
-                               weights = weights, density = False,
+  counts, edges = np.histogram(data, bins=bins, weights=weights, density=False,
                                **kwargs)
   bincs = (edges[1:]+edges[:-1])*0.5;
   norm = counts.sum()
@@ -105,14 +104,14 @@ def hist(data, bins=60, weights=None, density = False, **kwargs):
 
 
 
-def compare_hist(data, weights = [None, None], density = False, **kwargs):
+def compare_hist(data, weights=[None, None], density=False, **kwargs):
   """
-  This function compares to histograms in data = [ref, obj] with(/out) weights
+  This function compares to histograms in data=[ref, obj] with(/out) weights
   It returns two hisrogram ipo-objects, obj one with pulls, and both of them
   normalized to one.
   """
-  ref = hist(data[0], density = False, **kwargs, weights=weights[0])
-  obj = hist(data[1], density = False, **kwargs, weights=weights[1])
+  ref = hist(data[0], density=False, **kwargs, weights=weights[0])
+  obj = hist(data[1], density=False, **kwargs, weights=weights[1])
   ref_norm = 1; obj_norm = 1;
   if density:
     ref_norm = 1/ref.counts.sum(); obj_norm = 1/obj.counts.sum();
