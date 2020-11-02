@@ -285,18 +285,23 @@ class Parameters(OrderedDict):
     return OrderedDict((p.name, p.uvalue) for p in self.values())
 
 
-  def correl_mat(self):
-    pars = list(self.keys())
-    corr_mat = np.zeros((len(pars),len(pars)))
+  def corr(self):
+    pars = list(self.keys());
+    corr = np.eye( len(pars) )
     for i in range(0,len(pars)):
       p = pars[i]
-      corr = self[p].correl
+      c = self[p].correl
       for j in range(0,len(pars)):
-        if pars[j] in corr:
-          corr_mat[i][j] = corr[pars[j]]
-        else:
-          corr_mat[i][j] = 1#np.nan
-    return corr_mat
+        if c and pars[j] in c:
+          corr[i][j] = c[pars[j]]
+    return corr
+
+
+  def cov(self):
+    corr = self.corr()
+    uncs = np.array( [i.stdev if i.stdev else 0 for i in self.values()] )
+    cov = uncs[:,np.newaxis] * corr * uncs
+    return cov
 
 
   def lock(self,*args):
