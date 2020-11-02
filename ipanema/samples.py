@@ -195,11 +195,11 @@ class Sample(object):
     if self.__backup:
       self.__df = df                               # to maintain an orginal copy
     self._cuts = ""
-     
+
     self.df = df
     if cuts:
       self.chop(cuts)
-    
+
     self.params = params
     self.path = path
 
@@ -257,7 +257,7 @@ class Sample(object):
 
   @classmethod
   def from_root(cls, filename, treename = 'DecayTree', name = None, cuts = None,
-                params = None, copy=True, convert=True, trim=False, share=False,
+                params = None, copy=True, convert=True, trim=False, share=False, backup=False,
                 **up_kwgs):
     if filename[-5:] != '.root': filename += '.root'
     if not name:
@@ -268,7 +268,7 @@ class Sample(object):
       up_kwgs.update(entrystop=noe)
     df = uproot.open(filename)[treename].pandas.df(**up_kwgs)
     return cls(df, name, cuts=cuts, params=params,
-               copy=copy, convert=convert, trim=trim, path=filename)
+               copy=copy, convert=convert, trim=trim, backup=backup, path=filename)
 
   def add(self, name, attribute):
     self.__setattr__(name,attribute)
@@ -281,7 +281,7 @@ class Sample(object):
       self._cuts = cuts_and(cut, self._cuts)
       return self.df.query(cut)
     return self.df
-  
+
   def chop(self, cut = None):
     """
     Place cuts on df and actually cut df
