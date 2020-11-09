@@ -603,7 +603,7 @@ residual_reduce:  Function to convert a residual array to a scalar value,
 
 
 
-  def _wrapper_scipy_minimize_(self, fvars, reduce = True, rebounding = True):
+  def _wrapper_scipy_minimize_(self, fvars, reduce=True, rebounding=True):
     """
     Residual function used for scipy methods.
 
@@ -647,12 +647,10 @@ residual_reduce:  Function to convert a residual array to a scalar value,
       unbound_res_f = lambda x: self.residual_reduce(self._residual_(x, False))
       hessian = ndt.Hessian(unbound_res_f)(fvars)
       cov = 2 * np.linalg.inv(hessian)
-
     except (LinAlgError, ValueError):
       return None
     finally:
       self.result.nfev = nfev # paste it!
-    print(cov)
     return cov
 
 
