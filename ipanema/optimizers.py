@@ -287,15 +287,29 @@ def _nan_handler_(ary, policy='filter'):
 
   """
 
+  if policy not in ('filter', 'omit', 'raise'):
+    raise ValueError("Policy must be `filter`, `omit` or `raise`.")
+
+  def handler_func(x): return ~np.isfinite(x)
+
+  # WARNING:  some problems prefer the mask and others go better
+  #           with the mask, while others prefer the np.where 
+  #           behavior... needs to be studied
   if policy == 'filter':
-    return np.nan_to_num(ary, nan=1e12, posinf=1e12, neginf=1e12)
-  elif policy == 'raise':
+    #return np.nan_to_num(ary, nan=1e12, posinf=1e12, neginf=1e12)
+    mask = ~handler_func(ary)
+    if not np.all(mask):
+      return np.where(mask,ary,100)
+  elif policy == 'omit':
+    mask = ~handler_func(ary)
+    if not np.all(mask):
+      return ary[mask]
+  else:
     if np.where(np.isfinite(ary),0,1).sum():
-      raise ValueError("""
-        NaN Values were found in the given array. Ipanema can handle this
-        kind of problems through nan_handler. Currently the policy is set
-        to 'raise', change it to 'filter' in order to ipanema omit this
-        non-numerical values.
+      raise ValueError("""NaN Values were found in the given array. Ipanema can 
+        handle this kind of problems through nan_handler. Currently the policy 
+        is set to `raise`, change it to `filter`/`omit` in order to ipanema 
+        skip these non-numerical values.
         """)
     return ary
 
