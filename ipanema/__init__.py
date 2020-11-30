@@ -31,6 +31,10 @@ Copyright (c) 2020 Ipanema Developers ; GNU AFFERO GENERAL PUBLIC LICENSE
 
 """
 
+import os
+IPANEMAPATH= os.path.dirname(os.path.abspath(__file__))
+IPANEMALIB= os.path.join(IPANEMAPATH,"src")
+
 ## WARNING: make sure the following imports make that all necessary code is
 ##          avaliable for the final user
 
@@ -50,7 +54,7 @@ from .optimizers import Optimizer, optimize
 from .parameter import Parameter, Parameters, isParameter
 
 # Confidence
-from .confidence import confidence_interval, confidence_interval2d
+from .confidence import confidence_interval, confidence_interval2d, plot_conf2d#, plot_contours
 
 # Tools and utils
 from .tools.uncertainties_wrapper import wrap_unc, get_confidence_bands
