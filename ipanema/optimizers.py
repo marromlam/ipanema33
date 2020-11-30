@@ -225,8 +225,8 @@ def _lnpost_(value, fcn_call, params, param_vary, bounds, fcn_args=(),
   lnprob -= lnprob0*np.ones_like(lnprob)/len(lnprob)
 
   if lnprob.size > 1:
-    if 'log_fcn' in params and not is_weighted:
-      log_fcn = params['log_fcn'].value
+    if 'logfcn' in params and not is_weighted:
+      log_fcn = params['logfcn'].value
       c = np.log(2 * np.pi) + 2 * log_fcn
       lnprob = -0.5 * np.sum((lnprob / np.exp(log_fcn)) ** 2 + c)
     else:
@@ -1175,10 +1175,10 @@ class Optimizer(object):
     out = np.asarray(out).ravel()
     if out.size > 1 and is_weighted is False:
         # we need to marginalise over a constant data uncertainty
-        if 'log_fcn' not in params:
+      if 'logfcn' not in params:
             # log_fcn should already be in params if is_weighted was
             # previously set to True.
-            params.add({'name':'log_fcn', 'value':0.01, 'min':-np.inf, 'max':np.inf, 'free':True})
+        params.add({'name': 'logfcn', 'value': np.log(0.1), 'min':np.log(0.001), 'max':100*np.log(2), 'free': True, 'latex':'log(L)'})
             # have to re-prepare the fit
             result = self.prepare_fit(params)
             params = result.params
@@ -1334,9 +1334,8 @@ class Optimizer(object):
 
     # If uncertainty was automatically estimated, weight the residual properly
     if (not is_weighted) and (result.residual.size > 1):
-        if 'log_fcn' in params:
-            result.residual = result.residual/np.exp(params['log_fcn'].value)
-
+      if 'logfcn' in params:
+        result.residuals = result.residuals/np.exp(params['logfcn'].value)
     # Calculate statistics for the two standard cases:
     if isinstance(result.residual, ndarray) or (behavior == 'chi2'):
       result._compute_statistics_()
