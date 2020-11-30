@@ -16,6 +16,11 @@ from scipy.optimize import brentq
 from scipy.special import erf
 from scipy.stats import f
 
+from tqdm import tqdm
+import numpy as np
+import matplotlib.pyplot as plt
+from .parameter import Parameter, Parameters
+import uncertainties as unc
 
 
 ################################################################################
@@ -25,22 +30,24 @@ def fisher_test(ndata, nfree, new_chi, best_chi2, nfix=1):
   """
   Description Fisher test
 
-  In:
-  0.123456789:
-        ndata:  Number of data points.
-                int
-        nfree:  Number of free parameters.
-                int
-     new_chi2:  Chi2 of alternate model.
-                float
-    best_chi2:  Best chi2.
-                float
-      n_fixed:  Number of fixed parameters.
-                int, optional (default=1)
+  Parameters
+  ----------
+  ndata : int
+      Number of data points.
+  nfree : int
+      Number of free parameters.
+  new_chi2 : float
+      Chi2 of alternate model.
+  best_chi2 : float
+      Best chi2.
+  n_fixed : int, optional (default=1)
+      Number of fixed parameters.
+                
 
-  Out:
-            0:  Probability.
-                float
+  Returns
+  -------
+  float
+      Probability.
 
   """
   nfree = ndata - ( nfree + nfix )
@@ -86,7 +93,7 @@ shit = namedtuple('shit', ['value', 'prob'])
 ################################################################################
 ################################################################################
 
-def confidence_interval(minimizer, result, param_names=None, sigmas=[1, 2, 3],
+def confidence_interval(optimizer, result, param_names=None, sigmas=[1, 2, 3],
                         tester=None, maxiter=200, verbose=False):
   """
   Calculate the confidence interval for parameters.
@@ -94,32 +101,34 @@ def confidence_interval(minimizer, result, param_names=None, sigmas=[1, 2, 3],
   A parameter scan is used to compute the probability with a given statistic,
   by default is
 
-  In:
-  0.123456789:
-    minimizer:  The minimizer to use, holding objective function.
-                ipanema.Optimizer
-       result:  The result.
-                ipanema.MinimizerResult
-  param_names:  List of names of the parameters for which the confidence
-                interval is computes
+  Input
+  -----
+  optimizer : ipanema.Optimizer
+      The optimizer to use, holding objective function.
+  result : ipanema.optimizerResult
+      The result.
+  param_names : list
+      List of names of the parameters for which the confidence interval is computes
                 list, optional (default=None, all are computed)
-       sigmas:  The sigma-levels to find list.
-                list, optional (default=[1, 2, 3])
-      maxiter:  Maximum of iteration to find an upper limit.
+  sigmas : list, optional (default=[1, 2, 3])
+      The sigma-levels to find list.        
+  maxiter : 
+      Maximum of iteration to find an upper limit.
                 int, optional (default=200).
-      verbose:  Print extra debuging information
-                bool, optional (default=False)
-       tester:  Function to calculate the probability from the optimized chi2.
-                None or callable, optional (default=fisher_test)
-
-  Out:
-            0:  Dictionary with list of name: (sigma, values)-tuples.
-                dict
-            1:  Dictionary with fixed_param: ()
-                dict
+  verbose : bool, optional (default=False)
+      Print extra debuging information
+  tester: callable, optional (default=fisher_test)
+      Function to calculate the probability from the optimized chi2.
+                
+  Returns
+  -------
+  dict
+      Dictionary with list of name: (sigma, values)-tuples.
+  dict 
+      Dictionary with fixed_param: ()
 
   """
-  ci = CI(minimizer, result, param_names, tester, sigmas, verbose, maxiter)
+  ci = CI(optimizer, result, param_names, tester, sigmas, verbose, maxiter)
   cl = ci.get_all_confidence_intervals()
   return cl, ci.footprints
 
@@ -132,10 +141,10 @@ def confidence_interval(minimizer, result, param_names=None, sigmas=[1, 2, 3],
 
 class CI(object):
 
-  def __init__(self, minimizer, result, param_names=None, tester=None,
+  def __init__(self, optimizer, result, param_names=None, tester=None,
                sigmas=[1, 2, 3], verbose=False, maxiter=50):
     self.verbose = verbose
-    self.minimizer = minimizer
+    self.optimizer = optimizer
     self.result = result
     self.params = result.params
     self.params_ = backup_vals(self.params)
@@ -181,6 +190,7 @@ class CI(object):
     Search all confidence intervals.
     """
     result = {}
+    print(self.footprints)
     for p in self.param_names:
       result[p] = {0:self.params[p].value}
       result[p].update( self.get_conficence_interval(p, -1) )
@@ -194,15 +204,15 @@ class CI(object):
     """
     Get the confidence interval for a parameter, in one direction.
 
-    In:
-    0.123456789:
-          param:  Parameter which the confidence interval is being
-                  calculated for.
-                  str or ipanema.Parameter
+    Input
+    -----
+    param : str or ipanema.Parameter
+        Parameter which the confidence interval is being
       direction:  Left (-1) or right (+1) to look for the limit.
                   int or float
 
-    Out:
+    Output:
+    ______
               0:  Limit of the parameter confidence interval in the given
                   direction.
     """
@@ -242,7 +252,7 @@ class CI(object):
     param.free = True
     self.reset_vals()
     np.seterr(**orig_warn_settings)                   # restoring numpy warnings
-    print(param,ret)
+    #print(param,ret)
     return ret
 
 
@@ -307,9 +317,10 @@ class CI(object):
     param.value = val
     save_param = self.params[param.name]
     self.params[param.name] = param
-    self.minimizer.prepare_fit(self.params)
-    out = self.minimizer.optimize(method='bfgs')
+    self.optimizer.prepare_fit(self.params)
+    out = self.optimizer.optimize(method='bfgs')
     prob = self.tester(out.ndata, out.ndata-out.nfree, out.chi2, self.best_chi2)
+    print(prob)
     x = [i.value for i in out.params.values()]
     self.footprints[param.name].append(x + [prob])
     self.params[param.name] = save_param
@@ -317,8 +328,8 @@ class CI(object):
 
 
 
-def confidence_interval2d(minimizer, result, x_name, y_name, nx=10, ny=10,
-                    limits=None, tester=None):
+def confidence_interval2d(optimizer, result, x_name, y_name, nx=10, ny=10,
+                          limits=None, tester=None, verbose=False):
     r"""Calculate confidence regions for two fixed parameters.
 
     The method itself is explained in *confidence_interval*: here we are fixing
@@ -326,9 +337,9 @@ def confidence_interval2d(minimizer, result, x_name, y_name, nx=10, ny=10,
 
     Parameters
     ----------
-    minimizer : Minimizer
-        The minimizer to use, holding objective function.
-    result : MinimizerResult
+    optimizer : optimizer
+        The optimizer to use, holding objective function.
+    result : optimizerResult
         The result of running minimize().
     x_name : str
         The name of the parameter which will be the x direction.
@@ -356,12 +367,127 @@ def confidence_interval2d(minimizer, result, x_name, y_name, nx=10, ny=10,
 
     Examples
     --------
-    >>> mini = Minimizer(some_func, params)
+    >>> mini = optimizer(some_func, params)
     >>> result = mini.leastsq()
     >>> x, y, gr = confidence_interval2d(mini, result, 'para1','para2')
     >>> plt.contour(x,y,gr)
 
     """
+    params = Parameters.clone(result.params)
+    for p in params.values():
+      p.init = p.value
+    #print('params after clone:', params)
+
+
+    best_chi2 = result.chi2
+    org = backup_vals(result.params)
+    #print(org)
+
+    if tester is None or not hasattr(tester, '__call__'):
+      tester = fisher_test
+
+    x = params[x_name]
+    y = params[y_name]
+
+    if limits is None:
+      (x_upper, x_lower) = (x.value + 5 * x.stdev, x.value - 5 * x.stdev)
+      (y_upper, y_lower) = (y.value + 5 * y.stdev, y.value - 5 * y.stdev)
+    elif len(limits) == 2:
+      (x_upper, x_lower) = limits[0]
+      (y_upper, y_lower) = limits[1]
+
+    x_points = np.linspace(x_lower, x_upper, nx)
+    y_points = np.linspace(y_lower, y_upper, ny)
+    grid = np.dstack(np.meshgrid(x_points, y_points))
+
+    x.free = False
+    y.free = False
+    #print('params after fix:', params)
+
+    def get_prob(vals, restore=True):
+      #print(vals)
+      thisparams = Parameters.clone(params)
+      thisparams[x_name].value = vals[0]; thisparams[x_name].init = vals[0]
+      thisparams[y_name].value = vals[1]; thisparams[y_name].init = vals[1]
+      #print('params after update:', thisparams)
+      optimizer.prepare_fit(params=thisparams)
+      try:
+        #out = optimizer.scalar_optimize(method='Nelder-Mead', verbose=True, maxiter=100*len(thisparams)),
+        try:
+          out = optimizer.minuit(method='migrad-only', verbose=False)
+          if not out.isvalid:
+            if verbose:
+              print(vals, " > minuit failed, let's try with Levenberg-Marquardt")
+            #out = optimizer.scalar_optimize(verbose=False)
+            out = optimizer.scalar_optimize(method='BFGS')
+            #out = optimizer.least_squares()
+        except:
+          if verbose:
+            print(vals, " > gradient based algos fail here, let's go more robust with Nelder-Mead")
+          out = optimizer.scalar_optimize(verbose=False)
+      except:
+        print('death')
+        #out = optimizer.scalar_optimize()
+        #out = optimizer.minuit(method='migrad-only', verbose=False)
+      #out = optimizer.least_squares()
+      #out = optimizer.scalar_optimize()
+      prob = tester(out.ndata, out.ndata-out.nfree, out.chi2, best_chi2, nfix=2.)
+      return prob
+
+    out = x_points, y_points, np.apply_along_axis(get_prob, -1, grid)
+
+    x.free, y.free = True, True
+    #result.params = Parameters.clone(params)
+    result.chi2 = best_chi2
+    return out
+
+
+"""
+def confidence_interval2d(optimizer, result, x_name, y_name, nx=10, ny=10,
+                    limits=None, tester=None):
+    r"Calculate confidence regions for two fixed parameters.
+
+The method itself is explained in *confidence_interval*: here we are fixing
+two parameters.
+
+Parameters
+----------
+optimizer: optimizer
+The optimizer to use, holding objective function.
+result: optimizerResult
+The result of running minimize().
+x_name: str
+The name of the parameter which will be the x direction.
+y_name: str
+The name of the parameter which will be the y direction.
+nx: int, optional
+Number of points in the x direction.
+ny: int, optional
+Number of points in the y direction.
+limits: tuple, optional
+Should have the form((x_upper, x_lower), (y_upper, y_lower)). If not
+given, the default is 5 std-errs in each direction.
+tester: None or callable, optional
+Function to calculate the probability from the optimized chi-square.
+Default is None and uses built-in fisher_test(i.e., F-test).
+
+Returns
+-------
+x: numpy.ndarray
+X-coordinates(same shape as nx).
+y: numpy.ndarray
+Y-coordinates(same shape as ny).
+grid: numpy.ndarray
+Grid containing the calculated probabilities(with shape(nx, ny)).
+
+Examples
+--------
+>> > mini = optimizer(some_func, params)
+>> > result = mini.leastsq()
+>> > x, y, gr = confidence_interval2d(mini, result, 'para1', 'para2')
+>> > plt.contour(x, y, gr)
+
+"
     params = result.params
 
     best_chi2 = result.chi2
@@ -388,7 +514,7 @@ def confidence_interval2d(minimizer, result, x_name, y_name, nx=10, ny=10,
     y.free = False
 
     def get_prob(vals, restore=False):
-        """Calculate the probability."""
+        "Calculate the probability."
         if restore:
             restore_vals(org, result.params)
         x.value = vals[0]
@@ -397,9 +523,16 @@ def confidence_interval2d(minimizer, result, x_name, y_name, nx=10, ny=10,
         save_y = result.params[y.name]
         result.params[x.name] = x
         result.params[y.name] = y
-        minimizer.prepare_fit(params=result.params)
-        out = minimizer.minuit()
-        prob = tester(out.ndata, out.ndata - out.nfree, out.chi2,
+        optimizer.prepare_fit(params=result.params)
+        try:
+          #out = optimizer.minuit(method='migrad-only')
+          #out = optimizer.least_squares()
+          out = optimizer.scalar_optimize()
+          prob = tester(out.ndata, out.ndata - out.nfree, out.chi2,
+                         best_chi2, nfix=2.)
+        except:
+          out = optimizer.least_squares()
+          prob = tester(out.ndata, out.ndata - out.nfree, out.chi2,
                          best_chi2, nfix=2.)
         result.params[x.name] = save_x
         result.params[y.name] = save_y
@@ -411,3 +544,151 @@ def confidence_interval2d(minimizer, result, x_name, y_name, nx=10, ny=10,
     restore_vals(org, result.params)
     result.chi2 = best_chi2
     return out
+
+"""
+
+
+"""
+def plot_contours(mini, result, params=False, size=(20,20)):
+  # look for free parameters
+  if not params:
+    params = list(result.params.keys())
+  nfree = sum([1 if result.params[p].free else 0 for p in params])
+  print(f"ipanema is about to run ({size[0]}x{size[1]})x{int(nfree*(nfree-1)/2)} fits")
+
+  fig, axes = plt.subplots(figsize=(10*nfree//2, 10*nfree//2), ncols=nfree, nrows=nfree)#, sharex='col', sharey='row')
+
+  for i in range(0,nfree):
+    for j in range(0,nfree):
+      if i<j:
+        axes[i, j].axis('off')
+
+  with tqdm(total=int(nfree+nfree*(nfree-1)/2)) as pbar:
+    for i, k1 in enumerate(params):
+      for j, k2 in enumerate(params):
+        if i < j:
+          x,y,z = confidence_interval2d(mini, result, k1, k2, size[0], size[1])
+          #axes[j, i].contourf(x, y, z, np.linspace(0, 1, 11), cmap='GnBu')
+          axes[j, i].contourf(x, y, z, 4, colors=['C1','C2','C3','C4','white'])
+          if j+1 == nfree:
+            axes[j,i].set_xlabel(f"${result.params[k1].latex}$")
+          if i == 0:
+            axes[j,i].set_ylabel(f"${result.params[k2].latex}$")
+          axes[j,i].set_title(f'[{i},{j}]')
+          pbar.update(1)
+      #x,y,z = confidence_interval2d(mini, result, k1, k2, 30, 30)
+      if i == nfree-1:
+        axes[i,i].plot(y, np.sum(z,0))
+        #axes[i,i].get_shared_y_axes().remove(axes[nfree-1,j])
+        #axes[i,i].get_shared_y_axes().remove(axes[nfree-1,j])
+      else:
+        axes[i,i].plot(x,np.sum(z,1))
+        #swap(axes[i,i])
+      axes[i,i].set_title(f'[{i},{i}]')
+      pbar.update(1)
+  return fig, axes
+"""
+
+
+def plot_conf2d(mini, result, params=False, size=(20, 20)):
+  # look for free parameters
+  fig, axes = plt.subplots(figsize=(5, 5))
+  x, y, z = confidence_interval2d(mini, result, *params, *size)
+  axes.contourf(x, y, z, [0,1-np.exp(-0.5),1-np.exp(-2.0),1-np.exp(-4.5)], 
+                cmap='GnBu')
+                # colors=['C1','C3','C2','C4'], alpha=0.5)
+          
+  ci, _ = confidence_interval(mini, result, params)
+  for i, p in enumerate(params):
+    _var_lo = unc.ufloat(result.params[p].value, abs(ci[p][-1]-ci[p][0]))
+    _var_hi = unc.ufloat(result.params[p].value, abs(ci[p][+1]-ci[p][0]))
+    _v = f"{_var_lo:.2uL}".split('\pm')[0]
+    _l = f"{_var_lo:.2uL}".split('\pm')[1]
+    _u = f"{_var_hi:.2uL}".split('\pm')[1]
+    _tex = result.params[p].latex
+    _p = f"parab $\pm {result.params[p].unc_round[1]}$"
+    if i == 0:
+      axes.set_xlabel(f'${_tex} = {_v}_{{-{_l}}}^{{+{_u}}}$ ({_p})')
+    else:
+      axes.set_ylabel(f'${_tex} = {_v}_{{-{_l}}}^{{+{_u}}}$ ({_p})')
+
+  return fig, axes
+
+
+
+
+
+# def plot_contours(mini, result, params=False, size=(20, 20)):
+#   # look for free parameters
+#   if params:
+#     _params = params
+#   else:
+#     _params = list(result.params.keys())
+#   params = []
+#   for p in _params:
+#     if result.params[p].free:
+#       params.append(p)
+#     else:
+#       print(" WARNING: ")
+
+#   nfree = sum([1 if result.params[p].free else 0 for p in params])
+#   print(
+#       f"ipanema is about to run ({size[0]}x{size[1]})x{int(nfree*(nfree-1)/2)} fits\n")
+
+#   # , sharex='col', sharey='row')
+#   fig, axes = plt.subplots(
+#       figsize=(10*nfree//2, 10*nfree//2), ncols=nfree, nrows=nfree)
+
+#   for i in range(0, nfree):
+#     for j in range(0, nfree):
+#       if i <= j:
+#         axes[i, j].axis('off')
+
+#   with tqdm(total=int(nfree+nfree*(nfree-1)/2)) as pbar:
+#     for i, k1 in enumerate(params):
+#       for j, k2 in enumerate(params):
+#         if i < j:
+#           x, y, z = confidence_interval2d(
+#               mini, result, k1, k2, size[0], size[1])
+#           #axes[j, i].contourf(x, y, z, np.linspace(0, 1, 11), cmap='GnBu')
+#           # , colors=['C1','C3','C2','C4'], alpha=0.5)
+#           axes[j, i].contourf(
+#               x, y, z, [0, 1-np.exp(-0.5), 1-np.exp(-2.0), 1-np.exp(-4.5)], cmap='GnBu')
+#           if j+1 == nfree:
+#             axes[j, i].set_xlabel(f"${result.params[k1].latex}$")
+#           if i == 0:
+#             axes[j, i].set_ylabel(f"${result.params[k2].latex}$")
+#           axes[j, i].set_title(f'[{i},{j}]')
+#           pbar.update(1)
+#       #x,y,z = confidence_interval2d(mini, result, k1, k2, 30, 30)
+#       if i == nfree-1:
+#         0#axes[i, i].plot(y, np.sum(z, 0), 'k')
+#         #axes[i,i].get_shared_y_axes().remove(axes[nfree-1,j])
+#         #axes[i,i].get_shared_y_axes().remove(axes[nfree-1,j])
+#       else:
+#         0#axes[i, i].plot(x, np.sum(z, 1), 'k')
+#         #swap(axes[i,i])
+
+#       pbar.update(1)
+#   ci, trace = confidence_interval(mini, result, params)
+#   for i, k1 in enumerate(params):
+#     for j, k2 in enumerate(params):
+#       print(k1, k2)
+#       if i <= j:
+#         for color, x in enumerate(ci[k1].values()):
+#           print(color, x, ci[k1][-1], ci[k1][+1])
+#           #axes[j, i].axvline(x=x, color=f'k', linestyle=':', alpha=0.5)
+#           _var_lo = unc.ufloat(
+#               result.params[k2].value, abs(ci[k2][-1]-ci[k2][0]))
+#           _var_hi = unc.ufloat(
+#               result.params[k2].value, abs(ci[k2][+1]-ci[k2][0]))
+#           _v = f"{_var_lo:.2uL}".split('\pm')[0]
+#           _l = f"{_var_lo:.2uL}".split('\pm')[1]
+#           _u = f"{_var_hi:.2uL}".split('\pm')[1]
+#           _tex = result.params[k2].latex
+#           _p = f"parab $\pm {result.params[k2].unc_round[1]}$"
+#       if i-1 == j:
+#         axes[j, i].set_title(f'${_tex} = {_v}_{{-{_l}}}^{{+{_u}}}$ ({_p})')
+
+#   return fig, axes
+
