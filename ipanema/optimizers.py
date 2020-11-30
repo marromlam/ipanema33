@@ -157,7 +157,7 @@ def _lnprior_(value, bounds):
 
   Returns
   -------
-                float
+  float
       Log prior probability
 
   """
@@ -251,10 +251,10 @@ def _random_instance_(seed=None):
   ----------
   seed : int or RandomState (default=None)
       Seed to np.random.RandomState.
-
+                
   Returns
   -------
-                np.random.RandomState instance
+  np.random.RandomState instance
       Desired instance.
 
   """
@@ -264,8 +264,7 @@ def _random_instance_(seed=None):
     return np.random.RandomState(seed)
   if isinstance(seed, np.random.RandomState):
     return seed
-  raise ValueError('%r cannot be used to seed a numpy.random.RandomState'
-                  ' instance' % seed)
+  raise ValueError(f'Cannot use {seed} to instatinate umpy.random.RandomState')
 
 
 # DONE
@@ -279,14 +278,14 @@ def _nan_handler_(ary, policy='filter'):
       Residuals or sum of residuals, where NaNs will be considered
   policy : string (default=`filter`)
       Whether to raise, omit or filter the nan value during a fit.
-
+              
   Returns
   -------
   np.ndarray or float
       Manipulated array
 
   """
-
+  
   if policy not in ('filter', 'omit', 'raise'):
     raise ValueError("Policy must be `filter`, `omit` or `raise`.")
 
@@ -311,7 +310,7 @@ def _nan_handler_(ary, policy='filter'):
         is set to `raise`, change it to `filter`/`omit` in order to ipanema 
         skip these non-numerical values.
         """)
-    return ary
+  return ary
 
 ################################################################################
 
@@ -355,8 +354,8 @@ class OptimizerResult(object):
   """
 
   def __init__(self, **kws):
-    for key, val in kws.items():
-      setattr(self, key, val)
+    for k, v in kws.items():
+      setattr(self, k, v)
 
   @property# REVISIT
   def flatchain(self):
@@ -378,9 +377,9 @@ class OptimizerResult(object):
     Calculate the fitting statistics.
     """
     self.nvary = len(self.param_init)
-    if isinstance(self.residual, ndarray):
-      self.chi2 = (self.residual).sum()
-      self.ndata = len(self.residual)
+    if isinstance(self.residuals, ndarray):
+      self.chi2 = self.residual + 0*self.init_residual
+      self.ndata = len(self.residuals)
       self.nfree = self.ndata - self.nvary
     else:
       print('Error when computing statistics: residual is not an array.')
@@ -392,7 +391,7 @@ class OptimizerResult(object):
     self.aic = self.nll2 + 2 * self.nvary         # Akaike information criterion
     self.bic = self.nll2 + np.log(self.ndata) * self.nvary  # Bayesian info crit
 
-  def __str__(self, corr=True, min_corr=0.05):
+  def __str__(self, corr=True, min_corr=0.5):
     return fit_report(self, show_correl=corr, min_correl=min_corr, as_string=True)
 
 ################################################################################
@@ -410,7 +409,7 @@ class Optimizer(object):
   def __init__(self, fcn_call, params,
                fcn_args=None, fcn_kwgs=None,
                model_call=None, scale_covar=True, policy='filter',
-               residual_reduce='likelihood', calc_covar=True,
+               residual_reduce='sum', calc_covar=True,
                **method_kwgs):
     """
     Initialize the Optimizer class.
@@ -427,7 +426,7 @@ class Optimizer(object):
         Objective function that returns the residual (array, same lengh as data). 
         This function must have the signature:
         ```
-                      fcn_call(params, *fcn_args, **fcn_kwgs)
+        fcn_call(params, *fcn_args, **fcn_kwgs)
         ```
     params : ipanema.parameter.Parameters
         Set of paramters.          
@@ -437,16 +436,16 @@ class Optimizer(object):
         Keyword arguments to pass to fcn_call.       
     model_call : callable, optional (default=None)
         Function to be called at each fit iteration. This function
-                  should have the signature:
+        should have the signature:
         ```
-                      model_call(params, iter, resid, *fcn_args, **fcn_kwgs)
+        model_call(params, iter, resid, *fcn_args, **fcn_kwgs)
         ```
     scale_covar : bool, optional (default=True)
         Scale covariance matrix
     policy : str, optional (default=`raise`)
         When a NaN value if returned ipanema can handle it in two
         ways: `raise`, a `ValueError` is raised or `filter`, the
-                  NaN value is replaced by 1e12.
+        NaN value is replaced by 1e12.     
     residual_reduce : str or callable, optional (default=`residual_sum`)
         Function to convert a residual array to a scalar value, ipanema comes
         with two reductors:
@@ -458,10 +457,10 @@ class Optimizer(object):
         Whether to calculate the covariance matrix or not.    
     method_kwgs : dict, optional (default=None)
         Options to be passed tho the selected method.
-
+                  
     Returns
     -------
-            void
+    void
 
     """
 
@@ -495,9 +494,11 @@ class Optimizer(object):
       self.behavior = residual_reduce
     else:
       self.behavior = 'custom'
+
+
     if residual_reduce == 'chi2':
       self.residual_reduce = self._residual_squared_sum_
-    if residual_reduce == 'likelihood':
+    elif residual_reduce == 'likelihood':
       self.residual_reduce = self._residual_likelihood_
     else:
       self.residual_reduce = residual_reduce
@@ -557,12 +558,12 @@ class Optimizer(object):
         Whether to apply bound transformations or not. These transformations 
         are Minuit-like ones. There is an ipanema.Parameter method that handles
         them.
-
+                  
     Returns
     -------
     np.ndarray or float
         Residuals patched by nan_handler.
-
+                  
     """
 
     # Get parameters and set new proposals
@@ -573,10 +574,7 @@ class Optimizer(object):
     else:
       for name, val in zip(self.result.param_vary, fvars):
         params[name].value = val
-
-    #print(params)
     params.update_constraints()
-    #print(f'params = {params} AFTER')
 
 
     # Compute model output
@@ -595,10 +593,10 @@ class Optimizer(object):
     # Finishing
     if self._abort:
       self.result.residual = out
-      self.result.aborted  = True
-      self.result.message  = "Optimization aborted by user callback."
+      self.result.aborted = True
+      self.result.message = "Optimization aborted by user callback."
       self.result.message += "Could not give a complete result."
-      self.result.success  = False
+      self.result.success = False
       raise KeyboardInterrupt("Optimization aborted by user.")
     else:
       if reduce:
@@ -611,42 +609,22 @@ class Optimizer(object):
 
   def _wrapper_minuit_(self, *fvars, reduce=True):
     """
-    Residual function used for minuit methods.
-
-    In:
-          fvars:  Array of values of parameters
-                  array
-         reduce:  Whether to return FCN or vector of residuals
-                  bool
-
-    Out:
-              0:  Residuals
-                  float or np.ndarray
+    Wrapper around `_residual_` function used for Minuit methods.
     """
     return self._residual_(list(fvars), reduce=reduce, rebounding=False)
 
 
 
-  def _wrapper_scipy_minimize_(self, fvars, reduce=True, rebounding=True):
+  def _wrapper_scipy_(self, fvars, reduce=True, rebounding=True):
     """
-    Residual function used for scipy methods.
-
-    In:
-          fvars:  Array of values of parameters
-                  array
-         reduce:  Whether to return FCN or vector of residuals
-                  bool
-
-    Out:
-              0:  Residuals
-                  float or np.ndarray
+    Wrapper around `_residual_` function used for scipy methods.
     """
-    rebounding = True
     if self.result.method in ('shgo', 'dual_annealing', 'least_squares'):
       rebounding = False
+    else:
+      rebounding = True
     if fvars.shape == ():
       fvars = fvars.reshape((1,))
-      print(fvars)
     return self._residual_(list(fvars), reduce=reduce, rebounding=rebounding)
 
 
@@ -664,7 +642,7 @@ class Optimizer(object):
 
     Returns
     -------
-                  array
+    array
         Covariance matrix
     """
     nfev = deepcopy(self.result.nfev) # copy this
@@ -902,16 +880,16 @@ class Optimizer(object):
       while not ret.migrad_ok() and _counter <= 5:
         if _counter == 1:
           if verbose:
-          print(f"Goddamnit! This function is not well behaved!",\
-                f"Try:", end="")
+            print(f"Goddamnit! This function is not well behaved!",\
+                  f"Try:", end="")
         ret.migrad(ncall=1000 * (len(result.param_init)+1))
         _counter += 1
         if verbose:
-        print(f"{_counter} ", end="")
+          print(f"{_counter} ", end="")
       if _counter >= 5:
         if verbose:
-        print(f"Minuit cannot handle this fcn optimization.",
-              f"Call other method, ipanema provides a wide variety.")
+          print(f"Minuit cannot handle this fcn optimization.",
+                f"Call other method, ipanema provides a wide variety.")
 
       if method == 'hesse':
         if verbose:
@@ -921,22 +899,22 @@ class Optimizer(object):
         ret.hesse()
         if ret.get_fmin().hesse_failed:
           if verbose:
-          print(f"Seems like hesse has problems to find a valid covariance matrix")
+            print(f"Seems like hesse has problems to find a valid covariance matrix")
           ret.strategy = 2;
           ret.migrad()
           ret.hesse()
           if verbose:
-          if ret.get_fmin().hesse_failed:
-            print(f"Hesse keeps complaining you may have to change the minimizer...")
-          else:
-            print(f"Ipanema kicked hesse's ass, and now it gives proper cov")
+            if ret.get_fmin().hesse_failed:
+              print(f"Hesse keeps complaining you may have to change the minimizer...")
+            else:
+              print(f"Ipanema kicked hesse's ass, and now it gives proper cov")
       elif method == 'minos':
         if verbose:
           print('Minos is running')
         ret.minos()
     except KeyboardInterrupt:
       pass
-
+    
     if not result.aborted:
       # return minuit class (you can keep optimizing, but without ipanema)
       result._minuit = ret
@@ -1031,7 +1009,7 @@ class Optimizer(object):
       print(f"{'atol':>25} : {atol}")
       print(f"{'non-used arguments':>25} : {crap}")
       print(f"{'params':>25} : {result.params.valuesdict()}")
-
+    
     if method == 'Nelder-Mead':
       maxiter *= 10
     variables = result.param_init
@@ -1097,15 +1075,12 @@ class Optimizer(object):
 
   # MCMC Hammer --------------------------------------------------------------
 
-  def emcee(self, params=None, steps=1000, nwalkers=100, burn=0, thin=1,
-            ntemps=1, pos=None, reuse_sampler=False, workers=1,
-            behavior='likelihood', is_weighted=True, seed=None,
-            verbose=False, progress=True):
+  def emcee(self, params=None, steps=1000, nwalkers=100, burn=0, thin=1, ntemps=1, pos=None, reuse_sampler=False, workers=1, behavior='likelihood', is_weighted=True, seed=None, verbose=False, progress=True):
     """
     Bayesian sampling of the posterior distribution using emcee, a well known
     Markov Chain Monte Carlo package. The emcee package assumes that the
     prior is uniform. It is highly recommended to visit:
-        http://dan.iel.fm/emcee/current/user/line/
+    http://dan.iel.fm/emcee/current/user/line/
     The method samples the posterior distribution of the parameters, to do so
     it needs to calculate the log-posterior probability of the model
     parameters.
@@ -1130,17 +1105,17 @@ class Optimizer(object):
         Parallel Tempering if ntemps>1      
     pos : array, optional (default=None)
         Specify the initial positions for the sampler.  If `ntemps == 1`
-                  then `pos.shape` should be `(nwalkers, nvary)`. Otherwise,
-                  `(ntemps, nwalkers, nvary)`. You can also initialise using a
-                  previous chain that had the same `ntemps`, `nwalkers` and
-                  `nvary`. Note that `nvary` may be one larger than you expect it
-                  to be if your `fcn_call` returns an array and `is_weighted is
-                  False`.
+        then `pos.shape` should be `(nwalkers, nvary)`. Otherwise,
+        `(ntemps, nwalkers, nvary)`. You can also initialise using a
+        previous chain that had the same `ntemps`, `nwalkers` and
+        `nvary`. Note that `nvary` may be one larger than you expect it
+        to be if your `fcn_call` returns an array and `is_weighted is
+        False`.            
     reuse_sampler : bool, optional (default=False)
         If emcee was already used to optimize a function and there
-                  is no change in the parameters, then one can continue
-                  drawing from the same sampler. This argument skips emcee
-                  to load other arguments, so be aware.
+        is no change in the parameters, then one can continue
+        drawing from the same sampler. This argument skips emcee
+        to load other arguments, so be aware.
     workers : pool-like or int, optional (default=1) 
         For parallelization of sampling.          
     behavior:  str, optional (default='likelihood').
@@ -1148,12 +1123,12 @@ class Optimizer(object):
         probability ('likelihood') or a chi2 ('chi2')
     is_weighted : bool, optional (default=True)
         If True, emcee will supose that residuals have been
-                  divided by the true measurement uncertainty; if False,
-                  is assumed that unweighted residuals are passed.
-                  In this second case `emcee` will employ a positive
-                  measurement uncertainty during the sampling. This
-                  measurement uncertainty will be present in the output
-                  params and output chain with the name `log_fcn`.
+        divided by the true measurement uncertainty; if False,
+        is assumed that unweighted residuals are passed.
+        In this second case `emcee` will employ a positive
+        measurement uncertainty during the sampling. This
+        measurement uncertainty will be present in the output
+        params and output chain with the name `log_fcn`.          
     seed : int or `numpy.random.RandomState`, optional (default=None)
         Seed for numpy random generator.            
     verbose : bool, optional (default=`False`)
@@ -1188,14 +1163,14 @@ class Optimizer(object):
     out = self.fcn_call(params, *self.fcn_args, **self.fcn_kwgs)
     out = np.asarray(out).ravel()
     if out.size > 1 and is_weighted is False:
-        # we need to marginalise over a constant data uncertainty
+      # we need to marginalise over a constant data uncertainty
       if 'logfcn' not in params:
-            # log_fcn should already be in params if is_weighted was
-            # previously set to True.
+        # log_fcn should already be in params if is_weighted was
+        # previously set to True.
         params.add({'name': 'logfcn', 'value': np.log(0.1), 'min':np.log(0.001), 'max':100*np.log(2), 'free': True, 'latex':'log(L)'})
-            # have to re-prepare the fit
-            result = self.prepare_fit(params)
-            params = result.params
+        # have to re-prepare the fit
+        result = self.prepare_fit(params)
+        params = result.params
 
 
 
@@ -1205,23 +1180,23 @@ class Optimizer(object):
     var_arr = np.zeros(len(result.param_vary))
     i = 0
     for par in params:
-        param = params[par]
-        if param.formula is not None:
-            param.free = False
-        if param.free:
-            var_arr[i] = param.value
-            i += 1
-        else:
-            # don't want to append bounds if they're not being varied.
-            continue
+      param = params[par]
+      if param.formula is not None:
+        param.free = False
+      if param.free:
+        var_arr[i] = param.value
+        i += 1
+      else:
+        # don't want to append bounds if they're not being varied.
+        continue
 
-        param.from_internal = lambda val: val
-        lb, ub = param.min, param.max
-        if lb is None or lb is np.nan:
-            lb = -np.inf
-        if ub is None or ub is np.nan:
-            ub = np.inf
-        bounds.append((lb, ub))
+      param.from_internal = lambda val: val
+      lb, ub = param.min, param.max
+      if lb is None or lb is np.nan:
+          lb = -np.inf
+      if ub is None or ub is np.nan:
+          ub = np.inf
+      bounds.append((lb, ub))
     bounds = np.array(bounds)
 
     self.nvary = len(result.param_vary)
@@ -1238,71 +1213,72 @@ class Optimizer(object):
     # function arguments for the log-probability functions
     # these values are sent to the log-probability functions by the sampler.
     lnprob_args = (self.fcn_call, params, result.param_vary, bounds)
-    lnprob_kwgs = {'is_weighted': is_weighted,
-                     'behavior': behavior,
-                     'fcn_args': self.fcn_args,
-                     'fcn_kwgs': self.fcn_kwgs,
-                     'policy': self.policy, 'lnprob0':self.result.init_residual}
+    lnprob_kwgs = { 'is_weighted': is_weighted,
+                    'behavior': 'likelihood' if behavior=='likelihood' else 'chi2',
+                    'fcn_args': self.fcn_args,
+                    'fcn_kwgs': self.fcn_kwgs,
+                    'policy': self.policy, 'lnprob0':self.result.init_residual
+                  }
 
     if ntemps > 1:
-        # the prior and likelihood function args and kwgs are the same
-        sampler_kwgs['loglargs'] = lnprob_args
-        sampler_kwgs['loglkwgs'] = lnprob_kwgs
-        sampler_kwgs['logpargs'] = (bounds,)
+      # the prior and likelihood function args and kwgs are the same
+      sampler_kwgs['loglargs'] = lnprob_args
+      sampler_kwgs['loglkwgs'] = lnprob_kwgs
+      sampler_kwgs['logpargs'] = (bounds,)
     else:
-        sampler_kwgs['args'] = lnprob_args
-        sampler_kwgs['kwargs'] = lnprob_kwgs
+      sampler_kwgs['args'] = lnprob_args
+      sampler_kwgs['kwargs'] = lnprob_kwgs
 
     # set up the random number generator
     rng = _random_instance_(seed)
 
     # now initialise the samplers
     if reuse_sampler:
-        if auto_pool is not None:
-            self.sampler.pool = auto_pool
+      if auto_pool is not None:
+          self.sampler.pool = auto_pool
 
-        p0 = self._lastpos
-        if p0.shape[-1] != self.nvary:
-            raise ValueError("You cannot reuse the sampler if the number"
-                             "of freeing parameters has changed")
+      p0 = self._lastpos
+      if p0.shape[-1] != self.nvary:
+          raise ValueError("You cannot reuse the sampler if the number"
+                            "of freeing parameters has changed")
     elif ntemps > 1:
-        # Parallel Tempering
-        # jitter the starting position by scaled Gaussian noise
-        p0 = 1 + rng.randn(ntemps, nwalkers, self.nvary) * 1.e-4
-        p0 *= var_arr
-        self.sampler = emcee.PTSampler(ntemps, nwalkers, self.nvary,
-                                       _lnpost_, _lnprior_, **sampler_kwgs)
+      # Parallel Tempering
+      # jitter the starting position by scaled Gaussian noise
+      p0 = 1 + rng.randn(ntemps, nwalkers, self.nvary) * 1.e-4
+      p0 *= var_arr
+      self.sampler = emcee.PTSampler(ntemps, nwalkers, self.nvary,
+                                      _lnpost_, _lnprior_, **sampler_kwgs)
     else:
-        p0 = 1 + rng.randn(nwalkers, self.nvary) * 1.e-4
-        p0 *= var_arr
-        self.sampler = emcee.EnsembleSampler(nwalkers, self.nvary,
-                                             _lnpost_, **sampler_kwgs)
+      p0 = 1 + rng.randn(nwalkers, self.nvary) * 1.e-4
+      p0 *= var_arr
+      self.sampler = emcee.EnsembleSampler(nwalkers, self.nvary,
+                                            _lnpost_, **sampler_kwgs)
 
     # user supplies an initialisation position for the chain
     # If you try to run the sampler with p0 of a wrong size then you'll get
     # a ValueError. Note, you can't initialise with a position if you are
     # reusing the sampler.
     if pos is not None and not reuse_sampler:
-        tpos = np.asfarray(pos)
-        if p0.shape == tpos.shape:
-            pass
-        # trying to initialise with a previous chain
-        elif tpos.shape[0::2] == (nwalkers, self.nvary):
-            tpos = tpos[:, -1, :]
-        # initialising with a PTsampler chain.
-        elif ntemps > 1 and tpos.ndim == 4:
-            tpos_shape = list(tpos.shape)
-            tpos_shape.pop(2)
-            if tpos_shape == (ntemps, nwalkers, self.nvary):
-                tpos = tpos[..., -1, :]
-        else:
-            raise ValueError('pos should have shape (nwalkers, nvary)'
-                             'or (ntemps, nwalkers, nvary) if ntemps > 1')
-        p0 = tpos
+      tpos = np.asfarray(pos)
+      if p0.shape == tpos.shape:
+        pass
+      # trying to initialise with a previous chain
+      elif tpos.shape[0::2] == (nwalkers, self.nvary):
+        tpos = tpos[:, -1, :]
+      # initialising with a PTsampler chain.
+      elif ntemps > 1 and tpos.ndim == 4:
+        tpos_shape = list(tpos.shape)
+        tpos_shape.pop(2)
+        if tpos_shape == (ntemps, nwalkers, self.nvary):
+            tpos = tpos[..., -1, :]
+      else:
+        raise ValueError('pos should have shape (nwalkers, nvary)'
+                         'or (ntemps, nwalkers, nvary) if ntemps > 1')
+      p0 = tpos
 
     # if you specified a seed then you also need to seed the sampler
     if seed is not None:
-        self.sampler.random_state = rng.get_state()
+      self.sampler.random_state = rng.get_state()
 
     # now do a production run, sampling all the time
     output = self.sampler.run_mcmc(p0, steps, progress=progress)
@@ -1314,17 +1290,17 @@ class Optimizer(object):
 
     # take the zero'th PTsampler temperature for the parameter estimators
     if ntemps > 1:
-        flatchain = chain[0, ...].reshape((-1, self.nvary))
+      flatchain = chain[0, ...].reshape((-1, self.nvary))
     else:
-        flatchain = chain.reshape((-1, self.nvary))
+      flatchain = chain.reshape((-1, self.nvary))
 
     quantiles = np.percentile(flatchain, [15.87, 50, 84.13], axis=0)
 
     for i, var_name in enumerate(result.param_vary):
-        std_l, median, std_u = quantiles[:, i]
-        params[var_name].value = median
-        params[var_name].stdev = 0.5 * (std_u - std_l)
-        params[var_name].correl = {}
+      std_l, median, std_u = quantiles[:, i]
+      params[var_name].value = median
+      params[var_name].stdev = 0.5 * (std_u - std_l)
+      params[var_name].correl = {}
 
     params.update_constraints()
 
@@ -1332,9 +1308,9 @@ class Optimizer(object):
     corrcoefs = np.corrcoef(flatchain.T)
 
     for i, var_name in enumerate(result.param_vary):
-        for j, var_name2 in enumerate(result.param_vary):
-            if i != j:
-                result.params[var_name].correl[var_name2] = corrcoefs[i, j]
+      for j, var_name2 in enumerate(result.param_vary):
+        if i != j:
+          result.params[var_name].correl[var_name2] = corrcoefs[i, j]
 
     result.chain = np.copy(chain)
     result.lnprob = np.copy(lnprobability)
@@ -1347,7 +1323,7 @@ class Optimizer(object):
     result.residuals = self._residual_(np.array(params),reduce=False)
     result.residual = self._residual_(np.array(params),reduce=True)
     result.residual += self.result.init_residual
-
+    
     # If uncertainty was automatically estimated, weight the residual properly
     if (not is_weighted) and (result.residual.size > 1):
       if 'logfcn' in params:
@@ -1360,27 +1336,27 @@ class Optimizer(object):
     # Handle special case unique to emcee:
     # This should eventually be moved into result._compute_statistics_.
     elif behavior == 'likelihood':
-        result.ndata = 1
-        result.nfree = 1
+      result.ndata = 1
+      result.nfree = 1
 
-        # assuming prior prob = 1, this is true
-        nll2 = -2*result.residual
+      # assuming prior prob = 1, this is true
+      nll2 = -2*result.residual
 
-        # assumes that residual is properly weighted
-        result.chi2 = np.exp(nll2)
+      # assumes that residual is properly weighted
+      result.chi2 = np.exp(nll2)
 
-        result.chi2red = result.chi2 / result.nfree
-        result.aic = nll2 + 2 * result.nvary
-        result.bic = nll2 + np.log(result.ndata) * result.nvary
+      result.chi2red = result.chi2 / result.nfree
+      result.aic = nll2 + 2 * result.nvary
+      result.bic = nll2 + np.log(result.ndata) * result.nvary
 
     if auto_pool is not None:
-        auto_pool.terminate()
+      auto_pool.terminate()
 
     return result
 
 
 
-  # Trust-Region and Levenberg-Marquardt method ------------------------------
+  # Trust-Region and Levenberg-Marquardt method --------------------------------
 
   def least_squares(self, params=None, method='lm', verbose=False, **method_kwgs):
     """
@@ -1422,7 +1398,6 @@ class Optimizer(object):
       lower_bounds.append(replace_none(par.min, -1))
       upper_bounds.append(replace_none(par.max, +1))
 
-    print(method_kwgs)
     try:
       if method_ == 'trf':
         ret = least_squares(lambda x: self._residual_(x,False), start_vals,
@@ -1584,7 +1559,7 @@ class Optimizer(object):
 
 
 
-  # Simplicial Homology Global Optimization method ---------------------------
+  # Simplicial Homology Global Optimization method -----------------------------
 
   def shgo(self, params=None, verbose=False, **method_kwgs):
     """
@@ -1830,8 +1805,8 @@ def optimize(fcn_call, params, method='lbfgsb',
   Search for the minimum of an objective function with one of the provided
   methods.
   This function is a Optimizer wrapper only, so the same can be achieved if
-      fit = Optimizer(...)
-      fit.optimize(method=desired_method)
+  fit = Optimizer(...)
+  fit.optimize(method=desired_method)
   the main reason to use this, is to always reset the Optimizer, that is often
   the best practice to avoid mistakes/errors.
   This function do not overwrite the params object that is provided, instead
@@ -1860,7 +1835,7 @@ def optimize(fcn_call, params, method='lbfgsb',
   OptimizerResult 
       Object that in general include all info that the selected method provides
       (at least the most useful one).
-
+  
   """
   t0 = timer()
   fitter = Optimizer(fcn_call, params, fcn_args=fcn_args, fcn_kwgs=fcn_kwgs,
