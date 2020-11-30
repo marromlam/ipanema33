@@ -963,14 +963,7 @@ class Optimizer(object):
 
   # Scipy.optimize methods handler ---------------------------------------------
 
-  def scalar_optimize(self, params=None, method='BFGS',
-                      maxiter = False, hess = False, updating = 'immediate',
-                      workers = 1, strategy='best1bin',
-                      popsize=15, tol=0.01, mutation=(0.5, 1),
-                      recombination=0.7, seed=None, callback=None,
-                      disp=False, polish=True, init='latinhypercube',
-                      atol=0,
-                      verbose=False, **crap):
+  def scalar_optimize(self, params=None, method='Nelder-Mead', maxiter=False, hess=False, updating='immediate', workers=1, strategy='best1bin', popsize=15, tol=0.01, mutation=(0.5, 1), recombination=0.7, seed=None, callback=None, disp=False, polish=True, init='latinhypercube', atol=0, verbose=False, **crap):
     """
     Optimization using scipy.optimize functions. For info about the Methods
     please check :scipydoc:`optimize.optimize`
@@ -979,7 +972,7 @@ class Optimizer(object):
     result.method = method
     if not maxiter:
       maxiter = 1000 * (len(result.param_init)+1)
-    if method != 'differential_evolution':
+    if method != 'Differential-Evolution':
       updating = None
       workers = None
       strategy = None
@@ -996,15 +989,14 @@ class Optimizer(object):
       polish = None
       init = None
       atol = None
-    if method == 'differential_evolution':
+    if method == 'Differential-Evolution':
       maxiter = None
       for par in params.values():
         if (par.free and not (np.isfinite(par.min) and np.isfinite(par.max))):
-          raise ValueError('differential_evolution requires finite bounds.')
+          raise ValueError('Differential Evolution requires finite bounds.')
         diff_ev_bounds = [(-np.pi / 2., np.pi / 2.)] * len(variables)
     if verbose:
       disp = True
-      #iprint = 1
     if verbose:
       print(f"{'method':>25} : {method}")
       print(f"{'maxiter':>25} : {maxiter}")
@@ -1025,6 +1017,8 @@ class Optimizer(object):
       print(f"{'non-used arguments':>25} : {crap}")
       print(f"{'params':>25} : {result.params.valuesdict()}")
 
+    if method == 'Nelder-Mead':
+      maxiter *= 10
     variables = result.param_init
     params = result.params
     variables = [params[par].value for par in params if params[par].free]
@@ -1035,18 +1029,22 @@ class Optimizer(object):
     scpmin_kws = {"updating":updating, "workers":workers, "strategy":strategy,
                   "popsize":popsize, "disp":disp, "mutation":mutation,
                   "recombination":recombination, "seed":seed, "init":init,
-                  "callback":callback, "polish":polish, "tol":tol, "atol":atol, "maxiter":maxiter#, "iprint": iprint
+                  "callback":callback, "polish":polish, "tol":tol, 
+                  "atol":atol, "maxiter":maxiter#, "iprint": iprint
                  }
     scpmin_kws = {k:v for k,v in scpmin_kws.items() if v != None}
-    print("scpmin_kws: ",scpmin_kws)
-    if method == 'differential_evolution':
+    
+    # swicher: differential evolution is a bit different
+    if method == 'Differential-Evolution':
       try:
-        ret = differential_evolution(self._wrapper_scipy_minimize_, diff_ev_bounds, options=scpmin_kws)
+        ret = differential_evolution(self._wrapper_scipy_, diff_ev_bounds, 
+                                     options=scpmin_kws)
       except KeyboardInterrupt:
         pass
     else:
       try:
-        ret = scipy_minimize(self._wrapper_scipy_minimize_, variables, options=scpmin_kws)
+        ret = scipy_minimize(self._wrapper_scipy_, variables, method=method, 
+                             options=scpmin_kws)
       except KeyboardInterrupt:
         pass
 
@@ -1067,17 +1065,13 @@ class Optimizer(object):
       result.nfev -= 1
 
     result._compute_statistics_()
-    print(dir(ret))
     # calculate the cov and estimate uncertanties/correlations
     if (not result.aborted and self.calc_covar):
-      print('go for the cov')
       if 'hess_inv' in dir(ret):
         cov = 2 * ret.hess_inv
-        print(cov)
-        #print(self._int2ext_cov_(cov,variables))
       else:
         cov = self._calculate_covariance_matrix_(result.x)
-      cov = self._calculate_covariance_matrix_(result.x)
+      #cov = self._calculate_covariance_matrix_(result.x)
       if cov is not None:
         result.cov = cov
         self._calculate_uncertainties_correlations_()
