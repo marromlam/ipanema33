@@ -641,24 +641,25 @@ class Optimizer(object):
 
 
   # Statistics calculators ---------------------------------------------------
-
+  # DONE
   def _calculate_covariance_matrix_(self, fvars):
     """
     The covariance matrix.
 
-    In:
-    0.123456789:
-          fvars:  Array of optimal & free values of parameters
-                  array
+    Parameters
+    ----------
+    fvars : array
+        Array of optimal & free values of parameters
 
-    Out:
-              0:  Covariance matrix
+    Returns
+    -------
                   array
+        Covariance matrix
     """
     nfev = deepcopy(self.result.nfev) # copy this
     try:
-      unbound_res_f = lambda x: self.residual_reduce(self._residual_(x, False))
-      hessian = ndt.Hessian(unbound_res_f)(fvars)
+      res = lambda x: self.residual_reduce(self._residual_(x, False))
+      hessian = ndt.Hessian(res)(fvars)
       cov = 2 * np.linalg.inv(hessian)
     except (LinAlgError, ValueError):
       return None
@@ -702,9 +703,10 @@ class Optimizer(object):
     self.result.errorbars = True
 
     scaled_cov = self.result.cov
+    #print(self.result.chi2red)
     if self.behavior == 'chi2':
-      scaled_cov *= self.result.residual.sum() / self.result.nfree
-
+      scaled_cov *= self.result.chi2red
+    self.result.cov = scaled_cov
 
     fvar = [self.result.params[var].value for var in self.result.param_vary]
     fvar = np.atleast_1d(fvar)
