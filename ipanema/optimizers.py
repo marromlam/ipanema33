@@ -501,29 +501,26 @@ class Optimizer(object):
 
   # Residual reductions ------------------------------------------------------
 
-  def _residual_sum_(self,arr):
+  def _residual_sum_(self, arr):
     """
     Reduce residual array to scalar with the sum.
     """
-    #print('_residual_sum_:', _nan_handler_(array, self.policy).sum())
-
-    return _nan_handler_(arr.sum(),self.policy)
-
+    #print(_nan_handler_(arr.sum(), self.policy))
+    return _nan_handler_(arr, self.policy).sum()
 
 
-  def _residual_squared_sum_(self,arr):
+
+  def _residual_squared_sum_(self, arr):
     """
     Reduce residual array to scalar with the squared sum.
     """
-    out = _nan_handler_((arr*arr).sum(), self.policy)
-    return out
+    return _nan_handler_(arr*arr, self.policy).sum()
 
 
-  def _residual_likelihood_(self,arr): #WARNING SHOULD BE MODIFIED
+  def _residual_likelihood_(self, arr): #WARNING SHOULD BE MODIFIED
     """
     Reduce residual array to scalar with the squared sum.
     """
-    print('_residual_likelihood_:', _nan_handler_(arr, self.policy).sum())
     return _nan_handler_(arr.sum(), self.policy)
 
 
