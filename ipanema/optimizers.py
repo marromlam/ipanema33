@@ -851,14 +851,11 @@ class Optimizer(object):
 
   # Minuit method ------------------------------------------------------------
 
-  def minuit(self, params=None, method='hesse',
-             strategy=1, errordef=1, tol = 0.05, print_level=-1, pedantic=False,
-             maxiter = False,
-             verbose=False, **crap):
+  def minuit(self, params=None, method='hesse', strategy=1, errordef=1, tol=0.05, print_level=-1, pedantic=False, maxiter=False, verbose=False, **crap):
     """
     Optimization using Minuit.
     """
-    result = self.prepare_fit(params=params)
+    result = self.prepare_fit(params=params); #method='minos'
     result.method = f'Minuit ({method})'
 
     if verbose:
@@ -891,12 +888,15 @@ class Optimizer(object):
       _counter = 1; # set a counter
       while not ret.migrad_ok() and _counter <= 5:
         if _counter == 1:
+          if verbose:
           print(f"Goddamnit! This function is not well behaved!",\
                 f"Try:", end="")
         ret.migrad(ncall=1000 * (len(result.param_init)+1))
         _counter += 1
+        if verbose:
         print(f"{_counter} ", end="")
       if _counter >= 5:
+        if verbose:
         print(f"Minuit cannot handle this fcn optimization.",
               f"Call other method, ipanema provides a wide variety.")
 
@@ -907,10 +907,12 @@ class Optimizer(object):
         #self.result.init_residual = 0
         ret.hesse()
         if ret.get_fmin().hesse_failed:
+          if verbose:
           print(f"Seems like hesse has problems to find a valid covariance matrix")
           ret.strategy = 2;
           ret.migrad()
           ret.hesse()
+          if verbose:
           if ret.get_fmin().hesse_failed:
             print(f"Hesse keeps complaining you may have to change the minimizer...")
           else:
