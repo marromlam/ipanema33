@@ -56,3 +56,4 @@ ipanema.egg-info/
 .pytest_cache
 ipanema/__pycache__/*
 ipanema/core/__pycache__/*
+docs/build
