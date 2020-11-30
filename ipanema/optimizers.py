@@ -925,11 +925,14 @@ class Optimizer(object):
     if not result.aborted:
       # return minuit class (you can keep optimizing, but without ipanema)
       result._minuit = ret
+      result.isvalid = ~ret.get_fmin().hesse_failed & ret.migrad_ok()
       if verbose:
         ret.print_param()
       # calculate fit statistics
       result.x = np.atleast_1d(ret.args)
-      result.residual = self._wrapper_minuit_(*result.x, reduce = False)
+      result.residuals = self._wrapper_minuit_(*result.x, reduce = False)
+      result.residual = self._wrapper_minuit_(*result.x, reduce = True)
+      result.residual += self.result.init_residual
       result.nfev -= 1
 
     result._compute_statistics_()
@@ -1058,7 +1061,9 @@ class Optimizer(object):
 
       result.x = np.atleast_1d(result.x)
       unbound_res_f = lambda x: self.residual_reduce(self._residual_(x, False))
-      result.residual = self._residual_(result.x)
+      result.residuals = self._residual_(result.x,reduce=False)
+      result.residual = self._residual_(result.x,reduce=True)
+      result.residual += self.result.init_residual
       result.nfev -= 1
 
     result._compute_statistics_()
@@ -1330,14 +1335,17 @@ class Optimizer(object):
 
     # Calculate the residual with the "best fit" parameters
     out = self.fcn_call(params, *self.fcn_args, **self.fcn_kwgs)
-    result.residual = _nan_handler_(out, policy=self.policy)
+    result.residuals = self._residual_(np.array(params),reduce=False)
+    result.residual = self._residual_(np.array(params),reduce=True)
+    result.residual += self.result.init_residual
 
     # If uncertainty was automatically estimated, weight the residual properly
     if (not is_weighted) and (result.residual.size > 1):
       if 'logfcn' in params:
         result.residuals = result.residuals/np.exp(params['logfcn'].value)
+
     # Calculate statistics for the two standard cases:
-    if isinstance(result.residual, ndarray) or (behavior == 'chi2'):
+    if isinstance(result.residuals, ndarray) or (behavior == 'chi2'):
       result._compute_statistics_()
 
     # Handle special case unique to emcee:
@@ -1420,7 +1428,9 @@ class Optimizer(object):
 
     if not result.aborted:
       result.message = ret.message
-      result.residual = self._residual_(ret.x, False)
+      result.residual = self._residual_(ret.x, True)
+      result.residuals = self._residual_(ret.x, False)
+      result.residual += self.result.init_residual
       result.nfev -= 1
 
     # Fit statistics
@@ -1464,7 +1474,9 @@ class Optimizer(object):
 
         if not result.aborted:
           _best, _cov, infodict, errmsg, ier = lsout
-          result.residual = self._residual_(_best)
+          result.residuals = self._residual_(_best,False)
+          result.residual = self._residual_(_best, reduce=True)
+          result.residual += self.result.init_residual
           result.nfev -= 1
         result._compute_statistics_()
 
@@ -1537,14 +1549,16 @@ class Optimizer(object):
     x0 = result.param_init
 
     try:
-      ret = scipy_basinhopping(self._wrapper_scipy_minimize_, x0,
+      ret = scipy_basinhopping(self._wrapper_scipy_, x0,
                                **basinhopping_kwgs)
     except KeyboardInterrupt:
       pass
 
     if not result.aborted:
       result.message = ret.message
-      result.residual = self._residual_(ret.x)
+      result.residuals = self._residual_(ret.x)
+      result.residual = self._residual_(ret.x,reduce=True)
+      result.residual += self.result.init_residual
       result.nfev -= 1
 
     # Fit statistics
@@ -1588,7 +1602,7 @@ class Optimizer(object):
                          self.params.values()])[freeing]
 
     try:
-      ret = scipy_shgo(self._wrapper_scipy_minimize_, bounds, **shgo_kwgs)
+      ret = scipy_shgo(self._wrapper_scipy_, bounds, **shgo_kwgs)
     except KeyboardInterrupt:
       pass
 
@@ -1598,7 +1612,9 @@ class Optimizer(object):
           setattr(result, attr, value)
         else:
           setattr(result, 'shgo_{}'.format(attr), value)
-      result.residual = self._residual_(result.shgo_x, False)
+      result.residuals = self._residual_(result.shgo_x, False)
+      result.residual = self._residual_(result.shgo_x,reduce=True)
+      result.residual += self.result.init_residual
       result.nfev -= 1
 
     # Fit statistics
@@ -1671,7 +1687,7 @@ class Optimizer(object):
                        ' freeing parameters')
 
     try:
-      fcn = scipy_dual_annealing(self._wrapper_scipy_minimize_, bounds,
+      fcn = scipy_dual_annealing(self._wrapper_scipy_, bounds,
                                  **da_kwgs)
     except KeyboardInterrupt:
       pass
@@ -1682,7 +1698,9 @@ class Optimizer(object):
           setattr(result, attr, value)
         else:
           setattr(result, 'da_{}'.format(attr), value)
-      result.residual = self._residual_(result.da_x, False)
+      result.residuals = self._residual_(result.da_x, False)
+      result.residual = self._residual_(result.da_x,reduce=True)
+      result.residual += self.result.init_residual
       result.nfev -= 1
 
     result._compute_statistics_()
