@@ -142,28 +142,31 @@ ALL_METHODS.update(LIPSCHIZ_METHODS)
 
 
 
-
-
-
+# DONE
 def _lnprior_(value, bounds):
   """
   Get a log-prior probability
 
-  In:
-  0.123456789:
-        value:  Parameter's value.
+  Parameters
+  ----------
+  value : float
+      Parameter's value.
                 float
-       bounds:  Array with (min, max) range
-                np.ndarray
+  bounds : np.ndarray
+      Array with (min, max) range
 
-  Out:
-            0:  Log prior probability
+  Returns
+  -------
                 float
+      Log prior probability
 
   """
   if np.any(value > bounds[:, 1]) or np.any(value < bounds[:, 0]):
     return -np.inf
   return 0
+
+
+
 
 # REVISIT
 def _lnpost_(value, fcn_call, params, param_vary, bounds, fcn_args=(),
@@ -239,19 +242,20 @@ def _lnpost_(value, fcn_call, params, param_vary, bounds, fcn_args=(),
   return lnprob
 
 
-
+# DONE
 def _random_instance_(seed=None):
   """
   Set seed to a numpy.random.RandomState instance.
 
-  In:
-  0.123456789:
-         seed:  Seed to np.random.RandomState.
-                int or RandomState (default=None)
+  Parameters
+  ----------
+  seed : int or RandomState (default=None)
+      Seed to np.random.RandomState.
 
-  Out:
-            0:  Desired instance.
+  Returns
+  -------
                 np.random.RandomState instance
+      Desired instance.
 
   """
   if seed is None or seed is np.random:
@@ -264,24 +268,24 @@ def _random_instance_(seed=None):
                   ' instance' % seed)
 
 
-
+# DONE
 def _nan_handler_(ary, policy='filter'):
   """
-  Specify behaviour when an array contains numpy.nan or numpy.inf.
+  Specify behavior when an array contains numpy.nan or numpy.inf.
 
-  In:
-  0.123456789:
-          ary:  Array, tipically or residuals.
-                np.ndarray
-       policy:  Where to raise or filter the nan value during a fit.
-                string (default=raise)
+  Parameters
+  ----------
+  ary : np.ndarray or float
+      Residuals or sum of residuals, where NaNs will be considered
+  policy : string (default=`filter`)
+      Whether to raise, omit or filter the nan value during a fit.
 
-  Out:
-            0:  Manipulated array
+  Returns
+  -------
+  np.ndarray or float
+      Manipulated array
 
   """
-  if policy not in ('filter', 'raise'):
-    raise ValueError("policy must be filter', or 'raise'.")
 
   if policy == 'filter':
     return np.nan_to_num(ary, nan=1e12, posinf=1e12, neginf=1e12)
@@ -403,41 +407,46 @@ class Optimizer(object):
     fcn_args and fcn_kwgs. Parameters should be passed independently through
     the params argument.
 
-    In:
-       fcn_call:  Objective function that returns the residual
-                  (array, same lengh as data). This function must have the
-                  signature:
+    Parameters
+    ----------
+    fcn_call : callable
+        Objective function that returns the residual (array, same lengh as data). 
+        This function must have the signature:
+        ```
                       fcn_call(params, *fcn_args, **fcn_kwgs)
-                  callable
-         params:  Set of paramters.
-                  ipanema.parameter.Parameters
-       fcn_args:  Positional arguments to pass to fcn_call.
-                  tuple, optional (default=None)
-       fcn_kwgs:  Keyword arguments to pass to fcn_call.
-                  dict, optional (default=None)
-     model_call:  Function to be called at each fit iteration. This function
+        ```
+    params : ipanema.parameter.Parameters
+        Set of paramters.          
+    fcn_args : tuple, optional (default=None)
+        Positional arguments to pass to fcn_call.
+    fcn_kwgs : dict, optional (default=None)
+        Keyword arguments to pass to fcn_call.       
+    model_call : callable, optional (default=None)
+        Function to be called at each fit iteration. This function
                   should have the signature:
+        ```
                       model_call(params, iter, resid, *fcn_args, **fcn_kwgs)
-                  callable, optional (default=None)
-    scale_covar:  Scale covariance matrix
-                  bool, optional (default=True)
-         policy:  When a NaN value if returned ipanema can handle it in two
-                  ways: 'raise', a `ValueError` is raised or 'filter', the
+        ```
+    scale_covar : bool, optional (default=True)
+        Scale covariance matrix
+    policy : str, optional (default=`raise`)
+        When a NaN value if returned ipanema can handle it in two
+        ways: `raise`, a `ValueError` is raised or `filter`, the
                   NaN value is replaced by 1e12.
-                  str, optional (default='raise')
-residual_reduce:  Function to convert a residual array to a scalar value,
-                  ipanema comes with two reductors:
-                    - 'residual_sum': sum(residuals)
-                    - 'residual_squared_sum': sum(residuals**2)
-                  A callable can be provided so it can be used to do the
-                  reduction, but the callable should TAKE ONLY ONE argument.
-                  str or callable, optional (default='residual_sum')
-     calc_covar:  Whether to calculate the covariance matrix or not.
-                  bool, optional (default='True')
-    method_kwgs:  Options to be passed tho the selected method.
-                  dict, optional (default=None)
+    residual_reduce : str or callable, optional (default=`residual_sum`)
+        Function to convert a residual array to a scalar value, ipanema comes
+        with two reductors:
+        * `residual_sum`: sum(residuals)
+        * `residual_squared_sum`: sum(residuals**2)
+        A callable can be provided so it can be used to do the reduction, but 
+        the callable should **take only one** argument.     
+    calc_covar : bool, optional (default=`True`)
+        Whether to calculate the covariance matrix or not.    
+    method_kwgs : dict, optional (default=None)
+        Options to be passed tho the selected method.
 
-    Out:
+    Returns
+    -------
             void
 
     """
@@ -524,19 +533,24 @@ residual_reduce:  Function to convert a residual array to a scalar value,
   def _residual_(self, fvars, reduce=False, rebounding=True):
     """
     This is the all-method-residual-hammer. All fcn are evaluated by this
-    method. Wraps arount this exist for minuit and scipy
+    method. Wraps around this exist for minuit and scipy
 
-    In:
-          fvars:  Array of values of parameters
-                  array
-     rebounding:  Whether to apply bound transformations or not. These
-                  transformations are Minuit-like ones. There is an
-                  ipanema.Parameter method that hanndles them.
-                  bool (default=True)
+    Parameters
+    ----------
+    fvars : array 
+        Array of values of parameters.
+    reduce : bool, optional (default=`True`)
+        Whether to return an array of residuals or apply the reduction method
+        to return a scalar.
+    rebounding : bool, optional (default=`True`) 
+        Whether to apply bound transformations or not. These transformations 
+        are Minuit-like ones. There is an ipanema.Parameter method that handles
+        them.
 
-    Out:
-              0:  Residuals patched by nan_handler.
-                  np.ndarray
+    Returns
+    -------
+    np.ndarray or float
+        Residuals patched by nan_handler.
 
     """
 
@@ -736,13 +750,18 @@ residual_reduce:  Function to convert a residual array to a scalar value,
 
   def prepare_fit(self, params=None):
     """
-    In:
-    0.123456789:
-         params:  Parameters to use.
-                  ipanema.parameter.Parameters, optional
-    Out:
-              0:  OptimizerResult object prepared to perform fits
-                  optimizers.OptimizerResult
+    Function to create a OptimizerResult from a Optimizer object to latter be 
+    optimized
+
+    Parameters
+    ----------
+    params : ipanema.parameter.Parameters, optional
+        Parameters to use.
+                  
+    Returns
+    -------
+    OptimizerResult 
+        Object prepared to perform fits optimizers.OptimizerResult
     """
 
     # Build a OptimizerResult to store fitting-info
@@ -1077,60 +1096,60 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     it needs to calculate the log-posterior probability of the model
     parameters.
 
-    In:
-         params:  Set of parameters to be used.
-                  ipanema.parameter.Parameters, optional
-          steps:  Number of samples to draw from the posterior distribution
-                  int, optional (default=1000)
-       nwalkers:  From statistics it follows nwalkers >> nvary. As it says
-                  the emcee documentation:
-                      "Walkers are the members of the ensemble. They are
-                      almost like separate Metropolis-Hastings chains but, of
-                      course, the proposal distribution for a given walker
-                      depends on the positions of all the other walkers in
-                      the ensemble."
-                  int, optional (default=1000)
-           burn:  Number of sables to be discarded from the begining of the
-                  samplingint.
-                  int, optional (default=0)
-           thin:  mod(#samples,thin) it the number of accepted samples.
-                  int, optional (default=1)
-         ntemps:  Parallel Tempering if ntemps>1
-                  int, optional (default=1)
-            pos:  Specify the initial positions for the sampler.  If `ntemps == 1`
+    Parameters
+    ----------
+    params: ipanema.parameter.Parameters, optional
+        Set of parameters to be used.
+    steps: int, optional (default=1000)
+        Number of samples to draw from the posterior distribution
+    nwalkers : int, optional (default=1000)
+        From statistics it follows nwalkers >> nvary. As it says the emcee 
+        documentation: "Walkers are the members of the ensemble. They are
+        almost like separate Metropolis-Hastings chains but, of course, the 
+        proposal distribution for a given walker depends on the positions of 
+        all the other walkers in the ensemble."
+    burn : int, optional (default=0)
+        Number of sables to be discarded from the begining of the samplingint.
+    thin : int, optional (default=1)
+        mod(#samples,thin) it the number of accepted samples.             
+    ntemps : int, optional (default=1)
+        Parallel Tempering if ntemps>1      
+    pos : array, optional (default=None)
+        Specify the initial positions for the sampler.  If `ntemps == 1`
                   then `pos.shape` should be `(nwalkers, nvary)`. Otherwise,
                   `(ntemps, nwalkers, nvary)`. You can also initialise using a
                   previous chain that had the same `ntemps`, `nwalkers` and
                   `nvary`. Note that `nvary` may be one larger than you expect it
                   to be if your `fcn_call` returns an array and `is_weighted is
                   False`.
-                  array, optional (default=None)
-  reuse_sampler:  If emcee was already used to optimize a function and there
+    reuse_sampler : bool, optional (default=False)
+        If emcee was already used to optimize a function and there
                   is no change in the parameters, then one can continue
                   drawing from the same sampler. This argument skips emcee
                   to load other arguments, so be aware.
-                  bool, optional (default=False)
-        workers:  For parallelization of sampling.
-                  pool-like or int, optional (default=1)
-       behavior:  Whether the function-call method returns a log-posterior
-                  probability ('posterior') or a chi2 ('chi2')
-                  str, optional (default='posterior').
-    is_weighted:  If True, emcee will supose that residuals have been
+    workers : pool-like or int, optional (default=1) 
+        For parallelization of sampling.          
+    behavior:  str, optional (default='likelihood').
+        Whether the function-call method returns a log-posterior
+        probability ('likelihood') or a chi2 ('chi2')
+    is_weighted : bool, optional (default=True)
+        If True, emcee will supose that residuals have been
                   divided by the true measurement uncertainty; if False,
                   is assumed that unweighted residuals are passed.
                   In this second case `emcee` will employ a positive
                   measurement uncertainty during the sampling. This
                   measurement uncertainty will be present in the output
                   params and output chain with the name `log_fcn`.
-                  bool, optional (default=True)
-           seed:  Seed for numpy random generator.
-                  int or `numpy.random.RandomState`, optional (default=None)
-       progress:  Flag to show a process-bar ot the sampling.
-                  bool, optional (default=True)
+    seed : int or `numpy.random.RandomState`, optional (default=None)
+        Seed for numpy random generator.            
+    verbose : bool, optional (default=`False`)
+        Whether to print optimization information or not.
+    progress : bool, optional (default=`True`)
 
-    Out:
-              0:  Optimizer result object that in general include all info
-                  that the selected method provides.
+    Returns
+    -------
+    OptimizerResult 
+        Object that in general include all info the selected method provides.
     """
     tparams = params
     # if you're reusing the sampler then ntemps, nwalkers have to be
@@ -1354,13 +1373,19 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     Levenberg-Marquardt minimization method. This is handled by
     scipy.optimize.least_squares function.
 
-    In:
-         params:  Set of parameters, must be ipanema.parameter.Parameters
-    method_kwgs:  Keyword-arguments passed to the minimization algorithm.
+    Parameters
+    ----------
+    params : ipanema.parameter.Parameters
+        Set of parameters
+    verbose : bool, optional (default=`False`)
+        Whether to print optimization information or not.
+    method_kwgs : dict
+        Keyword-arguments passed to the minimization algorithm.
 
-    Out:
-              0:  Optimizer result object that in general include all info
-                  that the selected method provides.
+    Returns
+    -------
+    OptimizerResult 
+        Object that in general include all info the selected method provides.
 
     """
     result = self.prepare_fit(params)
@@ -1604,13 +1629,19 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     may be preferable to alternatives such as gradient descent.
     -- Wikipedia
 
-    In:
-         params:  Set of parameters, must be ipanema.parameter.Parameters
-    method_kwgs:  Keyword-arguments passed to the minimization algorithm.
+    Parameters
+    ----------
+    params : ipanema.parameter.Parameters
+        Set of parameters.
+    verbose : bool, optional (default=`False`)
+        Whether to print optimization information or not.
+    method_kwgs : dict
+        Keyword-arguments passed to the minimization algorithm.
 
-    Out:
-              0:  Optimizer result object that in general include all info
-                  that the selected method provides.
+    Returns
+    -------
+    OptimizerResult 
+        Object that in general include all info the selected method provides.
     """
 
     result = self.prepare_fit(params=params)
@@ -1673,45 +1704,52 @@ residual_reduce:  Function to convert a residual array to a scalar value,
     """
     Perform the minimization.
 
-    In:
-    0.123456789:
-         params:  Set of parameters, must be ipanema.parameter.Parameters
-         method:  Optimizer to use, there are...
-                  GRADIENT-BASED:
-                    - 'bfgs': Broyden–Fletcher–Goldfarb–Shanno
-                    - 'lbfgsb': Limited-memory BFGS with bounds
-                    - 'migrad': CERN Minuit (DFP method) calling migrad
-                    - 'minuit': CERN Minuit (DFP method) callin minuit
-                    - 'minos': CERN Minuit (DFP method) calling minos
-                    - 'leastsq': Levenberg-Marquardt
-                    - 'least_squares': Trust Region Reflective method
-                    - 'powell': Powell
-                    - 'cg': Conjugate-Gradient
-                    - 'newton': Newton-CG
-                    - 'cobyla': Constrained optimization by linear approx
-                  STOCHASTIC-BASED:
-                    - 'emmcc': Maximum likelihood via Monte-Carlo Markov Chain
-                    - 'basinhopping': basinhopping (~Metropolis–Hastings)
-                    - 'dual_annealing': Dual Annealing optimization
-                    – 'multinest': -> not yet
-                  GENETIC ALGORITHMS:
-                    - 'deap': -> not yet
-                  HEURISTIC:
-                    - 'differential_evolution': differential evolution
-                    - 'nelder': Nelder-Mead
-                  LIPSCHIZ FUNCTIONS:
-                    - 'shgo': Simplicial Homology Global Optimization
-                  CLASSIFY these:
-                    - 'tnc': Truncated Newton
-                    - 'trust-ncg': Newton-CG trust-region
-                    - 'trust-exact': nearly exact trust-region
-                    - 'trust-krylov': Newton GLTR trust-region
-                    - 'trust-constr': trust-region for constrained optimization
-                    - 'dogleg': Dog-leg trust-region
-                    - 'slsqp': Sequential Linear Squares Programming
+    Parameters
+    ----------
+    params : ipanema.Parameter
+        Set of parameters
+    method : string, optional (default=`lbfgsb`)
+        Optimizer to use, there are...
+        * GRADIENT-BASED:
+        * - `bfgs`: Broyden–Fletcher–Goldfarb–Shanno
+        * - `lbfgsb`: Limited-memory BFGS with bounds
+        * - `migrad`: CERN Minuit (DFP method) calling migrad
+        * - `minuit`: CERN Minuit (DFP method) callin minuit
+        * - `minos`: CERN Minuit (DFP method) calling minos
+        * - `leastsq`: Levenberg-Marquardt
+        * - `least_squares`: Trust Region Reflective method
+        * - `powell`: Powell
+        * - `cg`: Conjugate-Gradient
+        * - `newton`: Newton-CG
+        * - `cobyla`: Constrained optimization by linear approx
+        * STOCHASTIC-BASED:
+        * - `emmcc`: Maximum likelihood via Monte-Carlo Markov Chain
+        * - `basinhopping`: basinhopping (~Metropolis–Hastings)
+        * - `dual_annealing`: Dual Annealing optimization
+        * – `multinest`: -> not yet
+        * GENETIC ALGORITHMS:
+        * - `deap`: -> not yet
+        * HEURISTIC:
+        * - `differential_evolution`: differential evolution
+        * - `nelder`: Nelder-Mead
+        * LIPSCHIZ FUNCTIONS:
+        * - `shgo`: Simplicial Homology Global Optimization
+        * CLASSIFY these:
+        * - `tnc`: Truncated Newton
+        * - `trust-ncg`: Newton-CG trust-region
+        * - `trust-exact`: nearly exact trust-region
+        * - `trust-krylov`: Newton GLTR trust-region
+        * - `trust-constr`: trust-region for constrained optimization
+        * - `dogleg`: Dog-leg trust-region
+        * - `slsqp`: Sequential Linear Squares Programming
+    method_kwgs : dict
+        Keyword-arguments to be passed to the underlying minimization algorithm.
+    
+    Returns
+    -------
+    callable
+        Method
 
-    method_kwgs:  Keyword-arguments to be passed to the underlying
-                  minimization algorithm (the selected method).
     """
     kwgs = {'params': params}
     kwgs.update(self.miner_kwgs)
@@ -1773,29 +1811,30 @@ def optimize(fcn_call, params, method='lbfgsb',
   This function do not overwrite the params object that is provided, instead
   the fitted params are stored in OptimizerResult.params.
 
-  In:
-  0.123456789:
-     fcn_call:  A callable function fcn_call(pars, *fcn_args, **fcn_kwgs)
-                that returns an array. Optimizer will handle the sum and how
-                to do it.
-                callable
-         pars:  Set of parametes
-                ipanema.Parameters
-       method:  Optimizer to use. Check Optimizer.optimize help to see all of
-                them. They are also all listed in:
-                    ipanema.all_optimize_methods
-                string (default='lbfgsb')
-     fcn_args:  Set of positional arguments that fcn needs (or handles)
-                tuple
-     fcn_kwgs:  Set of keyword arguments that fcn needs (or handles)
-                dict
-  method_kwgs:  Set of keyword arguments passed to the optimizer method. If
-                the optimizer cannot handle them there will be errors.
-                dict
+  Parameters
+  ----------
+  fcn_call :  callable
+      A callable function `fcn_call(pars, *fcn_args, **fcn_kwgs)` that returns an
+      array. Optimizer will handle the sum and how to do it.
+  pars : ipanema.Parameters
+      Set of parametes
+  method : string (default='lbfgsb')
+      Optimizer to use. Check Optimizer.optimize help to see all of them. They
+      are also all listed in ipanema.all_optimize_methods
+  fcn_args : tuple
+      Set of positional arguments that fcn needs (or handles)
+  fcn_kwgs : dict
+      Set of keyword arguments that fcn needs (or handles)
+  method_kwgs : dict 
+      Set of keyword arguments passed to the optimizer method. If the optimizer
+      cannot handle them there will be errors.
 
-  Out:
-            0:  Optimizer result object that in general include all info that
-                the selected method provides (at least the most useful one).
+  Returns
+  -------
+  OptimizerResult 
+      Object that in general include all info that the selected method provides
+      (at least the most useful one).
+
   """
   t0 = timer()
   fitter = Optimizer(fcn_call, params, fcn_args=fcn_args, fcn_kwgs=fcn_kwgs,
