@@ -95,7 +95,7 @@ SCIPY_METHODS = {
   'slsqp':                  'SLSQP',
   'dogleg':                 'dogleg',
   'trust-ncg':              'trust-ncg',
-  'differential_evolution': 'differential_evolution'
+  'differential_evolution': 'Differential-Evolution'
 }
 
 GRADIENT_METHODS = {
@@ -121,17 +121,16 @@ STOCHASTIC_METHODS = {
 }
 
 HEURISTIC_METHODS = {
-  'differential_evolution': 'differential_evolution',
   'nelder':                 'Nelder-Mead'
 }
 
 GENETIC_METHODS = {
-#
+  'differential_evolution': 'differential_evolution',
 }
 
 
 LIPSCHIZ_METHODS = {
-  'shgo': 'shgo'
+  'shgo':                   'shgo'
 }
 
 ALL_METHODS = {}
