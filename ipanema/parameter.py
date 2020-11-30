@@ -415,7 +415,7 @@ class Parameters(OrderedDict):
     line += '  \\\\ \n'
 
     # Build the table
-    table  = "\\begin{table}\n\centering\n\\begin{tabular}{"+len(cols)*"c"+"}\n"
+    table  = "\\begin{table}[H]\n\centering\n\\begin{tabular}{"+len(cols)*"c"+"}\n"
     table += "\hline\n"
     table += line.format(*cols).title().replace('$',' ') + '\hline\n'
     for name, par in zip(par_dict.keys(),par_dict.values()):
@@ -542,20 +542,31 @@ class Parameter(object):
     """
     Update Parameter attributes.
 
-    In:
-    0.123456789:
-          value:  New float number
-           free:  True or False
-            min:  To remove limits use '-inf', not 'None'
-            max:  To remove limits use '+inf', not 'None'
-        formula:  To remove a constraint you must supply an empty string ''
-           init:  Initial value for the fit (default: value),
-         correl:  None,
-          stdev:  None,
-          latex:  LaTeX formula of the parameter name (default: name)
+    Parameters
+    ----------
+    value : float
+        New float number
+    free : bool
+        True or False
+    min : float
+        To remove limits use '-inf', not 'None'
+    max : float
+        To remove limits use '+inf', not 'None'
+    formula : string
+        To remove a constraint you must supply an empty string ''
+    init : float
+        Initial value for the fit (default: value),
+    corr : dict
+        None,
+    stdev : float
+        None,
+    latex: string
+        LaTeX formula of the parameter name (default: name)
 
-    Out:
-           void
+    Returns
+    -------
+    void
+    
     """
     self.__setstate__(value, free, min, max, formula)
 
@@ -676,14 +687,15 @@ class Parameter(object):
     """
     Minuit-style transformation for the gradient scaling factor.
 
-    In:
-    0.123456789:
-          value:  Value
-                  float
+    Parameters
+    ----------
+    value : float
+        Parameter value
 
-    Out:
-              0:  Scaling factor
-                  float
+    Returns
+    -------
+    float: 
+        Parameter's scaling factor
 
     """
     if self.min == -inf and self.max == inf:
@@ -848,67 +860,98 @@ class Parameter(object):
 
 
   # Define common operations over parameters -----------------------------------
-  def __array__(self): return array(float(self.uvalue))
+  def __array__(self): 
+    return array(float(self.uvalue))
 
-  def __str__(self): return self.__repr__()
+  def __str__(self): 
+    return self.__repr__()
 
-  def __abs__(self): return abs(self.uvalue)
+  def __abs__(self): 
+    return abs(self.uvalue)
 
-  def __neg__(self): return -self.uvalue
+  def __neg__(self): 
+    return -self.uvalue
 
-  def __pos__(self): return +self.uvalue
+  def __pos__(self): 
+    return +self.uvalue
 
-  def __nonzero__(self): return self.uvalue != 0
+  def __nonzero__(self): 
+    return self.uvalue != 0
 
-  def __int__(self): return int(self.uvalue)
+  def __int__(self): 
+    return int(self.uvalue)
 
-  def __float__(self): return float(self.uvalue)
+  def __float__(self): 
+    return float(self.uvalue)
 
-  def __trunc__(self): return self.uvalue.__trunc__()
+  def __trunc__(self): 
+    return self.uvalue.__trunc__()
 
-  def __add__(self, friend): return self.uvalue + friend
+  def __add__(self, friend): 
+    return self.uvalue + friend
 
-  def __sub__(self, friend): return self.uvalue - friend
+  def __sub__(self, friend): 
+    return self.uvalue - friend
 
-  def __div__(self, friend): return self.uvalue / friend
+  def __div__(self, friend): 
+    return self.uvalue / friend
 
-  def __floordiv__(self, friend): return self.uvalue // friend
+  def __floordiv__(self, friend): 
+    return self.uvalue // friend
 
-  def __divmod__(self, friend): return divmod(self.uvalue, friend)
+  def __divmod__(self, friend): 
+    return divmod(self.uvalue, friend)
 
-  def __mod__(self, friend): return self.uvalue % friend
+  def __mod__(self, friend): 
+    return self.uvalue % friend
 
-  def __mul__(self, friend): return self.uvalue * friend
+  def __mul__(self, friend): 
+    return self.uvalue * friend
 
-  def __pow__(self, friend): return self.uvalue ** friend
+  def __pow__(self, friend): 
+    return self.uvalue ** friend
 
-  def __gt__(self, friend): return self.uvalue > friend
+  def __gt__(self, friend): 
+    return self.uvalue > friend
 
-  def __ge__(self, friend): return self.uvalue >= friend
+  def __ge__(self, friend): 
+    return self.uvalue >= friend
 
-  def __le__(self, friend): return self.uvalue <= friend
+  def __le__(self, friend): 
+    return self.uvalue <= friend
 
-  def __lt__(self, friend): return self.uvalue < friend
+  def __lt__(self, friend): 
+    return self.uvalue < friend
 
-  def __eq__(self, friend): return self.uvalue == friend
+  def __eq__(self, friend): 
+    return self.uvalue == friend
 
-  def __ne__(self, friend): return self.uvalue != friend
+  def __ne__(self, friend): 
+    return self.uvalue != friend
 
-  def __radd__(self, friend): return friend + self.uvalue
+  def __radd__(self, friend): 
+    return friend + self.uvalue
 
-  def __rdiv__(self, friend): return friend / self.uvalue
+  def __rdiv__(self, friend): 
+    return friend / self.uvalue
 
-  def __rdivmod__(self, friend): return divmod(friend, self.uvalue)
+  def __rdivmod__(self, friend): 
+    return divmod(friend, self.uvalue)
 
-  def __rfloordiv__(self, friend): return friend // self.uvalue
+  def __rfloordiv__(self, friend): 
+    return friend // self.uvalue
 
-  def __rmod__(self, friend): return friend % self.uvalue
+  def __rmod__(self, friend): 
+    return friend % self.uvalue
 
-  def __rmul__(self, friend): return friend * self.uvalue
+  def __rmul__(self, friend): 
+    return friend * self.uvalue
 
-  def __rpow__(self, friend): return friend ** self.uvalue
+  def __rpow__(self, friend): 
+    return friend ** self.uvalue
 
-  def __rsub__(self, friend): return friend - self.uvalue
+  def __rsub__(self, friend): 
+    return friend - self.uvalue
 
 
 # Parameter-ness checher -------------------------------------------------------
