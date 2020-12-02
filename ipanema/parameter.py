@@ -275,6 +275,32 @@ class Parameters(OrderedDict):
     OrderedDict of parameter values.
     """
     return OrderedDict((p.name, p._getval(blind)) for p in self.values())
+  
+  
+  def valuesarray(self, pars=False, blind=True):
+    """
+    Get array of the parameters' values in the ipanema.Parameters object.
+
+    Parameters
+    ----------
+    pars : list or bool, optional (default=False)
+        List of paadrameters' names to build the covariance matrix from. If 
+        `False` then all of them will be used. 
+        Note: The order of `pars` is the final order of the matrix.
+    blind : bool, optional (default=True)
+        Whether to blind the parameter or not. By default the parameters will
+        be blinded, so the user cannot see its real value. When using this 
+        method in the function to minimize, **unblind it**.
+    
+    Returns
+    -------
+    np.ndarray 
+        Parameter array.
+    
+    """
+    if not pars:
+      pars = list(self.keys())
+    return np.array( [self[p]._getval(blind) for p in pars])
 
 
 
@@ -284,9 +310,26 @@ class Parameters(OrderedDict):
     """
     return OrderedDict((p.name, p.uvalue) for p in self.values())
 
+  def corr(self, pars=False):
+    """
+    Get correlation matrix of the parameters in the ipanema.Parameters object.
 
-  def corr(self):
-    pars = list(self.keys());
+    Parameters
+    ----------
+    pars : list or bool, optional (default=False)
+        List of parameters' names to build the correlation matrix from. If 
+        `False` then all of them will be used. 
+        Note: The order of `pars` is the final order of the matrix.
+    
+    Returns
+    -------
+    np.ndarray 
+        Correlation matrix.
+    
+    """
+
+    if not pars:
+      pars = list(self.keys())
     corr = np.eye( len(pars) )
     for i in range(0,len(pars)):
       p = pars[i]
@@ -297,9 +340,27 @@ class Parameters(OrderedDict):
     return corr
 
 
-  def cov(self):
-    corr = self.corr()
-    uncs = np.array( [i.stdev if i.stdev else 0 for i in self.values()] )
+  def cov(self, pars=False):
+    """
+    Get covariance matrix of the parameters in the ipanema.Parameters object.
+
+    Parameters
+    ----------
+    pars : list or bool, optional (default=False)
+        List of parameters' names to build the covariance matrix from. If 
+        `False` then all of them will be used. 
+        Note: The order of `pars` is the final order of the matrix.
+    
+    Returns
+    -------
+    np.ndarray 
+        Covariance matrix.
+    
+    """
+    if not pars:
+      pars = list(self.keys())
+    corr = self.corr(pars)
+    uncs = np.array( [self[p].stdev if self[p].stdev else 0 for p in pars] )
     cov = uncs[:,np.newaxis] * corr * uncs
     return cov
 
