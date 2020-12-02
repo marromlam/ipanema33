@@ -98,18 +98,31 @@ def initialize_device(device = None, verbose=False):
 
 
 
-def get_sizes(size):
-  a = size % MAX_LOCAL_SIZE
-  if a == 0:
-    gs, ls = size, MAX_LOCAL_SIZE
-  elif size < MAX_LOCAL_SIZE:
-    gs, ls = size, 1
-  else:
-    a = np.arange(1, min(MAX_LOCAL_SIZE, math.ceil(math.sqrt(size))))
-    a = a[size % a == 0]
-    ls = int(a[np.argmin(np.abs(a - MAX_LOCAL_SIZE))])
-    gs = size
-  return int(gs), int(ls)
+# def get_sizes(size):
+#   a = size % MAX_LOCAL_SIZE
+#   if a == 0:
+#     gs, ls = size, MAX_LOCAL_SIZE
+#   elif size < MAX_LOCAL_SIZE:
+#     gs, ls = size, 1
+#   else:
+#     a = np.arange(1, min(MAX_LOCAL_SIZE, math.ceil(math.sqrt(size))))
+#     a = a[size % a == 0]
+#     ls = int(a[np.argmin(np.abs(a - MAX_LOCAL_SIZE))])
+#     gs = size
+#   return int(gs), int(ls)
+def get_sizes(size, BLOCK_SIZE=256):
+    '''
+    i need to check if this worls for 3d size and 3d block
+    '''
+    a = size % BLOCK_SIZE
+    if a == 0:
+      gs, ls = size, BLOCK_SIZE
+    elif size < BLOCK_SIZE:
+      gs, ls = size, 1
+    else:
+      a = np.ceil(size/BLOCK_SIZE)
+      gs, ls = a*BLOCK_SIZE, BLOCK_SIZE
+    return int(gs), int(ls)
 
 
 # Initialization ---------------------------------------------------------------
