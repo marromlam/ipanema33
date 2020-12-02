@@ -59,7 +59,7 @@ ftype rngNormal(ftype mu, ftype sigma, void * seed, int cycles)
 {
   ftype x = rng_uniform(seed, cycles); //WARNING
   int _seed = *(int*)seed + x;
-  ftype y = rng_uniform(&seed, cycles);
+  ftype y = rng_uniform(&_seed, cycles);
   //printf("%f, %f\n", x,y);
   ftype z = sqrt( -2.0*log(x) ) * cos( 2.0*M_PI*y );
   return mu + z*sigma;
