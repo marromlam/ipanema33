@@ -927,8 +927,11 @@ class Optimizer(object):
       result.residual = self._wrapper_minuit_(*result.x, reduce = True)
       result.residual += self.result.init_residual
       result.nfev -= 1
-
-    result._compute_statistics_()
+    
+    if len(result.x) != len(result.params):       # guarrada para salir del paso
+      result._compute_statistics_()
+      result.cov = self._calculate_covariance_matrix_(result.x)
+      self._calculate_uncertainties_correlations_()  
 
     # calculate the cov and estimate uncertanties/correlations
     result.cov = np.matrix(ret.matrix())
@@ -947,9 +950,8 @@ class Optimizer(object):
       except ZeroDivisionError:
         self.result.errorbars = False
     self.result.message  = f"Fit is valid: {ret.migrad_ok()}."
-    self.result.message += f"This fit has errordef = {ret.errordef} and tol = {ret.tol}."
-    self.result.message += f"Current estimated distcance to minimum is {ret.edm:.4}."
-
+    self.result.message += f"This fit has errordef={ret.errordef} and tol={ret.tol}."
+    self.result.message += f"Current estimated distance to minimum is {ret.edm:.4}."
     return result
 
 
