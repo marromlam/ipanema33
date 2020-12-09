@@ -214,7 +214,7 @@ class Parameters(OrderedDict):
             par_dict[name][col] = 'None'
         elif col == 'reldev':
           if getattr(par, 'stdev'):
-            par_dict[name][col] = f"({abs(par.stdev/par.value):.2%})"
+            par_dict[name][col] = f"{abs(par.stdev/par.value):.2%}"
           else:
             par_dict[name][col] = 'None'
         elif col == 'free':
@@ -578,12 +578,13 @@ class Parameter(object):
 
     if latex: self.latex = latex
     if init: self.init = init
-    self._blind = blind if free else False
+    self._blind = int(blind) if free else False
     self._blindscale = blindscale
     self._blindstr = blindstr
     self._blindengine = blindengine
     self._blindmask = 0
-    if blind and blindstr:
+    if int(blind) and blindstr:
+      print('blind')
       if blindengine=='python':
         np.random.seed( abs(hash('blindstr')//(2**32-1)) )
         self._blindmask = (value-blindscale)+blindscale*np.random.rand()
