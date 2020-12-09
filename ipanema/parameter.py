@@ -578,13 +578,12 @@ class Parameter(object):
 
     if latex: self.latex = latex
     if init: self.init = init
-    self._blind = int(blind) if free else False
+    self._blind = bool(blind) if free else False
     self._blindscale = blindscale
     self._blindstr = blindstr
     self._blindengine = blindengine
     self._blindmask = 0
-    if int(blind) and blindstr:
-      print('blind')
+    if bool(blind) and blindstr:
       if blindengine=='python':
         np.random.seed( abs(hash('blindstr')//(2**32-1)) )
         self._blindmask = (value-blindscale)+blindscale*np.random.rand()
