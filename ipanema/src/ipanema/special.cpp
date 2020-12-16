@@ -5,7 +5,7 @@
 
 
 WITHIN_KERNEL
-ftype factorial(int n)
+ftype factorial(const int n)
 {
    if(n <= 0)
     return 1.;
@@ -115,54 +115,96 @@ ctype faddeeva( ctype z)
 
 
 WITHIN_KERNEL
-ftype legendre_poly(int l, int m, ftype cos_theta)
+ftype lpmv(const int l, const int m, const ftype cosT)
 {
-    if(l == 0 && m == 0)
-    {
-        return 1.;
-    }
-    else if(l == 1 && m == 0)
-    {
-        return cos_theta;
-    }
-    else if(l == 2 && m == 0)
-    {
-        return 0.5*(3.*cos_theta*cos_theta - 1.);
-    }
-    else if(l == 2 && (m == 1 || m == -1))
-    {
-        return -3.*cos_theta*sqrt(1.-cos_theta*cos_theta);
-    }
-    else if(l == 2 && (m == 2 || m == -2))
-    {
-        return 3.*cos_theta*(1.-cos_theta*cos_theta);
-    }
-    else
-        printf("ATTENTION: Legendre polynomial index l,m is out of the range of this function. Check code.");
+    const int L = (l<0) ? abs(l)-1 : l; 
+    const int M = abs(m);
+    ftype factor = 1.0;
 
-    return 0.;
+    if (m<0){
+        factor = pow(-1.0,(ftype) m) * factorial(L-M) / factorial(L+M);
+    }
+
+    // shit
+    if (M>l){
+        return 0;
+    }
+
+    // L = 0
+    if (L==0)
+    {
+        return 1.0;
+    }
+    // L = 1
+    else if (L==1)
+    {
+        if      (M==0) { return cosT; }
+        else           { return -factor*sqrt(1.0-cosT*cosT); } // OK
+    }
+    // L = 2
+    else if (L==2)
+    { 
+        if      (M==0) { return  0.5*(3.*cosT*cosT - 1.); } // OK
+        else if (M==1) { return -3.0*factor*cosT*sqrt(1.-cosT*cosT); } // OK
+        else           { return  3.0*factor*(1.-cosT*cosT); } // OK
+    }
+    // L = 3
+    else if (L==3)
+    { 
+        ftype sinT = sqrt(1.0-cosT*cosT);
+        if      (M==0) { return   0.5*(5.*cosT*cosT*cosT - 3.*cosT); } 
+        else if (M==1) { return  -1.5*factor*(5.*cosT*cosT - 1.)*sinT; } 
+        else if (M==2) { return  15.0*factor*sinT*sinT*cosT; } 
+        else           { return -15.0*factor*sinT*sinT*sinT; } 
+    }
+    // L = 4
+    else if (L==4)
+    { 
+        ftype sinT = sqrt(1.0-cosT*cosT);
+        if      (M==0) { return 0.125*(35.*cosT*cosT*cosT*cosT - 30.*cosT*cosT + 3.); } 
+        else if (M==1) { return  -2.5*factor*(7.*cosT*cosT*cosT - 3.*cosT)*sinT; } 
+        else if (M==2) { return   7.5*factor*(7.*cosT*cosT - 1.)*sinT*sinT; } 
+        else if (M==3) { return -105.*factor*sinT*sinT*sinT*cosT; } 
+        else           { return  105.*factor*sinT*sinT*sinT*sinT; } 
+    }
+    else {
+        printf("WARNING: Associated Legendre polynomial (%+d,%+d) is out of the scope of this function.", l, m);
+        return 0;
+    }
+
 }
 
 
 
 WITHIN_KERNEL
-ftype sph_harm(int l, int m, ftype cos_theta, ftype phi)
+ctype csph_harm(const int l, const int m, const ftype cosT, const ftype phi)
 {
-    if(m == 0)
+  ftype ans = lpmv(l, m, cosT);
+  ans *= sqrt( ((2*l+1)*factorial(l-m)) / (4*M_PI*factorial(l+m)) );
+  return cnew(ans*cos(m*phi), ans*sin(m*phi));
+}
+
+
+
+
+
+WITHIN_KERNEL
+ftype sph_harm(const int l, const int m, const ftype cosT, const ftype phi)
+{
+    if(m < 0)
     {
-        return sqrt((2*l + 1)/(4.*M_PI))*legendre_poly(l, m, cos_theta);
+      return pow(-1.,m) * sqrt(2.) * cim( csph_harm(l, -m, cosT, phi) );
     }
     else if(m > 0)
     {
-        return pow(-1.,m)*sqrt(2.)*sqrt((2*l + 1)/(4.*M_PI))*(sqrt(factorial(l-m))/sqrt(factorial(l+m)))*legendre_poly(l, m, cos_theta)*cos(m*phi);
+      return pow(-1.,m) * sqrt(2.) * cre( csph_harm(l,  m, cosT, phi) );
     }
     else
     {
-        return pow(-1.,m)*sqrt(2.)*sqrt((2*l + 1)/(4.*M_PI))*(sqrt(factorial(l-(-1.*m)))/sqrt(factorial(l-1.*m)))*legendre_poly(l, -1.*m, cos_theta)*sin(-1.*m*phi);
+      return sqrt( (2.*l+1.) / (4.*M_PI) ) * lpmv(l, m, cosT);
     }
-
-    return 0.;
 }
+
 
 
 WITHIN_KERNEL
@@ -235,105 +277,6 @@ ctype cerfc(ctype z)
 
 
 
-//Legendre polynomianls up to l = 2
-WITHIN_KERNEL
-double P_lm(int l, int m, double cos_psi)
-{
-//     double factor = 1./(l+0.5);
-    double factor = 1.;
-
-    if(l == 0 && m == 0)
-    {
-        return factor*1.;
-    }
-    else if(l == 1 && m == 0)
-    {
-        return factor*cos_psi;
-    }
-    else if(l == 2 && m == 0)
-    {
-        return factor*0.5*(3.*cos_psi*cos_psi - 1.);
-    }
-/*
-    else if(l == 2 && (m == 1 || m == -1))
-    {
-        return -factor*3.*cos_psi*sqrt(1.-cos_psi*cos_psi);
-    }
-*/
-    else if(l == 2 && m == 1 )
-    {
-        return -factor*3*cos_psi*sqrt(1.-cos_psi*cos_psi);
-    }
-    else if(l == 2 && m == -1 )
-    {
-        return factor*0.5*cos_psi*sqrt(1.-cos_psi*cos_psi);
-    }
-/*
-    else if(l == 2 && (m == 2 || m == -2))
-    {
-        return factor*3.*cos_psi*(1.-cos_psi*cos_psi);
-    }
-*/
-    else if(l == 2 && m == 2)
-    {
-        return factor*3.*(1.-cos_psi*cos_psi);
-    }
-    else if(l == 2 && m == -2)
-    {
-        return factor*0.125*(1.-cos_psi*cos_psi);
-    }
-    else
-        printf("ATTENTION: Legendre polynomial index l,m is out of the range of this function. Check code.");
-
-    return 0.;
-}
-
-//Spherical harmonics up to l = 2
-WITHIN_KERNEL
-double Y_lm(int l, int m, double cos_theta, double phi)
-{
-    double P_l;
-//     double factor = 1./(l+0.5);
-    double factor = 1.;
-
-    if(l == 0)
-    {
-        P_l = factor*1.;
-    }
-    else if (l == 1)
-    {
-        P_l = factor*cos_theta;
-    }
-    else if (l == 2)
-    {
-        P_l = factor*0.5*(3*cos_theta*cos_theta-1.);
-    }
-    else if (l > 2)
-    {
-        printf("ATTENTION: Ylm polynomial index l is out of the range of this function. Check code.");
-        return 0.;
-    }
-
-    if(m == 0)
-    {
-//         return sqrt((2*l + 1)/(4.*M_PI))*P_lm(l, m, cos_theta);
-        return sqrt((2*l + 1)/(4.*M_PI))*P_l;
-    }
-    else if(m > 0)
-    {
-//         return pow(-1.,m)*sqrt(2.)*sqrt((2*l + 1)/(4.*M_PI))*(sqrt(factorial(l-m))/sqrt(factorial(l+m)))*P_lm(l, m, cos_theta)*cos(m*phi);
-        return sqrt(2.)*sqrt((2*l + 1)/(4.*M_PI))*(sqrt(factorial(l-m))/sqrt(factorial(l+m)))*P_lm(l, m, cos_theta)*cos(m*phi);
-    }
-    else
-    {
-//         return pow(-1.,m)*sqrt(2.)*sqrt((2*l + 1)/(4.*M_PI))*(sqrt(factorial(l-(-1.*m)))/sqrt(factorial(l-1.*m)))*P_lm(l, -1.*m, cos_theta)*sin(-1.*m*phi);
-      m = abs(m);
-        return sqrt(2.)*sqrt((2*l + 1)/(4.*M_PI))*(sqrt(factorial(l-m))/sqrt(factorial(l+m)))*P_lm(l, m, cos_theta)*sin(m*phi);
-    }
-
-    return 0.;
-}
-
 
 
 
@@ -363,7 +306,7 @@ void pywofz(GLOBAL_MEM const ctype *z, GLOBAL_MEM ctype *out)
 
 
 KERNEL
-void pyfaddeeva(GLOBAL_MEM ctype *z, GLOBAL_MEM ctype *out)
+void pyfaddeeva(GLOBAL_MEM const ctype *z, GLOBAL_MEM ctype *out)
 {
    const int idx = get_global_id(0);
    out[idx] = faddeeva(z[idx]);
@@ -371,16 +314,40 @@ void pyfaddeeva(GLOBAL_MEM ctype *z, GLOBAL_MEM ctype *out)
 
 
 KERNEL
-void pycerfc(GLOBAL_MEM ctype *z, GLOBAL_MEM ctype *out)
+void pycerfc(GLOBAL_MEM const ctype *z, GLOBAL_MEM ctype *out)
 {
    const int idx = get_global_id(0);
    out[idx] = cerfc(z[idx]);
-   printf("erfc(%+.4f%+.4fi) = %+.4f%+.4fi\n",z[idx].x,z[idx].y,out[idx].x,out[idx].y);
 }
 
 KERNEL
-void pyipacerfc(GLOBAL_MEM ctype *z, GLOBAL_MEM ctype *out)
+void pyipacerfc(GLOBAL_MEM const ctype *z, GLOBAL_MEM ctype *out)
 {
    const int idx = get_global_id(0);
    out[idx] = ipanema_erfc(z[idx]);
+}
+
+KERNEL
+void pylpmv(const int l, const int m, GLOBAL_MEM const ftype *cos_theta, 
+            GLOBAL_MEM ftype *out)
+{
+  int idx = get_global_id(0);
+  out[idx] = lpmv(l,m,cos_theta[idx]);
+}
+
+KERNEL
+void pytessel_sph_harm(const int l, const int m, 
+                       GLOBAL_MEM const ftype *cos_theta,
+                       GLOBAL_MEM const ftype *phi, GLOBAL_MEM ftype *out)
+{
+  int idx = get_global_id(0);
+  out[idx] = sph_harm(l, m, cos_theta[idx], phi[idx]);
+}
+
+KERNEL
+void pysph_harm(const int l, const int m, GLOBAL_MEM const ftype *cosT, 
+                GLOBAL_MEM const ftype *phi, GLOBAL_MEM ctype *out)
+{
+  int idx = get_global_id(0);
+  out[idx] = csph_harm(l, m, cosT[idx], phi[idx]);
 }
