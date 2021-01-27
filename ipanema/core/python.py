@@ -26,6 +26,12 @@ def ale(a1, a2):
     return a1 < a2
 
 
+# create a n-dimensional mesh
+def ndmesh(*args):
+   args = map(np.asarray,args)
+   return np.broadcast_arrays(*[x[(slice(None),)+(None,)*i] for i, x in enumerate(args)])
+
+
 
 def concatenate(arrays, maximum=None):
   if maximum is not None:
