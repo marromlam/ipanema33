@@ -214,7 +214,10 @@ class Parameters(OrderedDict):
             par_dict[name][col] = 'None'
         elif col == 'reldev':
           if getattr(par, 'stdev'):
-            par_dict[name][col] = f"{abs(par.stdev/par.value):.2%}"
+            try:
+              par_dict[name][col] = f"{abs(par.stdev/par.value):.2%}"
+            except:
+              par_dict[name][col] = 'inf'
           else:
             par_dict[name][col] = 'None'
         elif col == 'free':
