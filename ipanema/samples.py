@@ -8,7 +8,7 @@ import numpy as np
 import pandas
 import os
 import json
-import uproot
+import uproot3 as uproot
 import re
 import builtins
 
@@ -256,16 +256,22 @@ class Sample(object):
                copy=copy, convert=convert, trim=trim, path=None)
 
   @classmethod
-  def from_root(cls, filename, treename = 'DecayTree', name = None, cuts = None,
-                params = None, copy=True, convert=True, trim=False, share=False, backup=False,
-                **up_kwgs):
+  def from_root(cls, filename, treename='DecayTree', name = None, cuts = None,
+                params=None, copy=True, convert=True, trim=False, share=False, backup=False,
+                branches=None, **up_kwgs):
     if filename[-5:] != '.root': filename += '.root'
     if not name:
       namewithextension = os.path.basename(os.path.normpath(filename))
       name = os.path.splitext(namewithextension)[0]
     if share:
+      # uproot4 current workaround: read fisrt branche and get len there
+      #b0 = uproot.open(filename)[treename].keys()[0]
+      #num_entries = len(uproot.open(filename)[treename][b0].array())
+      #noe = round(num_entries*share/100)
+      #up_kwgs.update(max_num_elements=noe)
       noe = round(uproot.open(filename)[treename]._fEntries*share/100)
       up_kwgs.update(entrystop=noe)
+    # uproot4: df = uproot.open(filename,**up_kwgs)[treename].arrays(branches, library="pd")
     df = uproot.open(filename)[treename].pandas.df(**up_kwgs)
     return cls(df, name, cuts=cuts, params=params,
                copy=copy, convert=convert, trim=trim, backup=backup, path=filename)
