@@ -1,4 +1,4 @@
-#ifdef USE_DOUBLE
+#if USE_DOUBLE
   #ifndef CUDA
   #pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
     WITHIN_KERNEL

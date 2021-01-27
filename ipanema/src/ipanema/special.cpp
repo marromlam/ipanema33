@@ -168,7 +168,9 @@ ftype lpmv(const int l, const int m, const ftype cosT)
         else           { return  105.*factor*sinT*sinT*sinT*sinT; } 
     }
     else {
-        printf("WARNING: Associated Legendre polynomial (%+d,%+d) is out of the scope of this function.", l, m);
+        if (get_global_id(0) < 10) {
+          printf("WARNING: Associated Legendre polynomial (%+d,%+d) is out of the scope of this function.", l, m);
+        }
         return 0;
     }
 
