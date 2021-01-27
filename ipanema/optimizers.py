@@ -928,10 +928,11 @@ class Optimizer(object):
       result.residual += self.result.init_residual
       result.nfev -= 1
     
-    if len(result.x) != len(result.params):       # guarrada para salir del paso
-      result._compute_statistics_()
-      result.cov = self._calculate_covariance_matrix_(result.x)
-      self._calculate_uncertainties_correlations_()  
+    result._compute_statistics_()
+    # if len(result.x) != len(result.params):       # guarrada para salir del paso
+    #   result._compute_statistics_()
+    #   result.cov = self._calculate_covariance_matrix_(result.x)
+    #   self._calculate_uncertainties_correlations_()  
 
     # calculate the cov and estimate uncertanties/correlations
     result.cov = np.matrix(ret.matrix())
@@ -1401,7 +1402,7 @@ class Optimizer(object):
       upper_bounds.append(replace_none(par.max, +1))
 
     try:
-      if method_ == 'trf':
+      if method_== 'trf':
         ret = least_squares(lambda x: self._residual_(x,False), start_vals,
                             bounds=(lower_bounds, upper_bounds),
                             method='trf',**method_kwgs)
