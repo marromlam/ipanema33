@@ -8,6 +8,11 @@ import numpy as np
 import pandas
 import os
 import json
+
+# ignore all future warnings
+from warnings import simplefilter
+simplefilter(action='ignore', category=FutureWarning)
+
 import uproot3 as uproot
 import re
 import builtins
