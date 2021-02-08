@@ -277,6 +277,220 @@ ctype cerfc(ctype z)
 }
 
 
+WITHIN_KERNEL
+ftype tarasca(ftype n) {
+  // Integrate[x^n*Sqrt[1 - x^2], {x, -1, 1}]
+  ftype ans = (1 + pow(-1.,n)) * sqrt(M_PI) * tgamma((1 + n)/2);
+  return ans / (4.*tgamma(2 + n/2));
+}
+
+
+
+WITHIN_KERNEL
+ftype curruncho(ftype n, ftype m, ftype xi, ftype xf) {
+  // Integrate[x^n*Cos[x]^m, {x, -1, 1}]
+  ftype ans = 0;
+  ftype kf = 0;
+  ftype mupp = floor((m+1)/2);
+  ftype mlow = floor((m-1)/2);
+  for (int k=0; k<mlow; k++){
+    kf = k; 
+    ans += pow(-1., kf) * (tgamma(m+1)/tgamma(m-2*k)) * pow(n*M_PI, m-2*kf-1);
+  }
+  ans *= pow(-1.0, n) / pow(n, m+1);
+  ans += pow(-1,mupp) * (tgamma(m+1)*floor(2*mupp - m))/pow(n, m+1);
+  return ans;
+}
+
+
+
+WITHIN_KERNEL
+ftype pozo(ftype n, ftype m, ftype xi, ftype xf)  {
+  // Integrate[x^n*Sin[x]^m, {x, -1, 1}]
+  ftype ans = 0;
+  ftype kf = 0;
+  ftype mhalf = floor(m/2);
+  for (int k=0; k<mhalf; k++){
+     kf = k;
+     ans += pow(-1., kf) * (tgamma(m+1)/tgamma(m-2*k+1)) * pow(n*M_PI, m-2*k);
+  }
+  ans *= pow(-1., n+1) / pow(n, m+1);
+  ans -= pow(-1, mhalf) * (tgamma(m+1)*floor(m-2*mhalf-1)) / pow(n, m+1);
+  return ans;
+}
+
+
+
+
+
+
+
+WITHIN_KERNEL
+ftype __core_igamc(ftype a, ftype x)
+{
+    const ftype MACHEP = 1.11022302462515654042E-16; // IEEE 2**-53
+    const ftype MAXLOG = 7.09782712893383996843E2; // IEEE log(2**1024) denormalized
+    const ftype BIG = 4.503599627370496e15;
+    const ftype BIGINV = 2.22044604925031308085e-16;
+
+    ftype ans, ax, c, yc, r, t, y, z;
+    ftype pk, pkm1, pkm2, qk, qkm1, qkm2;
+
+    /* Compute  x**a * exp(-x) / gamma(a)  */
+    ax = a * log(x) - x - lgamma(a);
+    if (ax < -MAXLOG) return 0.0;  // underflow
+    ax = exp(ax);
+
+    /* continued fraction */
+    y = 1.0 - a;
+    z = x + y + 1.0;
+    c = 0.0;
+    pkm2 = 1.0;
+    qkm2 = x;
+    pkm1 = x + 1.0;
+    qkm1 = z * x;
+    ans = pkm1/qkm1;
+
+    do {
+        c += 1.0;
+        y += 1.0;
+        z += 2.0;
+        yc = y * c;
+        pk = pkm1 * z  -  pkm2 * yc;
+        qk = qkm1 * z  -  qkm2 * yc;
+        if (qk != 0) {
+            r = pk/qk;
+            t = fabs( (ans - r)/r );
+            ans = r;
+        } else {
+            t = 1.0;
+        }
+        pkm2 = pkm1;
+        pkm1 = pk;
+        qkm2 = qkm1;
+        qkm1 = qk;
+        if (fabs(pk) > BIG) {
+            pkm2 *= BIGINV;
+            pkm1 *= BIGINV;
+            qkm2 *= BIGINV;
+            qkm1 *= BIGINV;
+        }
+    } while( t > MACHEP );
+
+    return( ans * ax );
+}
+
+
+
+
+WITHIN_KERNEL
+ftype __core_igam(ftype a, ftype x)
+{
+    const ftype MACHEP = 1.11022302462515654042E-16; // IEEE 2**-53
+    const ftype MAXLOG = 7.09782712893383996843E2; // IEEE log(2**1024) denormalized
+    ftype ans, ax, c, r;
+
+    /* Compute  x**a * exp(-x) / gamma(a)  */
+    ax = a * log(x) - x - lgamma(a);
+    if (ax < -MAXLOG) return 0.0; // underflow
+    ax = exp(ax);
+
+    /* power series */
+    r = a;
+    c = 1.0;
+    ans = 1.0;
+
+    do {
+        r += 1.0;
+        c *= x/r;
+        ans += c;
+    } while (c/ans > MACHEP);
+
+    return ans * ax/a;
+}
+
+
+
+
+
+
+
+
+WITHIN_KERNEL
+ftype gammaln(ftype x);
+
+WITHIN_KERNEL
+ftype gammainc(ftype a, ftype x);
+
+WITHIN_KERNEL
+ftype gammaincc(ftype a, ftype x);
+
+
+
+
+WITHIN_KERNEL
+ftype gammaln(ftype x)
+{
+  if (isnan(x)) return(x);
+  if (!isfinite(x)) return(INFINITY);
+  return lgamma(x);
+}
+
+WITHIN_KERNEL
+ftype gammainc(ftype a, ftype x)
+{
+    if ((x <= 0) || ( a <= 0)) return 0.0;
+    if ((x > 1.0) && (x > a)) return 1.0 - __core_igamc(a, x);
+    return __core_igam(a, x);
+}
+
+WITHIN_KERNEL
+ftype gammaincc(ftype a, ftype x)
+{
+    if ((x <= 0.0) || (a <= 0)) return 1.0;
+    if ((x <  1.0) || (x <  a)) return 1.0 - __core_igam(a, x);
+    return __core_igamc(a, x);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
