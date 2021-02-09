@@ -80,8 +80,6 @@ ctype cexp(const ctype z)
   return cnew(re * cos(im), re * sin(im));
 }
 
-
-
 WITHIN_KERNEL
 ctype csquare(const ctype z)
 {
@@ -143,6 +141,14 @@ ctype clog(const ctype z)
 {
   return cnew( log(cabs(z)) , atan2( cim(z), cre(z) ) ); 
 }
+
+
+WITHIN_KERNEL
+ctype cpow(const ctype w, const ctype z)
+{
+  return cexp( cmul(z, clog(w) ));
+}
+
 
 
 

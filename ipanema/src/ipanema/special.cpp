@@ -297,8 +297,8 @@ ftype curruncho(ftype n, ftype m, ftype xi, ftype xf) {
     kf = k; 
     ans += pow(-1., kf) * (tgamma(m+1)/tgamma(m-2*k)) * pow(n*M_PI, m-2*kf-1);
   }
-  ans *= pow(-1.0, n) / pow(n, m+1);
-  ans += pow(-1,mupp) * (tgamma(m+1)*floor(2*mupp - m))/pow(n, m+1);
+  ans *= pow(-1., n) / pow(n, m+1);
+  ans += pow(-1.,mupp) * (tgamma(m+1)*floor(2*mupp - m))/pow(n, m+1);
   return ans;
 }
 
@@ -315,7 +315,7 @@ ftype pozo(ftype n, ftype m, ftype xi, ftype xf)  {
      ans += pow(-1., kf) * (tgamma(m+1)/tgamma(m-2*k+1)) * pow(n*M_PI, m-2*k);
   }
   ans *= pow(-1., n+1) / pow(n, m+1);
-  ans -= pow(-1, mhalf) * (tgamma(m+1)*floor(m-2*mhalf-1)) / pow(n, m+1);
+  ans -= pow(-1., mhalf) * (tgamma(m+1)*floor(m-2*mhalf-1)) / pow(n, m+1);
   return ans;
 }
 
@@ -454,6 +454,76 @@ ftype gammaincc(ftype a, ftype x)
 
 
 
+WITHIN_KERNEL
+ftype corzo(ftype n, ftype xi, ftype xf)
+{
+  // Integrate[x^n*Cos[x]*Cos[x], {x, xi, xf}]
+  ctype cte = cnew(0., +pow(2.,-n) );
+
+  ftype fi = (4*xi)/(1+n);
+  fi -= tgamma(1+n)*cre( 
+                        cmul( 
+                            cmul(cte, cpow(cnew(0.,-xi), cnew(-n,0.))), 
+                            cgammaincc(1+n, cnew(0.,-2*xi))
+                            )  
+                        );
+  fi += tgamma(1+n)*cre(
+                        cmul(
+                            cmul(cte, cpow(cnew(0.,+xi), cnew(-n,0.))), 
+                            cgammaincc(1+n, cnew(0.,+2*xi))
+                            )  
+                        );
+
+  ftype ff = (4*xf)/(1+n);
+  ff -= tgamma(1+n)*cre(
+                        cmul(
+                            cmul(cte, cpow(cnew(0.,-xf), cnew(-n,0.))),
+                            cgammaincc(1+n, cnew(0.,-2*xf))  )  );
+  ff += tgamma(1+n)*cre(
+                        cmul(
+                            cmul(cte, cpow(cnew(0.,+xf), cnew(-n,0.))),
+                            cgammaincc(1+n, cnew(0.,+2*xf))
+                            )
+                        );
+
+  return 0.125*( pow(xf,n)*ff - pow(xi,n)*fi );
+}
+
+
+WITHIN_KERNEL
+ftype maycar(ftype n, ftype xi, ftype xf)
+{
+  // Integrate[x^n*Sin[x]*Sin[x], {x, xi, xf}]
+  ctype cte = cnew(0., +pow(2.,-n) );
+
+  ftype fi = pow(2.,2.+n)*xi*pow(xi*xi,n);
+  fi += tgamma(1+n)*cre( 
+                        cmul( 
+                            cmul(cnew(0.,1+n), cpow(cnew(0.,+xi), cnew(n,0.))), 
+                            cgammaincc(1+n, cnew(0.,-2*xi))
+                            )  
+                        );
+  fi -= tgamma(1+n)*cre(
+                        cmul(
+                            cmul(cnew(0.,1+n), cpow(cnew(0.,-xi), cnew(n,0.))), 
+                            cgammaincc(1+n, cnew(0.,+2*xi))
+                            )  
+                        );
+
+  ftype ff = pow(2.,2.+n)*xf*pow(xf*xf,n);
+  ff += tgamma(1+n)*cre(
+                        cmul(
+                            cmul(cnew(0.,1+n), cpow(cnew(0.,+xf), cnew(n,0.))),
+                            cgammaincc(1+n, cnew(0.,-2*xf))  )  );
+  ff -= tgamma(1+n)*cre(
+                        cmul(
+                            cmul(cnew(0.,1+n), cpow(cnew(0.,-xf), cnew(n,0.))),
+                            cgammaincc(1+n, cnew(0.,+2*xf))
+                            )
+                        );
+
+  return (pow(2.,-3-n)/(1+n))*( pow(xf,-n)*ff - pow(xi,-n)*fi );
+}
 
 
 
