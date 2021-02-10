@@ -299,7 +299,7 @@ ftype curruncho(ftype n, ftype m, ftype xi, ftype xf) {
   }
   ans *= pow(-1., n) / pow(n, m+1);
   ans += pow(-1.,mupp) * (tgamma(m+1)*floor(2*mupp - m))/pow(n, m+1);
-  return ans;
+  return ans*(xf - pow(-1.,m)*xi)/M_PI;
 }
 
 
@@ -316,7 +316,7 @@ ftype pozo(ftype n, ftype m, ftype xi, ftype xf)  {
   }
   ans *= pow(-1., n+1) / pow(n, m+1);
   ans -= pow(-1., mhalf) * (tgamma(m+1)*floor(m-2*mhalf-1)) / pow(n, m+1);
-  return ans;
+  return ans*(xf - pow(-1.,m)*xi)/M_PI;
 }
 
 
