@@ -287,9 +287,12 @@ ftype tarasca(ftype n) {
 
 
 WITHIN_KERNEL
-ftype curruncho(ftype n, ftype m, ftype xi, ftype xf) {
+ftype curruncho(const ftype n, const ftype m, const ftype xi, const ftype xf) {
   // Integrate[x^n*Cos[x]^m, {x, -1, 1}]
   ftype ans = 0;
+  if (xi == xf) return ans;
+  if (n == 0.0) return pow(xf, m+1.)/(m+1.) - pow(xi, m+1.)/(m+1.);
+
   ftype kf = 0;
   ftype mupp = floor((m+1)/2);
   ftype mlow = floor((m-1)/2);
@@ -305,9 +308,12 @@ ftype curruncho(ftype n, ftype m, ftype xi, ftype xf) {
 
 
 WITHIN_KERNEL
-ftype pozo(ftype n, ftype m, ftype xi, ftype xf)  {
+ftype pozo(const ftype n, const ftype m, const ftype xi, const ftype xf)  {
   // Integrate[x^n*Sin[x]^m, {x, -1, 1}]
   ftype ans = 0;
+  if (xi == xf) return ans;
+  if (n == 0.0) return ans;
+
   ftype kf = 0;
   ftype mhalf = floor(m/2);
   for (int k=0; k<mhalf; k++){
