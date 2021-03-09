@@ -80,14 +80,14 @@ sample.allocate(x='x',prob='0*x')
 #%% Fit and get the results ---------------------------------------------------
 
 # Create an instance of ipanema.Optimizer
-result = ipanema.Optimizer(likelihood,
+result = ipanema.Optimizer(likelihood, method='minuit',
                            params=pars,
                            fcn_args = (sample.x,sample.prob),
                            policy='filter'
                           )
 
 # Minimize likelihood using given method
-#print(result.optimize(method='emcee'))  # Markov Chain MC optimizer
+#print(result.optimize(method='emcee'))   Marko Chain MC optimizer
 print(result.optimize(method='minuit')) # Minuit optimizer (hesse)
 print(result.optimize(method='bfgs'))   # scipy Broyden optimizer
 

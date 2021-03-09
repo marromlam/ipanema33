@@ -54,10 +54,10 @@ from .optimizers import Optimizer, optimize
 from .parameter import Parameter, Parameters, isParameter
 
 # Confidence
-from .confidence import confidence_interval, confidence_interval2d, plot_conf2d#, plot_contours
+from .confidence import *
 
 # Tools and utils
-from .tools.uncertainties_wrapper import wrap_unc, get_confidence_bands
+from .tools.uncertainties_wrapper import wrap_unc#, get_confidence_bands
 from .utils.print_reports import fit_report
 from .core import utils
 
@@ -68,6 +68,6 @@ from .plot import untitled as plotting
 
 # Useful variables
 from .optimizers import ALL_METHODS
-all_optimize_methods = list(ALL_METHODS.keys()); del ALL_METHODS
+all_optimize_methods = list(ALL_METHODS.keys())#; del ALL_METHODS
 
 from .interpolation import extrap1d

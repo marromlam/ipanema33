@@ -19,8 +19,10 @@ from scipy.stats import f
 from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
-from .parameter import Parameter, Parameters
+from ..parameter import Parameter, Parameters
 import uncertainties as unc
+from uncertainties import unumpy as unp
+
 
 
 ################################################################################
@@ -42,7 +44,7 @@ def fisher_test(ndata, nfree, new_chi, best_chi2, nfix=1):
       Best chi2.
   n_fixed : int, optional (default=1)
       Number of fixed parameters.
-                
+
 
   Returns
   -------
@@ -111,20 +113,20 @@ def confidence_interval(optimizer, result, param_names=None, sigmas=[1, 2, 3],
       List of names of the parameters for which the confidence interval is computes
                 list, optional (default=None, all are computed)
   sigmas : list, optional (default=[1, 2, 3])
-      The sigma-levels to find list.        
-  maxiter : 
+      The sigma-levels to find list.
+  maxiter :
       Maximum of iteration to find an upper limit.
                 int, optional (default=200).
   verbose : bool, optional (default=False)
       Print extra debuging information
   tester: callable, optional (default=fisher_test)
       Function to calculate the probability from the optimized chi2.
-                
+
   Returns
   -------
   dict
       Dictionary with list of name: (sigma, values)-tuples.
-  dict 
+  dict
       Dictionary with fixed_param: ()
 
   """
@@ -409,9 +411,11 @@ def confidence_interval2d(optimizer, result, x_name, y_name, nx=10, ny=10,
       thisparams = Parameters.clone(params)
       thisparams[x_name].value = vals[0]; thisparams[x_name].init = vals[0]
       thisparams[y_name].value = vals[1]; thisparams[y_name].init = vals[1]
-      #print('params after update:', thisparams)
+      print('params after update:', thisparams)
+      print(optimizer.behavior)
       optimizer.prepare_fit(params=thisparams)
       try:
+        print('heyyyy')
         #out = optimizer.scalar_optimize(method='Nelder-Mead', verbose=True, maxiter=100*len(thisparams)),
         try:
           out = optimizer.minuit(method='migrad-only', verbose=False)
@@ -590,14 +594,14 @@ def plot_contours(mini, result, params=False, size=(20,20)):
 """
 
 
-def plot_conf2d(mini, result, params=False, size=(20, 20)):
+def plot_conf2d(mini, result, params=False, size=(20, 20), verbose=False):
   # look for free parameters
   fig, axes = plt.subplots(figsize=(5, 5))
-  x, y, z = confidence_interval2d(mini, result, *params, *size)
-  axes.contourf(x, y, z, [0,1-np.exp(-0.5),1-np.exp(-2.0),1-np.exp(-4.5)], 
+  x, y, z = confidence_interval2d(mini, result, *params, *size, verbose=verbose)
+  axes.contourf(x, y, z, [0,1-np.exp(-0.5),1-np.exp(-2.0),1-np.exp(-4.5)],
                 cmap='GnBu')
                 # colors=['C1','C3','C2','C4'], alpha=0.5)
-          
+
   ci, _ = confidence_interval(mini, result, params)
   for i, p in enumerate(params):
     _var_lo = unc.ufloat(result.params[p].value, abs(ci[p][-1]-ci[p][0]))
@@ -692,3 +696,76 @@ def plot_conf2d(mini, result, params=False, size=(20, 20)):
 
 #   return fig, axes
 
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+    WRAPPERS TO PLOT CONFIDENCE BANDS
+"""
+
+
+
+def fast_jac(f, vals, f_size=1):
+  J = np.zeros([f_size, len(vals)])
+  for l in range(0,len(vals)):
+    if vals[l]!= 0:
+      h = np.sqrt(np.finfo(float).eps)*vals[l];
+    else:
+      h = 1e-14;
+    xhp = np.copy(vals).astype(np.float64); xhp[l] += +h
+    xhm = np.copy(vals).astype(np.float64); xhm[l] += -h;
+    J[:,l] = (f(xhp) - f(xhm))/(2*h)
+  return J.T
+
+
+
+
+
+def propagate_term(der,unc):
+  return der**2*unc**2
+
+
+
+
+def wrap_unc(func, pars, **kwgs):
+
+  f = lambda pars: func(pars, **kwgs)
+
+  # get parameters and uncertainties
+  vals = np.array([pars[k].nominal_value  for k in range(0,len(pars))])
+  uncs = np.array([pars[k].std_dev        for k in range(0,len(pars))])
+
+  # compute f nominal_value
+  f_val = f(vals)
+  if hasattr(f(vals), "__len__"):
+    f_size = len(f(vals))
+  else:
+    f_size = 1
+
+  # get numeric derivatives
+  derivatives = fast_jac(f, vals, f_size)
+  f_unc = np.zeros_like(f_val)
+
+  # compute f std_dev
+  for i in range(0,len(uncs)):
+    f_unc[:] += propagate_term(derivatives[i],uncs[i])[0]
+  f_unc = np.sqrt(f_unc)
+
+  return unp.uarray(f_val,f_unc)
+
+
+
+def get_confidence_bands(y,sigma=1):
+  nom = unp.nominal_values(y)
+  std = unp.std_devs(y)
+  # uncertainty lines (sigma confidence)
+  return nom+sigma*std, nom-sigma*std
