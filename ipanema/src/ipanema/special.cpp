@@ -115,7 +115,7 @@ ctype faddeeva( ctype z)
 
 
 WITHIN_KERNEL
-ftype lpmv(const int l, const int m, const ftype cosT)
+ftype lpmv(const int m, const int l, const ftype cosT)
 {
     const int L = (l<0) ? abs(l)-1 : l; 
     const int M = abs(m);
@@ -181,7 +181,7 @@ ftype lpmv(const int l, const int m, const ftype cosT)
 WITHIN_KERNEL
 ctype csph_harm(const int l, const int m, const ftype cosT, const ftype phi)
 {
-  ftype ans = lpmv(l, m, cosT);
+  ftype ans = lpmv(m, l, cosT);
   ans *= sqrt( ((2*l+1)*factorial(l-m)) / (4*M_PI*factorial(l+m)) );
   return cnew(ans*cos(m*phi), ans*sin(m*phi));
 }
@@ -203,7 +203,7 @@ ftype sph_harm(const int l, const int m, const ftype cosT, const ftype phi)
     }
     else
     {
-      return sqrt( (2.*l+1.) / (4.*M_PI) ) * lpmv(l, m, cosT);
+      return sqrt( (2.*l+1.) / (4.*M_PI) ) * lpmv(m, l, cosT);
     }
 }
 
