@@ -1,8 +1,11 @@
+#ifndef _RANDOM_H_
+#define _RANDOM_H_
+
 #define rngA 16807      //ie 7**5
 #define rngM 2147483647 //ie 2**31-1
 #define rngN 0.00000000046566128752457969241057508271679984532147638747537340385623 //ie 1/(2**31-1)
 
-#include "core.hpp"
+#include "core.h"
 
 
 #ifdef CUDA
@@ -45,3 +48,6 @@ void rngin_uniform(GLOBAL_MEM double *out, int seed, int cycles);
 
 KERNEL
 void rngin_uniform_float(GLOBAL_MEM double *out, int seed, int cycles);
+
+
+#endif // _RANDOM_H_

@@ -1,4 +1,4 @@
-#include "random.hpp"
+#include "random.h"
 
 WITHIN_KERNEL
 float fract(float x)

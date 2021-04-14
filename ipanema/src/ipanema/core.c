@@ -1,8 +1,11 @@
+#include "core.h"
+
 #if USE_DOUBLE
   #ifndef CUDA
   #pragma OPENCL EXTENSION cl_khr_int64_base_atomics: enable
     WITHIN_KERNEL
-    void atomicAdd(volatile __global double *addr, double val)
+    void
+    atomicAdd(volatile __global double *addr, double val)
     {
       union {
         long u;
@@ -17,3 +20,35 @@
     }
   #endif
 #endif
+
+
+
+#ifdef CUDA
+  WITHIN_KERNEL
+  ftype fract(const ftype x)
+  {
+    return x - floorf(x);
+  }
+#else
+  WITHIN_KERNEL
+  ftype fract(const ftype x)
+  {
+    return x - floor(x);
+  }
+#endif
+
+
+
+WITHIN_KERNEL
+ftype rpow(const ftype x, const ftype n)
+{
+  return pow((ftype) x, (ftype) n);
+}
+
+
+
+WITHIN_KERNEL
+ftype sqr(const ftype x)
+{
+  return x*x;
+}

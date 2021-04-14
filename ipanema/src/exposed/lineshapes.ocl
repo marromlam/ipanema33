@@ -1,0 +1,111 @@
+#include "ipanema/core.h"
+#include "ipanema/special.h"
+#include "ipanema/lineshapes.h"
+
+KERNEL
+void py_ipatia(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in,
+               const ftype mu, const ftype sigma,
+               const ftype lambda, const ftype zeta, const ftype beta,
+               const ftype aL, const ftype nL, const ftype aR, const ftype nR)
+{
+  const int idx = get_global_id(0);
+  out[idx] = ipatia(in[idx], mu, sigma, lambda, zeta, beta, aL, nL, aR, nR);
+}
+
+
+
+KERNEL
+void py_hyperbolic_distribution(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in,
+               const ftype mu, const ftype lambda, const ftype alpha,
+               const ftype beta, const ftype delta)
+{
+  const int idx = get_global_id(0);
+  out[idx] = hyperbolic_distribution(in[idx]-mu, lambda, alpha, beta, delta);
+}
+
+
+KERNEL
+void py_Amoroso(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in, const ftype a,
+             const ftype theta, const ftype alpha, const ftype beta )
+{
+
+  SIZE_T idx = get_global_id(0);
+
+  out[idx] = amoroso(in[idx], a, theta, alpha, beta );
+}
+
+
+
+KERNEL
+void py_Normal(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in,
+            const ftype mu, const ftype sigma )
+{
+  SIZE_T idx = get_global_id(0);
+
+  out[idx] = normal(in[idx], mu, sigma );
+}
+
+
+
+KERNEL
+void py_CrystalBall( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, ftype c, ftype s, ftype a, ftype n )
+{
+  SIZE_T idx = get_global_id(0);
+  ftype x = in[idx];
+
+  ftype t = ( a < 0 ? -1 : +1 ) * ( x - c ) / s;
+
+  ftype aa = fabs(a);
+
+  if ( t >= -aa )
+    out[idx] = exp(-0.5 * t * t);
+  else
+  {
+    ftype A = pow(n / aa, n) * exp(-0.5 * aa * aa);
+    ftype B = n / aa - aa;
+
+    out[idx] = A / pow(B - t, n);
+  }
+}
+
+
+KERNEL
+void py_Poly( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, int n, GLOBAL_MEM ftype *p )
+{
+
+  SIZE_T idx  = get_global_id(0);
+  ftype x = in[idx];
+
+  if ( n == 0 )
+  {
+    out[idx] = 1.;
+    return;
+  }
+
+  ftype o = x * p[n - 1];
+  for ( int i = 1; i < n; ++i )
+    o = x * (o + p[n - i - 1]);
+
+  out[idx] = o + 1.;
+}
+
+
+
+KERNEL
+void py_PowerLaw( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, ftype c, ftype n )
+{
+  SIZE_T idx  = get_global_id(0);
+
+  out[idx] = 1. / pow(fabs(in[idx] - c), n);
+}
+
+
+
+KERNEL
+void py_Argus(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in,
+              const ftype m0, const ftype c, const ftype p)
+{
+  SIZE_T idx = get_global_id(0);
+
+  out[idx] = argus(in[idx], m0, c, p);
+}
