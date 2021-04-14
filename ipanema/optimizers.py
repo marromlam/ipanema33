@@ -251,7 +251,7 @@ def _random_instance_(seed=None):
   ----------
   seed : int or RandomState (default=None)
       Seed to np.random.RandomState.
-                
+
   Returns
   -------
   np.random.RandomState instance
@@ -278,21 +278,21 @@ def _nan_handler_(ary, policy='filter'):
       Residuals or sum of residuals, where NaNs will be considered
   policy : string (default=`filter`)
       Whether to raise, omit or filter the nan value during a fit.
-              
+
   Returns
   -------
   np.ndarray or float
       Manipulated array
 
   """
-  
+
   if policy not in ('filter', 'omit', 'raise'):
     raise ValueError("Policy must be `filter`, `omit` or `raise`.")
 
   def handler_func(x): return ~np.isfinite(x)
 
   # WARNING:  some problems prefer the mask and others go better
-  #           with the mask, while others prefer the np.where 
+  #           with the mask, while others prefer the np.where
   #           behavior... needs to be studied
   if policy == 'filter':
     #return np.nan_to_num(ary, nan=1e12, posinf=1e12, neginf=1e12)
@@ -305,9 +305,9 @@ def _nan_handler_(ary, policy='filter'):
       return ary[mask]
   else:
     if np.where(np.isfinite(ary),0,1).sum():
-      raise ValueError("""NaN Values were found in the given array. Ipanema can 
-        handle this kind of problems through nan_handler. Currently the policy 
-        is set to `raise`, change it to `filter`/`omit` in order to ipanema 
+      raise ValueError("""NaN Values were found in the given array. Ipanema can
+        handle this kind of problems through nan_handler. Currently the policy
+        is set to `raise`, change it to `filter`/`omit` in order to ipanema
         skip these non-numerical values.
         """)
   return ary
@@ -423,17 +423,17 @@ class Optimizer(object):
     Parameters
     ----------
     fcn_call : callable
-        Objective function that returns the residual (array, same lengh as data). 
+        Objective function that returns the residual (array, same lengh as data).
         This function must have the signature:
         ```
         fcn_call(params, *fcn_args, **fcn_kwgs)
         ```
     params : ipanema.parameter.Parameters
-        Set of paramters.          
+        Set of paramters.
     fcn_args : tuple, optional (default=None)
         Positional arguments to pass to fcn_call.
     fcn_kwgs : dict, optional (default=None)
-        Keyword arguments to pass to fcn_call.       
+        Keyword arguments to pass to fcn_call.
     model_call : callable, optional (default=None)
         Function to be called at each fit iteration. This function
         should have the signature:
@@ -445,19 +445,19 @@ class Optimizer(object):
     policy : str, optional (default=`raise`)
         When a NaN value if returned ipanema can handle it in two
         ways: `raise`, a `ValueError` is raised or `filter`, the
-        NaN value is replaced by 1e12.     
+        NaN value is replaced by 1e12.
     residual_reduce : str or callable, optional (default=`residual_sum`)
         Function to convert a residual array to a scalar value, ipanema comes
         with two reductors:
         * `residual_sum`: sum(residuals)
         * `residual_squared_sum`: sum(residuals**2)
-        A callable can be provided so it can be used to do the reduction, but 
-        the callable should **take only one** argument.     
+        A callable can be provided so it can be used to do the reduction, but
+        the callable should **take only one** argument.
     calc_covar : bool, optional (default=`True`)
-        Whether to calculate the covariance matrix or not.    
+        Whether to calculate the covariance matrix or not.
     method_kwgs : dict, optional (default=None)
         Options to be passed tho the selected method.
-                  
+
     Returns
     -------
     void
@@ -549,21 +549,21 @@ class Optimizer(object):
 
     Parameters
     ----------
-    fvars : array 
+    fvars : array
         Array of values of parameters.
     reduce : bool, optional (default=`True`)
         Whether to return an array of residuals or apply the reduction method
         to return a scalar.
-    rebounding : bool, optional (default=`True`) 
-        Whether to apply bound transformations or not. These transformations 
+    rebounding : bool, optional (default=`True`)
+        Whether to apply bound transformations or not. These transformations
         are Minuit-like ones. There is an ipanema.Parameter method that handles
         them.
-                  
+
     Returns
     -------
     np.ndarray or float
         Residuals patched by nan_handler.
-                  
+
     """
 
     # Get parameters and set new proposals
@@ -741,17 +741,17 @@ class Optimizer(object):
 
   def prepare_fit(self, params=None):
     """
-    Function to create a OptimizerResult from a Optimizer object to latter be 
+    Function to create a OptimizerResult from a Optimizer object to latter be
     optimized
 
     Parameters
     ----------
     params : ipanema.parameter.Parameters, optional
         Parameters to use.
-                  
+
     Returns
     -------
-    OptimizerResult 
+    OptimizerResult
         Object prepared to perform fits optimizers.OptimizerResult
     """
 
@@ -914,7 +914,7 @@ class Optimizer(object):
         ret.minos()
     except KeyboardInterrupt:
       pass
-    
+
     if not result.aborted:
       # return minuit class (you can keep optimizing, but without ipanema)
       result._minuit = ret
@@ -927,12 +927,12 @@ class Optimizer(object):
       result.residual = self._wrapper_minuit_(*result.x, reduce = True)
       result.residual += self.result.init_residual
       result.nfev -= 1
-    
+
     result._compute_statistics_()
     # if len(result.x) != len(result.params):       # guarrada para salir del paso
     #   result._compute_statistics_()
     #   result.cov = self._calculate_covariance_matrix_(result.x)
-    #   self._calculate_uncertainties_correlations_()  
+    #   self._calculate_uncertainties_correlations_()
 
     # calculate the cov and estimate uncertanties/correlations
     result.cov = np.matrix(ret.matrix())
@@ -1012,7 +1012,7 @@ class Optimizer(object):
       print(f"{'atol':>25} : {atol}")
       print(f"{'non-used arguments':>25} : {crap}")
       print(f"{'params':>25} : {result.params.valuesdict()}")
-    
+
     if method == 'Nelder-Mead':
       maxiter *= 10
     variables = result.param_init
@@ -1025,21 +1025,21 @@ class Optimizer(object):
     scpmin_kws = {"updating":updating, "workers":workers, "strategy":strategy,
                   "popsize":popsize, "disp":disp, "mutation":mutation,
                   "recombination":recombination, "seed":seed, "init":init,
-                  "callback":callback, "polish":polish, "tol":tol, 
+                  "callback":callback, "polish":polish, "tol":tol,
                   "atol":atol, "maxiter":maxiter#, "iprint": iprint
                  }
     scpmin_kws = {k:v for k,v in scpmin_kws.items() if v != None}
-    
+
     # swicher: differential evolution is a bit different
     if method == 'Differential-Evolution':
       try:
-        ret = differential_evolution(self._wrapper_scipy_, diff_ev_bounds, 
+        ret = differential_evolution(self._wrapper_scipy_, diff_ev_bounds,
                                      options=scpmin_kws)
       except KeyboardInterrupt:
         pass
     else:
       try:
-        ret = scipy_minimize(self._wrapper_scipy_, variables, method=method, 
+        ret = scipy_minimize(self._wrapper_scipy_, variables, method=method,
                              options=scpmin_kws)
       except KeyboardInterrupt:
         pass
@@ -1095,17 +1095,17 @@ class Optimizer(object):
     steps: int, optional (default=1000)
         Number of samples to draw from the posterior distribution
     nwalkers : int, optional (default=1000)
-        From statistics it follows nwalkers >> nvary. As it says the emcee 
+        From statistics it follows nwalkers >> nvary. As it says the emcee
         documentation: "Walkers are the members of the ensemble. They are
-        almost like separate Metropolis-Hastings chains but, of course, the 
-        proposal distribution for a given walker depends on the positions of 
+        almost like separate Metropolis-Hastings chains but, of course, the
+        proposal distribution for a given walker depends on the positions of
         all the other walkers in the ensemble."
     burn : int, optional (default=0)
         Number of sables to be discarded from the begining of the samplingint.
     thin : int, optional (default=1)
-        mod(#samples,thin) it the number of accepted samples.             
+        mod(#samples,thin) it the number of accepted samples.
     ntemps : int, optional (default=1)
-        Parallel Tempering if ntemps>1      
+        Parallel Tempering if ntemps>1
     pos : array, optional (default=None)
         Specify the initial positions for the sampler.  If `ntemps == 1`
         then `pos.shape` should be `(nwalkers, nvary)`. Otherwise,
@@ -1113,14 +1113,14 @@ class Optimizer(object):
         previous chain that had the same `ntemps`, `nwalkers` and
         `nvary`. Note that `nvary` may be one larger than you expect it
         to be if your `fcn_call` returns an array and `is_weighted is
-        False`.            
+        False`.
     reuse_sampler : bool, optional (default=False)
         If emcee was already used to optimize a function and there
         is no change in the parameters, then one can continue
         drawing from the same sampler. This argument skips emcee
         to load other arguments, so be aware.
-    workers : pool-like or int, optional (default=1) 
-        For parallelization of sampling.          
+    workers : pool-like or int, optional (default=1)
+        For parallelization of sampling.
     behavior:  str, optional (default='likelihood').
         Whether the function-call method returns a log-posterior
         probability ('likelihood') or a chi2 ('chi2')
@@ -1131,16 +1131,16 @@ class Optimizer(object):
         In this second case `emcee` will employ a positive
         measurement uncertainty during the sampling. This
         measurement uncertainty will be present in the output
-        params and output chain with the name `log_fcn`.          
+        params and output chain with the name `log_fcn`.
     seed : int or `numpy.random.RandomState`, optional (default=None)
-        Seed for numpy random generator.            
+        Seed for numpy random generator.
     verbose : bool, optional (default=`False`)
         Whether to print optimization information or not.
     progress : bool, optional (default=`True`)
 
     Returns
     -------
-    OptimizerResult 
+    OptimizerResult
         Object that in general include all info the selected method provides.
     """
     tparams = params
@@ -1326,7 +1326,7 @@ class Optimizer(object):
     result.residuals = self._residual_(np.array(params),reduce=False)
     result.residual = self._residual_(np.array(params),reduce=True)
     result.residual += self.result.init_residual
-    
+
     # If uncertainty was automatically estimated, weight the residual properly
     if (not is_weighted) and (result.residual.size > 1):
       if 'logfcn' in params:
@@ -1379,7 +1379,7 @@ class Optimizer(object):
 
     Returns
     -------
-    OptimizerResult 
+    OptimizerResult
         Object that in general include all info the selected method provides.
 
     """
@@ -1642,7 +1642,7 @@ class Optimizer(object):
 
     Returns
     -------
-    OptimizerResult 
+    OptimizerResult
         Object that in general include all info the selected method provides.
     """
 
@@ -1748,7 +1748,7 @@ class Optimizer(object):
         * - `slsqp`: Sequential Linear Squares Programming
     method_kwgs : dict
         Keyword-arguments to be passed to the underlying minimization algorithm.
-    
+
     Returns
     -------
     callable
@@ -1829,16 +1829,16 @@ def optimize(fcn_call, params, method='lbfgsb',
       Set of positional arguments that fcn needs (or handles)
   fcn_kwgs : dict
       Set of keyword arguments that fcn needs (or handles)
-  method_kwgs : dict 
+  method_kwgs : dict
       Set of keyword arguments passed to the optimizer method. If the optimizer
       cannot handle them there will be errors.
 
   Returns
   -------
-  OptimizerResult 
+  OptimizerResult
       Object that in general include all info that the selected method provides
       (at least the most useful one).
-  
+
   """
   t0 = timer()
   fitter = Optimizer(fcn_call, params, fcn_args=fcn_args, fcn_kwgs=fcn_kwgs,
