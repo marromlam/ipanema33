@@ -46,4 +46,10 @@ WITHIN_KERNEL
 ftype argus(const ftype x, const ftype m0, const ftype c, const ftype p);
 
 
+
+WITHIN_KERNEL
+ftype physbkg(const ftype m, const ftype m0, const ftype c, const ftype s);
+
+
+
 #endif // _LINESHAPES_H_

@@ -7,8 +7,9 @@ WITHIN_KERNEL
 ftype normal( const ftype x, const ftype mu, const ftype sigma )
 {
   const ftype s2 = sigma * sigma;
-  const ftype d  = (x - mu);
-  return exp(-d * d / (2 * s2)) / (SQRT_2PI_INV*sigma);
+  ftype d2  = (x - mu); d2 *= d2;
+
+  return exp(-0.5 * d2 / s2) / (SQRT_2PI_INV*sigma);
 }
 
 
@@ -29,9 +30,35 @@ ftype doublenormal(const ftype x, const ftype mu, const ftype sigma,
   const ftype gauss  = res*gauss11 + (1-res)*gauss12;
   const ftype gaussp = res*gauss22 + (1-res)*gauss22;
   
-  return yae*gauss + (1-gaussp);
+  return yae*gauss + (1-yae)*gaussp;
 }
 
+
+
+WITHIN_KERNEL
+ftype double_crystal_ball(const ftype x, const ftype mu, const ftype sigma, 
+                          const ftype aL, const ftype nL, const ftype aR, 
+                          const ftype nR)
+{
+  const ftype t = ( x - mu ) / sigma;
+
+  if ( t > aR )
+  {
+    const ftype A = rpow(nR / aR, nR) * exp(-0.5 * aR * aR);
+    const ftype B = nR / aR - aR;
+    return A / rpow(B + t, nR);
+  }
+  else if ( t < -aL )
+  {
+    const ftype A = rpow(nL / aL, nL) * exp(-0.5 * aL * aL);
+    const ftype B = nL / aL - aL;
+    return A / rpow(B - t, nL);
+  }
+  else
+  {
+    return exp(-0.5 * t * t);
+  }
+}
 
 
 WITHIN_KERNEL
@@ -47,9 +74,10 @@ ftype amoroso(const ftype x, const ftype a, const ftype theta,
 WITHIN_KERNEL
 ftype shoulder(const ftype x, const ftype mu, const ftype sigma, const ftype trans)
 {
-  const ftype beta = (mu - trans)/(sigma*sigma);
-  const ftype c = exp(-0.5*rpow((trans-mu)/sigma,2)) * exp(-beta*trans);
-  if (x <= trans)
+  const ftype shift = mu - trans;
+  const ftype beta = (mu - shift)/(sigma*sigma);
+  const ftype c = exp(-0.5*rpow((shift)/sigma,2)) * exp(-beta*shift);
+  if (x <= shift)
   { 
     return c * exp(beta*x);
   };
@@ -69,6 +97,62 @@ ftype argus(const ftype x, const ftype m0, const ftype c, const ftype p)
   const ftype b = exp(c * (1 - (x/m0) * (x/m0)) );
 
   return a*b;
+}
+
+
+
+WITHIN_KERNEL
+ftype physbkg(const ftype m, const ftype m0, const ftype c, const ftype s)
+{
+  //if (get_global_id(0) == 0){
+  //  printf("pars = %f, %f %f\n", m0, c, s);
+  //}
+
+  /*
+  const ftype ssq = s*s;
+  const ftype sfth = ssq*ssq;
+  const ftype csq = c*c;
+  const ftype m0sq = m0*m0;
+  const ftype xsq = m0sq;
+  const ftype msq = m*m;
+
+  const ftype up = 0.5*s * ( 2*exp(m0* (c + m/ssq) - (xsq + msq)/(2.*ssq) ) *s* (-m0sq + csq*sfth + xsq + m0*m +
+                 msq + ssq*(2 + c*m0 + 2*c*m) ) + exp((csq*sfth + xsq + 2*c*ssq*m + msq)/(2.*ssq) - 
+                 (xsq + msq)/(2.*ssq))*sqrt(2*M_PI)*
+                 (c*ssq + m)*(-m0sq + csq*sfth + msq + ssq*(3 + 2*c*m))*
+                 erf((c*ssq - m0 + m)/(sqrt(2.)*s)));
+
+  const ftype down = 0.5*s*(exp(-(msq)/(2.*ssq)) *s * 2 *s* (-m0sq + csq*sfth +
+                 msq + ssq*(2 + 2*c*m)) + exp((csq*sfth + 2*c*ssq*m + msq)/(2.*ssq) -(msq)/(2.*ssq)  )*sqrt(2*M_PI)*
+                 (c*ssq + m)*(-m0sq + csq*sfth + msq + ssq*(3 + 2*c*m))*
+                 erf((c*ssq + m)/(sqrt(2.)*s)));
+
+  return (up-down)<=0 ? 0 : (m-m0)>6*s ? 0 : (up-down);
+  */
+  const ftype ssq=s*s;
+  const ftype sfth=ssq*ssq;
+  const ftype csq=c*c;
+  const ftype m0sq=m0*m0;
+  const ftype xsq=m0sq;
+  const ftype msq=m*m;
+
+  const ftype up = 0.5 * s * (
+      2.0 * exp(m0* (c + m/ssq) - (xsq + msq)/(2.*ssq) ) * s * (-m0sq + csq*sfth + xsq + m0*m + msq + ssq*(2 + c*m0 + 2*c*m) ) 
+    + exp((csq*sfth + xsq + 2*c*ssq*m + msq)/(2.*ssq) - (xsq + msq)/(2.*ssq)) * sqrt(2.*M_PI) *
+      (c*ssq + m)*(-m0sq + csq*sfth + msq + ssq*(3 + 2*c*m)) * erf((c*ssq - m0 + m)/(sqrt(2.)*s))
+  );
+
+  const ftype down = 0.5*s*(exp(-(msq)/(2.*ssq)) *s * 2 *s* (-m0sq + csq*sfth +
+                 msq + ssq*(2 + 2*c*m)) + exp((csq*sfth + 2*c*ssq*m + msq)/(2.*ssq) -(msq)/(2.*ssq)  )*sqrt(2.*M_PI)*
+                 (c*ssq + m)*(-m0sq + csq*sfth + msq + ssq*(3 + 2*c*m))*
+                 erf((c*ssq + m)/(sqrt(2.)*s)));
+
+  //if (get_global_id(0) == 0){
+  //  printf("up_erf = %f\n", erf((c*ssq - m0 + m)/(sqrt(2.)*s)) );
+  //  printf("up, down = %f, %f\n", up, down);
+  //}
+  return (up-down)<=0?0:(m-m0)>6*s?0:(up-down);
+
 }
 
 
