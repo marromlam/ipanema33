@@ -64,7 +64,7 @@ void py_crystal_ball(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in,
                      ftype n)
 {
   SIZE_T idx = get_global_id(0);
-  out[idx] = crystal_ball(in[idx], c, s, a, n)
+  out[idx] = crystal_ball(in[idx], c, s, a, n);
 }
 
 

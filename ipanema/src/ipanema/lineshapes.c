@@ -22,10 +22,10 @@ ftype double_gaussian(const ftype x, const ftype mu, const ftype sigma,
   const ftype mup = mu + dmu;
   const ftype sigmap = sigma + dsigma;
 
-  const ftype gauss11 = gaussian(x, mu,  sigma);
-  const ftype gauss12 = gaussian(x, mu,  sigmap);
-  const ftype gauss21 = gaussian(x, mup, sigma);
-  const ftype gauss22 = gaussian(x, mup, sigmap);
+  const ftype gauss11 = normal(x, mu,  sigma);
+  const ftype gauss12 = normal(x, mu,  sigmap);
+  const ftype gauss21 = normal(x, mup, sigma);
+  const ftype gauss22 = normal(x, mup, sigmap);
   
   const ftype gauss  = res*gauss11 + (1-res)*gauss12;
   const ftype gaussp = res*gauss22 + (1-res)*gauss22;
@@ -40,7 +40,7 @@ ftype crystal_ball(const ftype x, const ftype c, const ftype s, const ftype a,
                    const ftype n)
 {
   const ftype t = ( a < 0 ? -1 : +1 ) * ( x - c ) / s;
-  ftype aa = fabs(a);
+  const ftype aa = fabs(a);
 
   if ( t >= -aa )
     return exp(-0.5 * t * t);
