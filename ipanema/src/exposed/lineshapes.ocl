@@ -28,7 +28,7 @@ void py_hyperbolic_distribution(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *i
 
 
 KERNEL
-void py_Amoroso(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in, const ftype a,
+void py_amoroso(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in, const ftype a,
              const ftype theta, const ftype alpha, const ftype beta )
 {
   SIZE_T idx = get_global_id(0);
@@ -38,46 +38,33 @@ void py_Amoroso(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in, const ftype a
 
 
 KERNEL
-void py_Normal(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in,
+void py_gaussian(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in,
             const ftype mu, const ftype sigma )
 {
   SIZE_T idx = get_global_id(0);
-  out[idx] = normal(in[idx], mu, sigma );
+  out[idx] = gaussian(in[idx], mu, sigma );
 }
 
 
 
 KERNEL
-void py_double_normal(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in,
+void py_double_gaussian(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in,
                       const ftype mu, const ftype sigma , const ftype dmu,
                       const ftype dsigma, const ftype yae, const ftype res)
 {
   SIZE_T idx = get_global_id(0);
-  out[idx] = doublenormal(in[idx], mu, sigma, dmu, dsigma, yae, res);
+  out[idx] = double_gaussian(in[idx], mu, sigma, dmu, dsigma, yae, res);
 }
 
 
 
 KERNEL
-void py_CrystalBall(GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in,
-                    ftype c, ftype s, ftype a, ftype n)
+void py_crystal_ball(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in,
+                     const ftype c, const ftype s, const ftype a, const 
+                     ftype n)
 {
   SIZE_T idx = get_global_id(0);
-  ftype x = in[idx];
-
-  ftype t = ( a < 0 ? -1 : +1 ) * ( x - c ) / s;
-
-  ftype aa = fabs(a);
-
-  if ( t >= -aa )
-    out[idx] = exp(-0.5 * t * t);
-  else
-  {
-    ftype A = pow(n / aa, n) * exp(-0.5 * aa * aa);
-    ftype B = n / aa - aa;
-
-    out[idx] = A / pow(B - t, n);
-  }
+  out[idx] = crystal_ball(in[idx], c, s, a, n)
 }
 
 
@@ -94,7 +81,7 @@ void py_double_crystal_ball(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in,
 
 
 KERNEL
-void py_Poly( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, int n, GLOBAL_MEM ftype *p )
+void py_poly( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, int n, GLOBAL_MEM ftype *p )
 {
 
   SIZE_T idx  = get_global_id(0);
@@ -116,7 +103,7 @@ void py_Poly( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, int n, GLOBAL_MEM fty
 
 
 KERNEL
-void py_PowerLaw(GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, ftype c, ftype n)
+void py_power_law(GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, ftype c, ftype n)
 {
   SIZE_T idx  = get_global_id(0);
   out[idx] = 1. / pow(fabs(in[idx] - c), n);
@@ -125,7 +112,7 @@ void py_PowerLaw(GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, ftype c, ftype n)
 
 
 KERNEL
-void py_Argus(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in,
+void py_argus(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in,
               const ftype m0, const ftype c, const ftype p)
 {
   SIZE_T idx = get_global_id(0);
