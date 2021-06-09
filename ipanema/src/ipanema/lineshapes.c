@@ -81,6 +81,7 @@ ftype double_crystal_ball(const ftype x, const ftype mu, const ftype sigma,
 }
 
 
+
 WITHIN_KERNEL
 ftype amoroso(const ftype x, const ftype a, const ftype theta,
               const ftype alpha, const ftype beta )

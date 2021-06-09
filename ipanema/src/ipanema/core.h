@@ -26,6 +26,14 @@
 #define XLIM 5.33
 #define YLIM 4.29
 
+// intgration
+#define EPS 1.0e-5
+#define JMAX 20
+
+// randon number generation
+#define RNG_CYCLES 100
+
+
 #define Inf (1./0.)
 #define NaN (0./0.)
 
