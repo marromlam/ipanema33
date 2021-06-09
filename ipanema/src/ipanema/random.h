@@ -18,8 +18,8 @@
 
 
 
-WITHIN_KERNEL
-float fract(float x);
+// WITHIN_KERNEL
+// float fract(float x);
 
 // WITHIN_KERNEL
 // int rng_core(int seed, int cycles);
@@ -38,16 +38,16 @@ float fract(float x);
 
 
 KERNEL
-void rngin_uniform_int(GLOBAL_MEM int *out, int seed, int cycles);
+void rngin_uniform_int(GLOBAL_MEM int *out, int seed);
 
 
 
 KERNEL
-void rngin_uniform(GLOBAL_MEM double *out, int seed, int cycles);
+void rngin_uniform(GLOBAL_MEM double *out, int seed);
 
 
 KERNEL
-void rngin_uniform_float(GLOBAL_MEM double *out, int seed, int cycles);
+void rngin_uniform_float(GLOBAL_MEM double *out, int seed);
 
 
 #endif // _RANDOM_H_
