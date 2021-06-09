@@ -42,7 +42,7 @@
 WITHIN_KERNEL
 ftype rpow(const ftype x, const ftype n)
 {
-  return pow((ftype) x, (ftype) n);
+  return pow(x, n);
 }
 
 
@@ -52,3 +52,28 @@ ftype sqr(const ftype x)
 {
   return x*x;
 }
+
+
+//static float sqrarg;
+//#define SQR(a) ((sqrarg=(a)) == 0.0 ? 0.0 : sqrarg*sqrarg)
+//#define SQUARE(a) ((a)*(a))
+
+/* ftype hypotenuse(const ftype a, const ftype b) */
+/* { */
+/*   const ftype absa = fabs(a); */
+/*   const ftype absb = fabs(b); */
+/*   if (absa > absb) */
+/*   { */
+/*     return absa * sqrt(1.0 + SQUARE(absb/absa)); */
+/*   } */
+/*   else */
+/*   { */
+/*     return absb == 0.0 ? 0.0 : absb * sqrt(1.0 + SQUARE(absa/absb)); */
+/*   } */
+/* } */
+
+
+
+
+
+
