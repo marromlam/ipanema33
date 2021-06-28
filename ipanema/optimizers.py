@@ -704,7 +704,7 @@ class Optimizer(object):
     for par in self.result.params.values():
       par.stdev, par.correl = 0, None
       has_formula = has_formula or par.formula is not None
-
+    
     for ivar, name in enumerate(self.result.param_vary):
       par = self.result.params[name]
       par.stdev = sqrt(scaled_cov[ivar, ivar])
@@ -1067,7 +1067,7 @@ class Optimizer(object):
         cov = 2 * ret.hess_inv
       else:
         cov = self._calculate_covariance_matrix_(result.x)
-      #cov = self._calculate_covariance_matrix_(result.x)
+      cov = self._calculate_covariance_matrix_(result.x)
       if cov is not None:
         result.cov = cov
         self._calculate_uncertainties_correlations_()

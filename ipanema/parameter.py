@@ -602,7 +602,7 @@ class Parameter(object):
 
 
 
-  def set(self, value=None, free=None, min=None, max=None, formula=None):
+  def set(self, value=None, init=None, stdev=None, free=None, min=None, max=None, formula=None):
     """
     Update Parameter attributes.
 
@@ -632,7 +632,7 @@ class Parameter(object):
     void
     
     """
-    self.__setstate__(value, free, min, max, formula)
+    self.__setstate__(value, init, stdev, free, min, max, formula)
 
 
 
@@ -659,9 +659,13 @@ class Parameter(object):
 
 
 
-  def __setstate__(self, value=None, free=None, min=None, max=None, formula=None):
+  def __setstate__(self, value=None, init=None, stdev=None, free=None, min=None, max=None, formula=None):
     if value is not None:
       self._value = value
+      self._set_formula_('')
+
+    if stdev is not None:
+      self.stdev = stdev
       self._set_formula_('')
 
     if free is not None:
