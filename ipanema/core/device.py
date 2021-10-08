@@ -534,6 +534,11 @@ def arange(n, dtype=types.cpu_int):
 def ale(a1, a2):
     return FUNCS_BY_ELEMENT.ale(a1, a2)
 
+# create a n-dimensional mesh
+def ndmesh(*args):
+   args = map(np.asarray,args)
+   return np.broadcast_arrays(*[x[(slice(None),)+(None,)*i] for i, x in enumerate(args)])
+
 
 
 def concatenate(arrays, maximum=None):
