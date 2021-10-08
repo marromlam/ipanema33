@@ -1,4 +1,4 @@
-from ..parameter import  Parameters
+from ..parameter import Parameters
 import numpy as np
 import warnings
 
@@ -32,16 +32,13 @@ def compute_sweights(model, data, params, yields):
   # Create as many sets of parameters as species. Each one of them only turns on
   # a specie, and set the others to zero
   _yields = []
-  print(yields)
   _sum_yields = np.sum([v.uvalue.n for v in yields.values()])
-  print(_sum_yields, len(data))
   for k,v in yields.items():
       __yields = Parameters.clone(yields)
       for _k in __yields.keys():
         __yields[_k].set(value=0, init=0)
       __yields[k].set(value=1/len(data), init=1)
       _yields.append(__yields)
-      print(__yields)
 
   # Stack all  
   p = np.vstack([model(data, **params.valuesdict(), **y.valuesdict()) for y in _yields]).T
