@@ -81,5 +81,7 @@ WITHIN_KERNEL
 ftype sqr(const ftype x);
 
 
+WITHIN_KERNEL
+int nearest_int(const ftype x);
 
 #endif //_CORE_H_

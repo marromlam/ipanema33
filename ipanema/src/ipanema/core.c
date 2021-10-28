@@ -54,6 +54,19 @@ ftype sqr(const ftype x)
 }
 
 
+WITHIN_KERNEL
+int nearest_int(ftype x)
+{
+   int i;
+   if (x >= 0) {
+      i = (int)(x + 0.5);
+      if ( i & 1 && x + 0.5 == (ftype)i ) i--;
+   } else {
+      i = (int)(x - 0.5);
+      if ( i & 1 && x - 0.5 == (ftype)i ) i++;
+   }
+   return i;
+}
 //static float sqrarg;
 //#define SQR(a) ((sqrarg=(a)) == 0.0 ? 0.0 : sqrarg*sqrarg)
 //#define SQUARE(a) ((a)*(a))
