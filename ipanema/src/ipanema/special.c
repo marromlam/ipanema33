@@ -62,7 +62,7 @@ ftype binom(const int n, const int k)
 
 
 WITHIN_KERNEL
-double erfcx(const double x)
+ftype erfcx(const ftype x)
 {
     // Steven G. Johnson, October 2012.
 
@@ -131,7 +131,7 @@ ftype lpmv(const int m, const int l, const ftype cosT)
 
     // shit
     if (M>l){
-        printf("WARNING: Associated Legendre polynomial (%+d,%+d) is out of the scope of this function.", l, m);
+        /* printf("WARNING: Associated Legendre polynomial (%+d,%+d) is out of the scope of this function.", l, m); */
         return 0;
     }
 
@@ -173,9 +173,9 @@ ftype lpmv(const int m, const int l, const ftype cosT)
         else           { return  105.*factor*sinT*sinT*sinT*sinT; }
     }
     else {
-        if (get_global_id(0) < 10000000000) {
-          printf("WARNING: Associated Legendre polynomial (%+d,%+d) is out of the scope of this function.", l, m);
-        }
+        /* if (get_global_id(0) < 10000000000) { */
+        /*   printf("WARNING: Associated Legendre polynomial (%+d,%+d) is out of the scope of this function.", l, m); */
+        /* } */
         //asm(“trap;”);
         return 0;
     }
@@ -490,8 +490,14 @@ ftype rkn(const int m, const ftype x)
   int n = (m<0) ? -m : m;
 
   // Filter some posible problems
-  if ( n > MAXFAC ) { printf("OVERFLOW\n"); return MAXNUM; }
-  if ( x <= 0.0 ) { printf("fora do dominio\n"); return MAXNUM; }
+  if ( n > MAXFAC ) { 
+      /* printf("OVERFLOW\n"); */
+      return MAXNUM;
+  }
+  if ( x <= 0.0 ) {
+      /* printf("fora do dominio\n"); */
+      return MAXNUM;
+  }
 
 
   if( x <= 9.55 )
@@ -538,11 +544,13 @@ ftype rkn(const int m, const ftype x)
           s += t;
           if ( (MAXNUM - fabs(t)) < fabs(s) )
           {
-            printf("OVERFLOW\n"); return MAXNUM;
+            /* printf("OVERFLOW\n"); */
+            return MAXNUM;
           }
           if ( (tox > 1.0) && ((MAXNUM/tox) < zmn) )
           {
-            printf("OVERFLOW\n"); return MAXNUM;
+            /* printf("OVERFLOW\n"); */
+            return MAXNUM;
           }
           zmn *= tox;
         }
@@ -550,11 +558,13 @@ ftype rkn(const int m, const ftype x)
         t = fabs(s);
         if ( (zmn > 1.0) && ((MAXNUM/zmn) < t) )
         {
-          printf("OVERFLOW\n"); return MAXNUM;
+          //printf("OVERFLOW\n");
+          return MAXNUM;
         }
         if ( (t > 1.0) && ((MAXNUM/t) < zmn) )
         {
-          printf("OVERFLOW\n"); return MAXNUM;
+          //printf("OVERFLOW\n");
+          return MAXNUM;
         }
         ans = s * zmn;
       }
@@ -590,7 +600,10 @@ ftype rkn(const int m, const ftype x)
     // Asymptotic expansion for rkv(x) which converges to 1.4e-17 for x > 18.4
 
     // filter the underflow
-    if ( x > MAXLOG ) { printf("UNDERFLOW\n"); return 0.0; }
+    if ( x > MAXLOG ) { 
+        //printf("UNDERFLOW\n");
+        return 0.0; 
+    }
 
     k = n;
     pn = 4.0 * k * k;
@@ -629,7 +642,7 @@ ftype rkv(const ftype n, const ftype x)
   // check domain
   if ( x <= 0.0 )
   {
-    if (x < 0.0) { printf("fora do dominio\n"); }
+    /* if (x < 0.0) { printf("fora do dominio\n"); } */
     return MAXNUM;
   }
 
