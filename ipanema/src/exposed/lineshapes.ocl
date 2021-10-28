@@ -81,7 +81,8 @@ void py_double_crystal_ball(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in,
 
 
 KERNEL
-void py_poly( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, int n, GLOBAL_MEM ftype *p )
+void py_poly(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in, 
+             const int n, GLOBAL_MEM const ftype *p )
 {
 
   SIZE_T idx  = get_global_id(0);
@@ -103,7 +104,8 @@ void py_poly( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, int n, GLOBAL_MEM fty
 
 
 KERNEL
-void py_power_law(GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, ftype c, ftype n)
+void py_power_law(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in, 
+                  const ftype c, const ftype n)
 {
   SIZE_T idx  = get_global_id(0);
   out[idx] = 1. / pow(fabs(in[idx] - c), n);
@@ -137,4 +139,15 @@ void py_physbkg(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in,
 {
   SIZE_T idx = get_global_id(0);
   out[idx] = physbkg(in[idx], m0, c, s);
+}
+
+
+
+KERNEL
+void py_johnson_su(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in,
+                const ftype mu, const ftype sigma, const ftype gamma,
+                const ftype delta)
+{
+  SIZE_T idx = get_global_id(0);
+  out[idx] = johnson_su(in[idx], mu, sigma, gamma, delta);
 }

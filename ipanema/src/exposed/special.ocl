@@ -1,4 +1,5 @@
 #include "ipanema/core.h"
+#include "ipanema/stats.h"
 #include "ipanema/special.h"
 
 
@@ -40,3 +41,13 @@ void py_rkv(GLOBAL_MEM ftype *out, GLOBAL_MEM const ftype *in, const ftype n)
   const int idx = get_global_id(0);
   out[idx] = rkv(n, in[idx]);
 }
+
+
+KERNEL
+void py_kolmogorov_prob(GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in)
+{
+  const unsigned int idx = get_global_id(0);
+  out[idx] = kolmogorov_prob(in[idx]);
+}
+
+
