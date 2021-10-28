@@ -323,6 +323,13 @@ KERNEL void ale( GLOBAL_MEM unsigned *out, GLOBAL_MEM double *in1, GLOBAL_MEM do
   out[idx] = ( in1[idx] < in2[idx] );
 }
 
+///Abs (for arrays)
+KERNEL void kabs( GLOBAL_MEM unsigned *out, GLOBAL_MEM double *in)
+{
+  SIZE_T idx = get_global_id(0);
+  out[idx] = fabs(in[idx]);
+}
+
 /// Less than
 KERNEL void le( GLOBAL_MEM unsigned *out, GLOBAL_MEM double *in, double v )
 {
@@ -418,7 +425,7 @@ for function in ('exponential_complex',):
 """
 # These functions take an array of doubles and return another array of doubles
 #for function in ('exponential_double', 'logarithm', 'real'):
-for function in ('exponential_double', 'sqrt_double', 'logarithm'):
+for function in ('exponential_double', 'sqrt_double', 'logarithm', 'kabs'):
     setattr(FUNCS_BY_ELEMENT, function, RETURN_DOUBLE(
         getattr(FUNCS_BY_ELEMENT, function)))
 
@@ -690,6 +697,8 @@ def log(a):
     return FUNCS_BY_ELEMENT.logarithm(a)
 
 
+def abs(a):
+    return FUNCS_BY_ELEMENT.kabs(a)
 
 def log10(a):
     return FUNCS_BY_ELEMENT.logarithm(a)
@@ -793,7 +802,8 @@ def sum_inside(centers, edges, values=None):
 
   return out
 
-
+def cumsum(a):
+  return allocate(np.cumsum(a.get()))
 
 def slice_from_boolean(a, valid):
     return THREAD.to_device(a.get()[valid.get().astype(types.cpu_real_bool)])
