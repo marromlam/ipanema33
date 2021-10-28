@@ -118,8 +118,13 @@ def uncertainty_wrapper(func, pars, hessian=False):
   f = lambda pars: func(pars)
 
   # get parameters and uncertainties
-  vals = np.array([pars[k].nominal_value for k in range(0,len(pars))])
-  uncs = np.array([pars[k].std_dev for k in range(0,len(pars))])
+  try:
+    _pars = list(pars.uvaluesdict().values())
+    vals = np.array([_pars[k].nominal_value for k in range(0,len(pars))])
+    uncs = np.array([_pars[k].std_dev for k in range(0,len(pars))])
+  except:
+    vals = np.array([pars[k].nominal_value for k in range(0,len(pars))])
+    uncs = np.array([pars[k].std_dev for k in range(0,len(pars))])
 
   # compute f nominal_value
   f_val = f(vals)
