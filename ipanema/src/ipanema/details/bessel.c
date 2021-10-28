@@ -5,7 +5,7 @@ ftype chebev(const ftype a, const ftype b, const ftype c[], const int m,
   ftype d = 0.0, dd=0.0, sv, y, y2;
   if ((x-a)*(x-b) > 0.0)
   {
-    printf("x not in range in routine chebev\n");
+    /* printf("x not in range in routine chebev\n"); */
     return 0.0;
   }
   y2 = 2.0 * ( y=(2.0*x-a-b) / (b-a) );
@@ -55,7 +55,7 @@ void bessel_rikv(const ftype x, const ftype xnu, ftype *ri, ftype *rk, ftype *ri
 
   if (x <=  0.0 || xnu < 0.0)
   {
-    printf("bad arguments in bessel_rikv");
+    /* printf("bad arguments in bessel_rikv"); */
   }
   const int nl = (int)(xnu+0.5);
   xmu = xnu-nl; xmu2 = xmu*xmu;
@@ -77,7 +77,7 @@ void bessel_rikv(const ftype x, const ftype xnu, ftype *ri, ftype *rk, ftype *ri
     if (fabs(del-1.0) < MACHEP) { break; }
   }
 
-  if (i > 10000) { printf("x too large in bessel_rikv; try asymptotic expansion"); }
+  if (i > 10000) { /*printf("x too large in bessel_rikv; try asymptotic expansion");*/ }
 
   ril = 1.e-30; // initialize for recurrence
   ripl = h*ril; // initialize for recurrence
@@ -108,7 +108,7 @@ void bessel_rikv(const ftype x, const ftype xnu, ftype *ri, ftype *rk, ftype *ri
       del = c*ff; sum += del; del1 = c*(p-i*ff); sum1 += del1;
       if (fabs(del) < fabs(sum)*MACHEP) { break; }
     }
-    if (i > 10000) { printf("bessk series failed to converge"); }
+    if (i > 10000) { /*printf("bessk series failed to converge");*/ }
     rkmu = sum;
     rk1 = sum1*xi2;
   }
@@ -126,7 +126,7 @@ void bessel_rikv(const ftype x, const ftype xnu, ftype *ri, ftype *rk, ftype *ri
     if (fabs(dels/s) < MACHEP) { break; }
     // Need only test convergence of sum since CF2 itself converges more quickly.
     }
-    if (i > 10000) { printf("bessel_rikv: failure to converge in cf2"); }
+    if (i > 10000) { /*printf("bessel_rikv: failure to converge in cf2");*/ }
     h = a1*h;
     rkmu = sqrt(M_PI/(2.0*x))*exp(-x)/s;
     rk1 = rkmu*(xmu+x+0.5-h)*xi;

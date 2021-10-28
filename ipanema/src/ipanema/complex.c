@@ -218,10 +218,9 @@ WITHIN_KERNEL
 ctype cjv(const ftype n, const ctype x)
 {
   #ifdef CUDA
-    printf("not yet implemented\n");
+    /* printf("not yet implemented\n"); */
     return C(0.,0.);
   #else
-    printf("not yet implemented\n");
     return C(0.,0.);
   #endif
 }
