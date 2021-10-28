@@ -277,7 +277,7 @@ class Sample(object):
       noe = round(uproot.open(filename)[treename]._fEntries*share/100)
       up_kwgs.update(entrystop=noe)
     # uproot4: df = uproot.open(filename,**up_kwgs)[treename].arrays(branches, library="pd")
-    df = uproot.open(filename)[treename].pandas.df(**up_kwgs)
+    df = uproot.open(filename)[treename].pandas.df(branches=branches, **up_kwgs)
     return cls(df, name, cuts=cuts, params=params,
                copy=copy, convert=convert, trim=trim, backup=backup, path=filename)
 

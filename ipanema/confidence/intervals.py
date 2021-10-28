@@ -130,6 +130,8 @@ def confidence_interval(optimizer, result, param_names=None, sigmas=[1, 2, 3],
       Dictionary with fixed_param: ()
 
   """
+  if optimizer.result != 'chi2':
+      sigmas = [s*2 for s in sigmas]
   ci = CI(optimizer, result, param_names, tester, sigmas, verbose, maxiter)
   cl = ci.get_all_confidence_intervals()
   return cl, ci.footprints
@@ -597,7 +599,7 @@ def plot_contours(mini, result, params=False, size=(20,20)):
 def plot_conf2d(mini, result, params=False, size=(20, 20), verbose=False):
   # look for free parameters
   fig, axes = plt.subplots(figsize=(5, 5))
-  x, y, z = confidence_interval2d(mini, result, *params, *size, verbose=verbose)
+  x, y, z = confidence_interval2d(mini, result, *params, *size, verbose=verbose)# IDEA:
   axes.contourf(x, y, z, [0,1-np.exp(-0.5),1-np.exp(-2.0),1-np.exp(-4.5)],
                 cmap='GnBu')
                 # colors=['C1','C3','C2','C4'], alpha=0.5)

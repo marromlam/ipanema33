@@ -398,12 +398,11 @@ class OptimizerResult(object):
 
 
 
-################################################################################
-# Optimizer Object #############################################################
+# Optimizer Object {{{
 
 class Optimizer(object):
   """
-  A general optimizer for curve fitting and optimization.
+  A generaloptimizer for curve fitting and optimization.
   """
 
   def __init__(self, fcn_call, params,
@@ -514,7 +513,7 @@ class Optimizer(object):
 
 
 
-  # Residual reductions ------------------------------------------------------
+  # Residual reductions {{{
 
   def _residual_sum_(self, arr):
     """
@@ -538,9 +537,10 @@ class Optimizer(object):
     """
     return _nan_handler_(arr.sum(), self.policy)
 
+  # }}}
 
 
-  # Wrappers around fcn_call -------------------------------------------------
+  # Wrappers around fcn_call {{{
 
   def _residual_(self, fvars, reduce=False, rebounding=True):
     """
@@ -627,10 +627,11 @@ class Optimizer(object):
       fvars = fvars.reshape((1,))
     return self._residual_(list(fvars), reduce=reduce, rebounding=rebounding)
 
+  # }}}
 
 
-  # Statistics calculators ---------------------------------------------------
-  # DONE
+  # Statistics calculators {{{
+
   def _calculate_covariance_matrix_(self, fvars):
     """
     The covariance matrix.
@@ -735,9 +736,10 @@ class Optimizer(object):
           self.result.params[nam].value = v.nominal_value
     np.seterr(**orig_warn_settings)
 
+  # }}}
 
 
-  # Prepare and unprepare fit functions --------------------------------------
+  # Prepare and unprepare fit {{{
 
   def prepare_fit(self, params=None):
     """
@@ -813,11 +815,15 @@ class Optimizer(object):
     return result
 
 
-
   def unprepare_fit(self):
     pass
 
+  # }}}
 
+
+  # METHODS (should be in different files) {{{
+
+  # Minuit method {{{
 
   def _configure_minuit_parameters_(self, pars):
     """
@@ -838,9 +844,6 @@ class Optimizer(object):
         config.update(parameter_minuit_config(pars[par]))
     return config
 
-
-
-  # Minuit method ------------------------------------------------------------
 
   def minuit(self, params=None, method='hesse', strategy=1, errordef=1, tol=0.05, print_level=-1, pedantic=False, maxiter=False, verbose=False, **crap):
     """
@@ -955,9 +958,10 @@ class Optimizer(object):
     self.result.message += f"Current estimated distance to minimum is {ret.edm:.4}."
     return result
 
+  # }}}
 
 
-  # Scipy.optimize methods handler ---------------------------------------------
+  # Scipy.optimize methods handler {{{
 
   def scalar_optimize(self, params=None, method='Nelder-Mead', maxiter=False, hess=False, updating='immediate', workers=1, strategy='best1bin', popsize=15, tol=0.01, mutation=(0.5, 1), recombination=0.7, seed=None, callback=None, disp=False, polish=True, init='latinhypercube', atol=0, verbose=False, **crap):
     """
@@ -1074,9 +1078,10 @@ class Optimizer(object):
 
     return result
 
+  # }}}
 
 
-  # MCMC Hammer --------------------------------------------------------------
+  # MCMC Hammer {{{
 
   def emcee(self, params=None, steps=1000, nwalkers=100, burn=0, thin=1, ntemps=1, pos=None, reuse_sampler=False, workers=1, behavior='likelihood', is_weighted=True, seed=None, verbose=False, progress=True):
     """
@@ -1357,9 +1362,10 @@ class Optimizer(object):
 
     return result
 
+  # }}}
 
 
-  # Trust-Region and Levenberg-Marquardt method --------------------------------
+  # Trust-Region and Levenberg-Marquardt method {{{
 
   def least_squares(self, params=None, method='lm', verbose=False, **method_kwgs):
     """
@@ -1500,13 +1506,10 @@ class Optimizer(object):
 
         return result
 
+  # }}}
 
 
-
-
-
-
-  # Basin - Hopping method -----------------------------------------------------
+  # Basin - Hopping method {{{
 
   def basinhopping(self, params=None, verbose=False, **method_kwgs):
     """
@@ -1560,9 +1563,10 @@ class Optimizer(object):
 
     return result
 
+  # }}}
 
 
-  # Simplicial Homology Global Optimization method -----------------------------
+  # Simplicial Homology Global Optimization method {{{
 
   def shgo(self, params=None, verbose=False, **method_kwgs):
     """
@@ -1615,9 +1619,10 @@ class Optimizer(object):
 
     return result
 
+  # }}}
 
 
-  # Dual Annealing optimization ----------------------------------------------
+  # Dual Annealing optimization {{{
 
   def dual_annealing(self, params=None, verbose=False, **method_kwgs):
     """
@@ -1700,9 +1705,12 @@ class Optimizer(object):
 
     return result
 
+  # }}}
+
+  # }}}
 
 
-  # Optimization launcher ----------------------------------------------------
+  # Optimization launcher {{{
 
   def optimize(self, params=None, method='lbfgsb', **method_kwgs):
     """
@@ -1789,14 +1797,12 @@ class Optimizer(object):
           kwgs['method'] = v
     return function(**kwgs)
 
+  # }}}
+
+# }}}
 
 
-################################################################################
-
-
-
-################################################################################
-# Optimize function ############################################################
+# Optimize function {{{
 
 def optimize(fcn_call, params, method='lbfgsb',
              fcn_args=None, fcn_kwgs=None,
@@ -1855,4 +1861,7 @@ def optimize(fcn_call, params, method='lbfgsb',
     print(f'Optimization finished in {hours}h {minutes}m {seconds:2.3}s.')
   return result
 
-################################################################################
+# }}}
+
+
+# vim:foldmethod=marker
