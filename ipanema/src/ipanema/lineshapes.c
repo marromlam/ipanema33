@@ -2,6 +2,7 @@
 #include "special.h"
 
 
+// Gaussian {{{
 
 WITHIN_KERNEL
 ftype gaussian( const ftype x, const ftype mu, const ftype sigma )
@@ -12,7 +13,10 @@ ftype gaussian( const ftype x, const ftype mu, const ftype sigma )
   return exp(-0.5 * d2 / s2) / (SQRT_2PI_INV*sigma);
 }
 
+// }}}
 
+
+// Double gaussian {{{
 
 WITHIN_KERNEL
 ftype double_gaussian(const ftype x, const ftype mu, const ftype sigma, 
@@ -33,7 +37,10 @@ ftype double_gaussian(const ftype x, const ftype mu, const ftype sigma,
   return yae*gauss + (1-yae)*gaussp;
 }
 
+// }}}
 
+
+// Crystal Ball (right-tail only) {{{
 
 WITHIN_KERNEL
 ftype crystal_ball(const ftype x, const ftype c, const ftype s, const ftype a, 
@@ -53,7 +60,10 @@ ftype crystal_ball(const ftype x, const ftype c, const ftype s, const ftype a,
   }
 }
 
+// }}}
 
+
+// Double Crystal Ball {{{
 
 WITHIN_KERNEL
 ftype double_crystal_ball(const ftype x, const ftype mu, const ftype sigma, 
@@ -80,7 +90,10 @@ ftype double_crystal_ball(const ftype x, const ftype mu, const ftype sigma,
   }
 }
 
+// }}}
 
+
+// Amoroso {{{
 
 WITHIN_KERNEL
 ftype amoroso(const ftype x, const ftype a, const ftype theta,
@@ -90,7 +103,10 @@ ftype amoroso(const ftype x, const ftype a, const ftype theta,
   return rpow(d, alpha * beta - 1) * exp(- rpow(d, beta));
 }
 
+// }}}
 
+
+// Shoulder {{{
 
 WITHIN_KERNEL
 ftype shoulder(const ftype x, const ftype mu, const ftype sigma, const ftype trans)
@@ -105,7 +121,10 @@ ftype shoulder(const ftype x, const ftype mu, const ftype sigma, const ftype tra
   return exp(-0.5 * rpow((x-mu)/sigma,2));
 }
 
+// }}}
 
+
+// Argus {{{
 
 WITHIN_KERNEL
 ftype argus(const ftype x, const ftype m0, const ftype c, const ftype p)
@@ -120,7 +139,10 @@ ftype argus(const ftype x, const ftype m0, const ftype c, const ftype p)
   return a*b;
 }
 
+// }}}
 
+
+// Physics Background {{{
 
 WITHIN_KERNEL
 ftype physbkg(const ftype m, const ftype m0, const ftype c, const ftype s)
@@ -176,7 +198,10 @@ ftype physbkg(const ftype m, const ftype m0, const ftype c, const ftype s)
 
 }
 
+// }}}
 
+
+// Generalized hyperbolic distribution {{{
 
 WITHIN_KERNEL
 ftype hyperbolic_distribution(const ftype x, const ftype lambda,
@@ -219,6 +244,10 @@ ftype hyperbolic_distribution(const ftype x, const ftype lambda,
 }
 
 
+// }}}
+
+
+// Ipatia {{{
 
 WITHIN_KERNEL
 ftype ipatia(const ftype x, const ftype mu, const ftype sigma,
@@ -306,7 +335,11 @@ ftype ipatia(const ftype x, const ftype mu, const ftype sigma,
     // writen before.
     ftype delta2 = (lambda>=-1.0) ? sigma : sigma * sqrt(-2.0 - 2.0*lambda);
     delta2 *= delta2;
-    if (delta2 == 0 ) { printf("DIVISION BY ZERO\n"); return MAXNUM; }
+    if (delta2 == 0 )
+    {
+      //printf("DIVISION BY ZERO\n");
+      return MAXNUM;
+    }
 
     if (d < -aLsigma )
     {
@@ -337,8 +370,29 @@ ftype ipatia(const ftype x, const ftype mu, const ftype sigma,
   }
   else
   {
-    printf("zeta = 0 only suported if lambda < 0, and lambda = %f\n", lambda);
+    // printf("zeta = 0 only suported if lambda < 0, and lambda = %f\n", lambda);
     return MAXNUM;
   }
 
 }
+
+// }}}
+
+
+// Johnson's SU {{{
+
+WITHIN_KERNEL
+ftype johnson_su(const ftype x, const ftype mu, const ftype sigma, 
+    const ftype gamma, const ftype delta)
+{
+  const ftype d = (x-mu)/sigma;
+
+  ftype ans = (delta)/(sigma*sqrt(2*M_PI));
+  ans /= sqrt(1 + d*d);
+  ans *= exp(-0.5*rpow(gamma + delta*asinh(d), 2));
+  return ans;
+}
+// }}}
+
+
+// vim:foldmethod=marker

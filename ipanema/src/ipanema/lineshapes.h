@@ -51,5 +51,8 @@ WITHIN_KERNEL
 ftype physbkg(const ftype m, const ftype m0, const ftype c, const ftype s);
 
 
+WITHIN_KERNEL
+ftype johnson_su(const ftype x, const ftype mu, const ftype sigma, 
+    const ftype gamma, const ftype delta);
 
 #endif // _LINESHAPES_H_
