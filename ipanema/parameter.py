@@ -24,10 +24,7 @@ for name in ['gamma', 'erf', 'erfc', 'wofz']:
 def _check_ast_errors_(formula_eval):
   if len(formula_eval.error) > 0: formula_eval.raise_exception(None)
 
-try:
-  import ROOT
-except:
-  print("you can't use root (what a pity)")
+from .parameters.blinding import RooUnblindUniform
 
 ################################################################################
 # Parameters ###################################################################
@@ -524,7 +521,7 @@ class Parameter(object):
   def __init__(self, name=None, value=0, free=True, min=-inf, max=inf,
                formula=None, casket=None, init=None,
                correl=None, stdev=None, latex=None,
-               blind=False, blindstr=None, blindscale = 1.0, blindengine='python'):
+               blind=False, blindstr=None, blindscale=1.0, blindengine='python'):
     """
     Object that controls a model
 
@@ -588,15 +585,18 @@ class Parameter(object):
     self._blindmask = 0
     if bool(blind) and blindstr:
       if blindengine=='python':
+
         np.random.seed( abs(hash('blindstr')//(2**32-1)) )
         self._blindmask = (value-blindscale)+blindscale*np.random.rand()
         #self._blindmask = value*(-blindscale+blindscale*np.random.rand())
         #print(self._blindmask)
         #        self._blindmask = np.random.uniform(value*(1-blindscale),value*(1+blindscale))
       elif blindengine=='root':
-        u = ROOT.RooRealVar(f"{self.name}_",f"{self.name}_",2,0,4)
-        b = ROOT.RooUnblindUniform(f"{self.name}", f"{self.name}", self._blindstr, self._blindscale, u)
-        self._blindmask = b.getVal()-u.getVal()
+        # WARNING: no entiendo esto
+        # u = ROOT.RooRealVar(f"{self.name}_",f"{self.name}_",2,0,4)
+        # b = ROOT.RooUnblindUniform(f"{self.name}", f"{self.name}", self._blindstr, self._blindscale, u)
+        b = RooUnblindUniform(f"{self.name}", f"{self.name}", self._blindstr, self._blindscale, 2)
+        self._blindmask = b.evaluate()-2
 
     self._check_init_bounds_()
 
