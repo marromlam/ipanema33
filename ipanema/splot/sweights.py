@@ -6,7 +6,7 @@ import warnings
 __all__ = ['compute_sweights', 'sweights_u']
 
 
-def compute_sweights(model, data, params, yields):
+def compute_sweights(model, params, yields):
   r"""
   Computes sWeights from probability density functions for different components/species in
   a fit model (for instance signal and background) fitted on some data.
@@ -29,6 +29,9 @@ def compute_sweights(model, data, params, yields):
   
   """
 
+  # Evaluate full model
+  full_model = model(**params.valuesdict(), **yields.valuesdict())
+
   # Create as many sets of parameters as species. Each one of them only turns on
   # a specie, and set the others to zero
   _yields = []
@@ -36,15 +39,15 @@ def compute_sweights(model, data, params, yields):
   for k,v in yields.items():
       __yields = Parameters.clone(yields)
       for _k in __yields.keys():
-        __yields[_k].set(value=0, init=0)
-      __yields[k].set(value=1/len(data), init=1)
+        __yields[_k].set(value=0, init=0, min=-np.inf, max=np.inf)
+      __yields[k].set(value=1/len(full_model), init=1)
       _yields.append(__yields)
 
   # Stack all  
-  p = np.vstack([model(data, **params.valuesdict(), **y.valuesdict()) for y in _yields]).T
-  Nx = model(data, **params.valuesdict(), **yields.valuesdict())
-  pN = p / Nx[:, None]
+  p = np.vstack([model(**params.valuesdict(), **y.valuesdict()) for y in _yields]).T
+  pN = p / full_model[:, None]
 
+  # Sanity check
   MLSR = pN.sum(axis=0)
 
   def warning_message(tolerance):
@@ -69,7 +72,7 @@ def compute_sweights(model, data, params, yields):
   V = np.linalg.inv(Vinv)
   
   # Compute the set of sweights
-  sweights = p.dot(V) / Nx[:, None]
+  sweights = p.dot(V) / full_model[:, None]
 
   return {y: sweights[:, i] for i, y in enumerate(yields)}
 
