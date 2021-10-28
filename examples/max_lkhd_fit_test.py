@@ -8,7 +8,7 @@
 # Imports ----------------------------------------------------------------------
 #    First we should do some imports
 from ipanema import initialize
-initialize('python',1)     # python|opencl|cuda this script runs on all backends
+initialize('cuda',1)     # python|opencl|cuda this script runs on all backends
 
 import os
 import numpy as np
@@ -64,12 +64,12 @@ def loglikelihood(pars, data1, data2):
 x = ristra.allocate( np.linspace(-10,20,200)  )
 y = model(x,4,6)
 plt.plot(ristra.get(x), ristra.get(y))
-
+plt.show()
 
 #%% Prepare arrays -------------------------------------------------------------
 #    It's time to create a random dataset that follows the model with p_true
 #    set of parameters.
-N = int(1e6)
+N = int(1e8)
 data1 = np.random.normal(p_true['mu'].value, p_true['sigma1'].value, size=int(1e6))
 data1 = ristra.allocate(data1) # allocate it wherever the backend needs
 data2 = np.random.normal(p_true['mu'].value, p_true['sigma2'].value, size=int(1e5))
@@ -87,7 +87,7 @@ fig, axplot = plotting.axes_plot();
 axplot.fill_between(hdata2.bins, hdata2.counts,
                     step="mid", color='k',alpha=0.2,
                     label=f"dataset 2")
-
+plt.show()
 
 
 
@@ -156,7 +156,7 @@ for dataset, n in zip([data1, data2],['1','2']):
   hdata = histogram.hist(ristra.get(dataset), weights=None, bins=100)
 
   # scale linspace to histogram
-  factor = hdata.norm*abs(hdata.edges[1]-hdata.edges[0])
+  factor = hdata.norm#*abs(hdata.edges[1]-hdata.edges[0])
   y_hesse *= factor/(y_hesse.sum()*abs(x[1]-x[0]))
   y_bfgs *= factor/(y_bfgs.sum()*abs(x[1]-x[0]))
 
@@ -167,7 +167,7 @@ for dataset, n in zip([data1, data2],['1','2']):
                       label=f"dataset {n}")
   axplot.plot(x, y_hesse, label='minuit' )
   axplot.plot(x, y_bfgs, label='bfgs', color='C3' )
-  axplot.set_yscale('log')
+  #axplot.set_yscale('log')
   axpull.fill_between(hdata.bins,
                       histogram.pull_pdf(x,y_hesse,hdata.bins,hdata.counts,hdata.errl,hdata.errh),
                       0, facecolor="C0", alpha=0.5)
@@ -176,3 +176,4 @@ for dataset, n in zip([data1, data2],['1','2']):
                       0, facecolor="C3", alpha=0.5)
   axplot.legend()
   fig.savefig(f'dataset{n}_fit.pdf')
+  fig.show()

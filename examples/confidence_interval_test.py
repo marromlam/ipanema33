@@ -1,40 +1,7 @@
 
 
 
-
-
-
 #%%
-
-import numpy as np
-import ipanema
-import matplotlib.pyplot as plt
-
-1+1
-
-def residual(pars,x,y=None):
-  p = pars.valuesdict()
-  model = p['a'] + p['b']*x
-  if y is None:
-    return model
-  return (1/(0.05)**2)*(model - y)**2
-
-p = ipanema.Parameters()
-p.add({'name':'a','value':  0.071},
-      {'name':'b','value':  0.026})
-
-
-x = np.array([10,20,30,40,50,60,70,80,90])
-y = np.array([0.37,0.58,0.83,1.15,1.36,1.62,1.90,2.18,2.45])
-
-
-plt.plot(x,y,'.')
-
-
-help(lmmini.emcee)
-res_emcee = lmmini.optimize(method='emcee', steps=100000, is_weighted=False)
-res_emcee.params.print()
-
 import corner
 corner.corner(res_emcee.flatchain)
 
