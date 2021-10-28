@@ -71,7 +71,9 @@ def hist(data, bins=60, weights=None, density=False, **kwargs):
   counts, edges = np.histogram(data, bins=bins, weights=weights, density=False,
                                **kwargs)
   bincs = (edges[1:]+edges[:-1])*0.5;
-  norm = counts.sum()
+  #norm = counts.sum()
+  #norm = np.trapz(counts,bincs)
+  norm = np.sum(counts)*(bincs[1]-bincs[0])
 
   # Compute the mass-center of each bin
   cmbins = np.copy(bincs)
