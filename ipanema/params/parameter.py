@@ -24,7 +24,7 @@ for name in ['gamma', 'erf', 'erfc', 'wofz']:
 def _check_ast_errors_(formula_eval):
   if len(formula_eval.error) > 0: formula_eval.raise_exception(None)
 
-from .parameters.blinding import RooUnblindUniform
+# from .parameters.blinding import RooUnblindUniform
 
 __all__ = ['Parameter', 'Parameters']
 
