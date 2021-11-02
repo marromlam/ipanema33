@@ -39,8 +39,8 @@ import six # faime falta?
 import uncertainties as unc
 
 # Ipanema modules
-from .parameter import Parameter, Parameters
-from .utils.print_reports import fit_report
+from ..params import Parameter, Parameters
+from ..utils.print_reports import fit_report
 
 __all__ = ['optimize', 'Optimizer']
 
