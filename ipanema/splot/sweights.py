@@ -1,4 +1,4 @@
-from ..parameter import Parameters
+from ..params import Parameters
 import numpy as np
 import warnings
 
