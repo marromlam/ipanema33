@@ -30,25 +30,35 @@ def compute_sweights(model, params, yields):
   """
 
   # Evaluate full model
-  full_model = model(**params.valuesdict(), **yields.valuesdict())
+  prob_model = model(**params.valuesdict(), **yields.valuesdict())
+
+  # Get number of events and yield size
+  _sum_yields = np.sum([v.uvalue.n for v in yields.values()])
+  _number_of_events = len(prob_model)
+
+  # Dictionary with species and sWeights
+  sweights = {y: np.zeros(_number_of_events) for y in yields} 
 
   # Create as many sets of parameters as species. Each one of them only turns on
   # a specie, and set the others to zero
-  _yields = []
-  _sum_yields = np.sum([v.uvalue.n for v in yields.values()])
+  _yields = {}
   for k,v in yields.items():
+    if not np.allclose(v.value/_sum_yields, 0, 1e-10):
       __yields = Parameters.clone(yields)
       for _k in __yields.keys():
         __yields[_k].set(value=0, init=0, min=-np.inf, max=np.inf)
-      __yields[k].set(value=1/len(full_model), init=1)
-      _yields.append(__yields)
+      __yields[k].set(value=1/len(prob_model), init=1)
+      _yields.update({k:__yields})
+    else:
+      msg = f"Specie {k} is compatible with zero. Flushing its sWeights to zero."
+      warnings.warn(msg)
 
   # Stack all  
-  p = np.vstack([model(**params.valuesdict(), **y.valuesdict()) for y in _yields]).T
-  pN = p / full_model[:, None]
+  prob_species = np.vstack([model(**params.valuesdict(), **y.valuesdict()) for y in _yields.values()]).T
+  prob_species_norm = prob_species / prob_model[:, None]
 
   # Sanity check
-  MLSR = pN.sum(axis=0)
+  MLSR = prob_species_norm.sum(axis=0)
 
   def warning_message(tolerance):
     msg = "The Maximum Likelihood Sum Rule sanity check, described in equation 17 of"
@@ -68,13 +78,16 @@ def compute_sweights(model, params, yields):
     warnings.warn(msg)
 
   # Get correlation matrix
-  Vinv = (pN).T.dot(pN)
+  Vinv = (prob_species_norm).T.dot(prob_species_norm)
   V = np.linalg.inv(Vinv)
   
   # Compute the set of sweights
-  sweights = p.dot(V) / full_model[:, None]
+  _sweights = prob_species.dot(V) / prob_model[:, None]
 
-  return {y: sweights[:, i] for i, y in enumerate(yields)}
+  for i, y in enumerate(_yields):
+    sweights[y] = _sweights[:, i]
+
+  return sweights
 
 
 def sweights_u(arr, weights, *args, **kwargs):
