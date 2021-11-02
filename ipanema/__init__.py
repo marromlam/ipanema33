@@ -32,9 +32,22 @@ Copyright (c) 2020 Ipanema Developers ; GNU AFFERO GENERAL PUBLIC LICENSE
 """
 
 import os
-IPANEMAPATH= os.path.dirname(os.path.abspath(__file__))
-IPANEMALIB= os.path.join(IPANEMAPATH,"src")
+from .splot import get_exposed_package_objects
 
+IPANEMAPATH = os.path.dirname(os.path.abspath(__file__))
+IPANEMALIB = os.path.join(IPANEMAPATH,"src")
+
+
+objs = get_exposed_package_objects(IPANEMAPATH)
+globals().update(objs)
+
+
+__all__ = ['IPANEMAPATH', 'IPANEMALIB']
+__all__ += list(objs.keys())
+__all__.sort()
+
+
+"""
 ## WARNING: make sure the following imports make that all necessary code is
 ##          avaliable for the final user
 
@@ -71,3 +84,4 @@ from .optimizers import ALL_METHODS
 all_optimize_methods = list(ALL_METHODS.keys())#; del ALL_METHODS
 
 from .interpolation import extrap1d
+"""

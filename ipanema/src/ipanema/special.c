@@ -95,7 +95,7 @@ ftype erfcx(const ftype x)
 
     if (x >= 0) {
         if (x > 50) { // continued-fraction expansion is faster
-            const double ispi = 0.56418958354775628694807945156; // 1 / sqrt(pi)
+            const ftype ispi = 0.56418958354775628694807945156; // 1 / sqrt(pi)
             if (x > 5e7) // 1-term expansion, important to avoid overflow
                 return ispi / x;
             /* 5-term expansion (rely on compiler for CSE), simplified from:

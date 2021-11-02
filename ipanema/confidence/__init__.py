@@ -1,2 +1,11 @@
-from .propagator import uncertainty_wrapper, get_confidence_bands
-from .intervals import confidence_interval, confidence_interval2d, plot_conf2d#, plot_contours
+import os
+
+from ..splot import get_exposed_package_objects
+
+PACKAGE_PATH = os.path.dirname(os.path.abspath(__file__))
+
+
+objs = get_exposed_package_objects(PACKAGE_PATH)
+globals().update(objs)
+__all__ = list(sorted(objs.keys()))
+

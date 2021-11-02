@@ -10,6 +10,8 @@ import os, sys
 
 from .ezaro_style import *
 
+__all__ = ["axes_plot", "axes_plotpull", "axes_square"]
+
 class ipo(object):
   """docstring for ipanema-plot-object (ipo)."""
 

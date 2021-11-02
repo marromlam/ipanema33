@@ -11,7 +11,7 @@ from .untitled import ipo
 import numpy as np
 from scipy.interpolate import interp1d
 
-
+__all__ = ['errors_poisson', 'pull_hist', 'pull_pdf', 'hist', 'compare_hist']
 
 
 def errors_poisson(data, a=0.318):

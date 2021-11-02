@@ -22,7 +22,7 @@ import numdifftools as ndt
 
 # Import methods
 from iminuit import Minuit as minuit
-from scipy.optimize import leastsq as levenberg_marquardt
+from scipy.optimize import leastsq as levenberg_marquardt, optimize
 from scipy.optimize import minimize as scipy_minimize
 from scipy.optimize import basinhopping as scipy_basinhopping
 from scipy.optimize import differential_evolution, least_squares
@@ -42,7 +42,7 @@ import uncertainties as unc
 from .parameter import Parameter, Parameters
 from .utils.print_reports import fit_report
 
-
+__all__ = ['optimize', 'Optimizer']
 
 
 

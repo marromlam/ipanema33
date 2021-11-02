@@ -205,12 +205,15 @@ KERNEL_CODE = """
 /** Definition of functions to execute in GPU arrays.
  */
 
+#define ftype double
+
+
 /** Arange (only modifies real values)
  *
  * Reikna does not seem to handle very well complex numbers. Setting
  * "vmin" as a complex results in undefined behaviour some times.
 
-KERNEL void arange_complex( GLOBAL_MEM double *out, double vmin )
+KERNEL void arange_complex( GLOBAL_MEM ftype *out, ftype vmin )
 {
   SIZE_T idx = get_global_id(0);
   out[idx][0] = vmin + idx;
@@ -225,7 +228,7 @@ KERNEL void arange_int( GLOBAL_MEM int *out, int vmin )
 }
 
 /// Assign values
-KERNEL void assign_double( GLOBAL_MEM double *out, GLOBAL_MEM double *in, int offset )
+KERNEL void assign_double( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, int offset )
 {
   SIZE_T idx = get_global_id(0);
   out[idx + offset] = in[idx];
@@ -240,43 +243,43 @@ KERNEL void assign_bool( GLOBAL_MEM unsigned *out, GLOBAL_MEM unsigned *in, int 
 
 /// Exponential (complex)
 /*
-KERNEL void exponential_complex( GLOBAL_MEM double *out, GLOBAL_MEM double *in )
+KERNEL void exponential_complex( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in )
 {
   SIZE_T idx = get_global_id(0);
-  double v = in[idx];
+  ftype v = in[idx];
 
-  double d = exp(v[0]);
+  ftype d = exp(v[0]);
 
   out[idx][0] = d * cos(v[1]);
   out[idx][1] = d * sin(v[1]);
 }
 */
 
-/// Exponential (double)
-KERNEL void exponential_double( GLOBAL_MEM double *out, GLOBAL_MEM double *in )
+/// Exponential (ftype)
+KERNEL void exponential_double( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in )
 {
   SIZE_T idx = get_global_id(0);
-  double x = in[idx];
+  ftype x = in[idx];
 
   out[idx] = exp(x);
 }
 
 
 /// Sqrt (double)
-KERNEL void sqrt_double( GLOBAL_MEM double *out, GLOBAL_MEM double *in )
+KERNEL void sqrt_double( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in )
 {
   SIZE_T idx = get_global_id(0);
-  double x = in[idx];
+  ftype x = in[idx];
 
   out[idx] = sqrt(x);
 }
 
 /// Linear interpolation
-KERNEL void interpolate( GLOBAL_MEM double *out, GLOBAL_MEM double *in, int n, GLOBAL_MEM double *xp, GLOBAL_MEM double *yp )
+KERNEL void interpolate( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, int n, GLOBAL_MEM ftype *xp, GLOBAL_MEM ftype *yp )
 {
   SIZE_T idx = get_global_id(0);
 
-  double x = in[idx];
+  ftype x = in[idx];
 
   for ( int i = 0; i < n; ++i ) {
 
@@ -295,29 +298,29 @@ KERNEL void interpolate( GLOBAL_MEM double *out, GLOBAL_MEM double *in, int n, G
 }
 
 /// Linspace (endpoints included)
-KERNEL void linspace( GLOBAL_MEM double *out, double vmin, double vmax, int size )
+KERNEL void linspace( GLOBAL_MEM ftype *out, ftype vmin, ftype vmax, int size )
 {
   SIZE_T idx = get_global_id(0);
   out[idx] = vmin + idx * (vmax - vmin) / (size - 1);
 }
 
 /// Logarithm
-KERNEL void logarithm( GLOBAL_MEM double *out, GLOBAL_MEM double *in )
+KERNEL void logarithm( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in )
 {
   SIZE_T idx = get_global_id(0);
-  double x = in[idx];
+  ftype x = in[idx];
   out[idx] = log(x);
 }
 
 /// Greater or equal than
-KERNEL void geq( GLOBAL_MEM unsigned *out, GLOBAL_MEM double *in, double v )
+KERNEL void geq( GLOBAL_MEM unsigned *out, GLOBAL_MEM ftype *in, ftype v )
 {
   SIZE_T idx = get_global_id(0);
   out[idx] = ( in[idx] >= v );
 }
 
 /// Less than (for arrays)
-KERNEL void ale( GLOBAL_MEM unsigned *out, GLOBAL_MEM double *in1, GLOBAL_MEM double *in2 )
+KERNEL void ale( GLOBAL_MEM unsigned *out, GLOBAL_MEM ftype *in1, GLOBAL_MEM ftype *in2 )
 {
   SIZE_T idx = get_global_id(0);
   out[idx] = ( in1[idx] < in2[idx] );
@@ -331,14 +334,14 @@ KERNEL void kabs( GLOBAL_MEM unsigned *out, GLOBAL_MEM double *in)
 }
 
 /// Less than
-KERNEL void le( GLOBAL_MEM unsigned *out, GLOBAL_MEM double *in, double v )
+KERNEL void le( GLOBAL_MEM unsigned *out, GLOBAL_MEM ftype *in, ftype v )
 {
   SIZE_T idx = get_global_id(0);
   out[idx] = ( in[idx] < v );
 }
 
 /// Less or equal than
-KERNEL void leq( GLOBAL_MEM unsigned *out, GLOBAL_MEM double *in, double v )
+KERNEL void leq( GLOBAL_MEM unsigned *out, GLOBAL_MEM ftype *in, ftype v )
 {
   SIZE_T idx = get_global_id(0);
   out[idx] = ( in[idx] <= v );
@@ -366,7 +369,7 @@ KERNEL void ones_bool( GLOBAL_MEM unsigned *out )
 }
 
 /// Create an array of ones
-KERNEL void ones_double( GLOBAL_MEM double *out )
+KERNEL void ones_double( GLOBAL_MEM ftype *out )
 {
   SIZE_T idx = get_global_id(0);
   out[idx] = 1.;
@@ -374,14 +377,14 @@ KERNEL void ones_double( GLOBAL_MEM double *out )
 
 /// Take the real part of an array
 /*
-KERNEL void real( GLOBAL_MEM double *out, GLOBAL_MEM double *in )
+KERNEL void real( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in )
 {
   SIZE_T idx = get_global_id(0);
   out[idx] = in[idx][0];
 }
 */
 /// Get elements from an array by indices
-KERNEL void slice_from_integer( GLOBAL_MEM double *out, GLOBAL_MEM double *in, GLOBAL_MEM int *indices )
+KERNEL void slice_from_integer( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, GLOBAL_MEM int *indices )
 {
   SIZE_T idx = get_global_id(0);
   out[idx] = in[indices[idx]];
@@ -409,7 +412,7 @@ KERNEL void zeros_bool( GLOBAL_MEM unsigned *out )
 }
 
 /// Create an array of zeros
-KERNEL void zeros_double( GLOBAL_MEM double *out )
+KERNEL void zeros_double( GLOBAL_MEM ftype *out )
 {
   SIZE_T idx = get_global_id(0);
   out[idx] = 0.;
