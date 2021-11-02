@@ -269,8 +269,24 @@ class Parameters(OrderedDict):
     for par in params: self._add_parameter_(par)
 
 
+  def remove(self, *params):
+    """
+    Delete parameter from ipanema.Parameters
 
-  def valuesdict(self,blind=True):
+    Parameters
+    ----------
+    params : list
+    List of parameters to be removed from ipanema.Parameters object.
+
+
+    """
+    for p in params:
+      if p in self.keys():
+        self.pop(p)
+
+
+
+  def valuesdict(self, blind=True):
     """
     OrderedDict of parameter values.
     """
