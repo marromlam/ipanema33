@@ -19,7 +19,7 @@ from scipy.stats import f
 from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
-from ..parameter import Parameter, Parameters
+from ..params import Parameter, Parameters
 import uncertainties as unc
 from uncertainties import unumpy as unp
 
