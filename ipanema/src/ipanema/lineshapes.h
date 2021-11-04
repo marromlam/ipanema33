@@ -55,4 +55,8 @@ WITHIN_KERNEL
 ftype johnson_su(const ftype x, const ftype mu, const ftype sigma, 
     const ftype gamma, const ftype delta);
 
+WITHIN_KERNEL
+ftype johan_cruijff(const ftype x, const ftype mu, const ftype sigmaL,
+                    const ftype sigmaR, const ftype alphaL, const ftype alphaR);
+
 #endif // _LINESHAPES_H_

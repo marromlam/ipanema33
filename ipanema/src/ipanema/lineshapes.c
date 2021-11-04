@@ -395,4 +395,35 @@ ftype johnson_su(const ftype x, const ftype mu, const ftype sigma,
 // }}}
 
 
+// JohanCruijff {{{
+// This function  was taken from LHCb/Urania project.
+// Credits: Wouter Hulsbergen
+
+ftype johan_cruijff(const ftype x, const ftype mu, const ftype sigmaL,
+                    const ftype sigmaR, const ftype alphaL, const ftype alphaR)
+{
+  double sigma = 0.0;
+  double alpha = 0.0;
+  const double dx = (x - mu);
+
+  if(dx<0){
+    sigma = sigmaL;
+    alpha = alphaL;
+  }
+  else
+  {
+    sigma = sigmaR;
+    alpha = alphaR;
+  }
+
+  const double f = 2*sigma*sigma + alpha*dx*dx;
+
+  return exp(-dx*dx/f);
+}
+
+
+
+// }}}
+
+
 // vim:foldmethod=marker
