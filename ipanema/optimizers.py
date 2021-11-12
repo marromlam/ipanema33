@@ -938,7 +938,12 @@ class Optimizer(object):
     #   self._calculate_uncertainties_correlations_()
 
     # calculate the cov and estimate uncertanties/correlations
-    result.cov = np.matrix(ret.matrix())
+    try:
+      result.cov = np.matrix(ret.matrix())
+    except:
+      ret.migrad()
+      ret.hesse()
+      result.cov = np.matrix(ret.matrix())
     result.invcov = np.matrix(np.linalg.inv(result.cov))
     for ivar, ipar in enumerate(self.result.param_vary):
       par = self.result.params[ipar]
