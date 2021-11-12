@@ -399,6 +399,7 @@ ftype johnson_su(const ftype x, const ftype mu, const ftype sigma,
 // This function  was taken from LHCb/Urania project.
 // Credits: Wouter Hulsbergen
 
+WITHIN_KERNEL
 ftype johan_cruijff(const ftype x, const ftype mu, const ftype sigmaL,
                     const ftype sigmaR, const ftype alphaL, const ftype alphaR)
 {
