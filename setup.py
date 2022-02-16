@@ -33,11 +33,10 @@ Copyright (c) 2020 Ipanema Developers ; GNU AFFERO GENERAL PUBLIC LICENSE
 """
 
 
-
 setup(name='ipanema3',
-      version='1.0.0',
-      author='Marcos Romero',
-      author_email='marcos.romero.lamas@cern.ch',
+      version='1.0.1',
+      author='Marcos Romero Lamas',
+      author_email='mromerol@cern.ch',
       url='https://github.com/marromlam/ipanema.git',
       download_url='https://github.com/marromlam/ipanema.git',
       install_requires=['asteval>=0.9.12',
@@ -65,6 +64,6 @@ setup(name='ipanema3',
       keywords='curve-fitting, optimization, hyperthreading',
       # tests_require=['pytest'],
       # package_dir={'ipanema': 'ipanema'},
-      include_package_data=True,
       packages=['ipanema'],
-)
+      include_package_data=True,
+      )
