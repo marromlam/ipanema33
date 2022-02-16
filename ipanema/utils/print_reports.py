@@ -19,6 +19,8 @@ def __parse_attr(obj, attr, length=11):
     return '%d' % val
   elif isinstance(val, float):
     return val
+  elif isinstance(val, str):
+    return val
   return repr(val)
 
 ################################################################################
