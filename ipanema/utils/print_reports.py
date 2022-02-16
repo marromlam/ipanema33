@@ -12,6 +12,7 @@ __all__ = ['fit_report']
 ################################################################################
 
 def __parse_attr(obj, attr, length=11):
+<<<<<<< Updated upstream
   val = getattr(obj, attr, None)
   if val is None:
     return 'not avaliable'
@@ -22,6 +23,18 @@ def __parse_attr(obj, attr, length=11):
   elif isinstance(val, str):
     return val
   return repr(val)
+=======
+    val = getattr(obj, attr, None)
+    if val is None:
+        return 'not avaliable'
+    elif isinstance(val, int):
+        return '%d' % val
+    elif isinstance(val, float):
+        return val
+    elif isinstance(val, str):
+        return val
+    return repr(val)
+>>>>>>> Stashed changes
 
 ################################################################################
 
