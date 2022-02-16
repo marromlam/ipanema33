@@ -4,16 +4,27 @@
 #                                                                              #
 ################################################################################
 
+
+__author__ = 'Marcos Romero Lamas'
+__email__ = 'marromlam@gmail.com'
+__all__ = ['PYTHON', 'OPENCL', 'CUDA', 'fetch_devices', 'initialize', 'deinitialize',
+           'get_sizes', 'initialize_device', 'ristra', 'compile']
+
+
+# Modulo {{{
+
 import os
 import builtins
 from reikna import cluda
 import atexit
 import numpy as np
 import math
+from lib99ocl import LIB99OCL
 
-__all__ = ['PYTHON', 'OPENCL', 'CUDA', 'fetch_devices', 'initialize', 'get_sizes', 'initialize_device', 'ristra' ]
+# }}}
 
-# Backends ---------------------------------------------------------------------
+
+# Backends {{{
 #    This is where operations take place
 
 # Three backends:
@@ -21,16 +32,16 @@ PYTHON = 'python' # python: standard backend (no compiled code)
 OPENCL = 'opencl' # opencl: single-core, multi-core, gpu
 CUDA = 'cuda'     # nvidia: NVIDIA-gpu
 
-# Initial BACKEND
 builtins.BACKEND = None
-
-# Device variables
 builtins.DEVICE = None
 builtins.CONTEXT = None
 builtins.THREAD = None
+builtins.REAL = 'float'
+
+# }}}
 
 
-# Array allocation -------------------------------------------------------------
+# Array allocation {{{
 #    This is where arrays will be allocated, and this depends of course on then
 #    selected backend.
 
@@ -45,9 +56,38 @@ class manipulate_array(type):
 class ristra(metaclass=manipulate_array):
   pass
 
+# }}}
 
 
-# Device functions -------------------------------------------------------------
+# Compile function {{{
+
+def compile(template:str, render_args:list=None, render_kwds:dict=None,
+            fast_math:bool=True, compiler_options:list=None, keep:bool=False):
+    """
+    Compiles a template against the `ipanema.BACKEND`. It includes all the
+    functions defined in lib99ocl library. It returns a reikna.Program object
+    which has all the defined kernels as callable methods.
+
+    Parameters
+    ----------
+    template:str
+    Code string to be compiled.
+    render_args:list
+
+    """
+    # add lib99ocl to the list of included directories
+    if not compiler_options:
+        compiler_options = []
+    compiler_options += [f"-I {LIB99OCL}"]
+
+    return THREAD.compile(template_src=template, render_args=render_args, 
+                          render_kwds=render_kwds, fast_math=fast_math,
+                          compiler_options=compiler_options, keep=keep)
+
+# }}}
+
+
+# Device functions {{{
 #    Here several functions are declared in order to find and initialize the
 #    selected from the avaliable devices
 
@@ -63,8 +103,7 @@ def fetch_devices():
   print('Please select one [device]')
 
 
-
-def initialize_device(device = None, verbose=False):
+def initialize_device(device=None, verbose=False):
   if not device:
     fetch_devices()
     return
@@ -97,7 +136,10 @@ def initialize_device(device = None, verbose=False):
     builtins.THREAD = API.Thread(builtins.CONTEXT)
     if verbose: print(f'Selected device <{platform.name}> : {device.name}')
 
+# }}}
 
+
+# Get sizes function {{{
 
 def get_sizes(size, BLOCK_SIZE=MAX_LOCAL_SIZE):
   a = size % BLOCK_SIZE
@@ -125,13 +167,15 @@ def get_sizes(size, BLOCK_SIZE=MAX_LOCAL_SIZE):
 #       gs, ls = a*BLOCK_SIZE, BLOCK_SIZE
 #     return int(gs), int(ls)
 
+# }}}
 
-# Initialization ---------------------------------------------------------------
+
+# Initialization {{{
 #    This function should be called at the very beginning of the code. It sets
 #    the BACKEND, DEVICE, CONTEXT, THREAD and ALLOCATION. So it puts in place
 #    all the needed ingredients to ipanema work
 
-def initialize(backend=PYTHON, device=None, verbose=False):
+def initialize(backend=PYTHON, device=None, verbose=False, real='double'):
   if builtins.BACKEND is not None and backend != builtins.BACKEND:
     print(f'Unable to set backend to "{backend}". It is already "{BACKEND}".')
     return
@@ -146,6 +190,7 @@ def initialize(backend=PYTHON, device=None, verbose=False):
     return
 
   builtins.BACKEND = backend
+  builtins.REAL = real
 
   if builtins.BACKEND == PYTHON:
     if verbose: print(f'Using backend "{builtins.BACKEND}"')
@@ -160,7 +205,6 @@ def initialize(backend=PYTHON, device=None, verbose=False):
     raise ValueError(f'Unknown backend "{BACKEND}"')
 
 
-
 def deinitialize():
   builtins.BACKEND = None
   builtins.DEVICE = None
@@ -168,3 +212,8 @@ def deinitialize():
   builtins.THREAD = None
   builtins.ALLOCATION = None
   print('this function is a placeholder...')
+
+# }}}
+
+
+# vim:foldmethod=marker

@@ -48,8 +48,8 @@ def count_nonzero(a):
 
 def allocate(a, copy=True, convert=True):
   if convert:
-    if a.dtype != types.cpu_type:
-      a = a.astype(types.cpu_type)
+    if a.dtype != types.cpu_real:
+      a = a.astype(types.cpu_real)
     return a
   if copy:
     return a.copy()
@@ -58,7 +58,7 @@ def allocate(a, copy=True, convert=True):
 
 
 
-def empty(size, dtype=types.cpu_type):
+def empty(size, dtype=types.cpu_real):
   return np.empty(size, dtype=dtype)
 
 
@@ -129,7 +129,7 @@ def leq(a, v):
 
 
 def linspace(vmin, vmax, size):
-  return np.linspace(vmin, vmax, size, dtype=types.cpu_type)
+  return np.linspace(vmin, vmax, size, dtype=types.cpu_real)
 
 
 
@@ -173,7 +173,7 @@ def min(a):
 
 
 
-def ones(n, dtype=types.cpu_type):
+def ones(n, dtype=types.cpu_real):
   if dtype == types.cpu_bool:
     # Hack due to lack of "bool" in PyOpenCL
     return np.ones(n, dtype=types.cpu_real_bool)
@@ -230,7 +230,7 @@ def true_till(N, n):
 
 
 
-def zeros(n, dtype=types.cpu_type):
+def zeros(n, dtype=types.cpu_real):
   if dtype == types.cpu_bool:
     return np.zeros(n, dtype=types.cpu_real_bool)
   else:

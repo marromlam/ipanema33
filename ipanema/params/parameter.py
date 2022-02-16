@@ -24,7 +24,7 @@ for name in ['gamma', 'erf', 'erfc', 'wofz']:
 def _check_ast_errors_(formula_eval):
   if len(formula_eval.error) > 0: formula_eval.raise_exception(None)
 
-# from .parameters.blinding import RooUnblindUniform
+from .blinding import RooUnblindUniform
 
 __all__ = ['Parameter', 'Parameters']
 
@@ -263,6 +263,13 @@ class Parameters(OrderedDict):
     else:
       raise KeyError("This is not a valid Parameter")
 
+
+  def remove(self, *params):
+    """
+    Add many parameters, using the given tuple.
+    """
+    for par in params:
+      self.pop(par)
 
 
   def add(self, *params):

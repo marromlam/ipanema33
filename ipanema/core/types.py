@@ -5,18 +5,19 @@
 ################################################################################
 
 import ctypes
-import numpy
-
+import numpy as np
+from builtins import REAL
 
 
 # Types for numpy.ndarray objects
-cpu_type      = numpy.float64     					# double
-cpu_complex   = numpy.complex128  					# complex double
-cpu_int       = numpy.int32       					# int
-cpu_bool      = numpy.uint32
-cpu_real_bool = numpy.bool        					# bool (not allowed in PyOpenCL)
+cpu_real      = np.float64 if REAL == 'double' else np.float32
+cpu_complex   = np.complex128 if REAL == 'double' else np.complex64
+cpu_int       = np.int32
+cpu_bool      = np.uint32
+cpu_real_bool = np.bool
+
 
 # Types to handle with ctypes
-c_int         = ctypes.c_int  							# int
-c_double      = ctypes.c_double  						# double
-c_double_p    = ctypes.POINTER(c_double)  	# double*
+c_int         = ctypes.c_int
+c_double      = ctypes.c_double
+c_double_p    = ctypes.POINTER(c_double)
