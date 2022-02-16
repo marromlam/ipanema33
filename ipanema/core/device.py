@@ -16,7 +16,7 @@ import threading
 
 from . import multi_par
 from . import types
-from .utils import get_sizes
+from .utils import compile, get_sizes
 
 THREAD = builtins.THREAD
 
@@ -196,229 +196,15 @@ def return_dtype(dtype):
 
 
 RETURN_COMPLEX = return_dtype(types.cpu_complex)
-RETURN_DOUBLE = return_dtype(types.cpu_type)
+RETURN_DOUBLE = return_dtype(types.cpu_real)
 RETURN_BOOL = return_dtype(types.cpu_bool)
 
 
 # Compile general GPU functions by element.
-KERNEL_CODE = """
-/** Definition of functions to execute in GPU arrays.
- */
-
-#define ftype double
-
-
-/** Arange (only modifies real values)
- *
- * Reikna does not seem to handle very well complex numbers. Setting
- * "vmin" as a complex results in undefined behaviour some times.
-
-KERNEL void arange_complex( GLOBAL_MEM ftype *out, ftype vmin )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx][0] = vmin + idx;
-  out[idx][1] = 0.;
-}
-*/
-/// Arange
-KERNEL void arange_int( GLOBAL_MEM int *out, int vmin )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx] = vmin + idx;
-}
-
-/// Assign values
-KERNEL void assign_double( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, int offset )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx + offset] = in[idx];
-}
-
-/// Assign values
-KERNEL void assign_bool( GLOBAL_MEM unsigned *out, GLOBAL_MEM unsigned *in, int offset )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx + offset] = in[idx];
-}
-
-/// Exponential (complex)
-/*
-KERNEL void exponential_complex( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in )
-{
-  SIZE_T idx = get_global_id(0);
-  ftype v = in[idx];
-
-  ftype d = exp(v[0]);
-
-  out[idx][0] = d * cos(v[1]);
-  out[idx][1] = d * sin(v[1]);
-}
-*/
-
-/// Exponential (ftype)
-KERNEL void exponential_double( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in )
-{
-  SIZE_T idx = get_global_id(0);
-  ftype x = in[idx];
-
-  out[idx] = exp(x);
-}
-
-
-/// Sqrt (double)
-KERNEL void sqrt_double( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in )
-{
-  SIZE_T idx = get_global_id(0);
-  ftype x = in[idx];
-
-  out[idx] = sqrt(x);
-}
-
-/// Linear interpolation
-KERNEL void interpolate( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, int n, GLOBAL_MEM ftype *xp, GLOBAL_MEM ftype *yp )
-{
-  SIZE_T idx = get_global_id(0);
-
-  ftype x = in[idx];
-
-  for ( int i = 0; i < n; ++i ) {
-
-    if ( x > xp[i] )
-      continue;
-    else {
-
-      if ( x == xp[i] )
-  out[idx] = yp[i];
-      else
-  out[idx] = (yp[i - 1]*(xp[i] - x) + yp[i]*(x - xp[i - 1])) / (xp[i] - xp[i - 1]);
-
-      break;
-    }
-  }
-}
-
-/// Linspace (endpoints included)
-KERNEL void linspace( GLOBAL_MEM ftype *out, ftype vmin, ftype vmax, int size )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx] = vmin + idx * (vmax - vmin) / (size - 1);
-}
-
-/// Logarithm
-KERNEL void logarithm( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in )
-{
-  SIZE_T idx = get_global_id(0);
-  ftype x = in[idx];
-  out[idx] = log(x);
-}
-
-/// Greater or equal than
-KERNEL void geq( GLOBAL_MEM unsigned *out, GLOBAL_MEM ftype *in, ftype v )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx] = ( in[idx] >= v );
-}
-
-/// Less than (for arrays)
-KERNEL void ale( GLOBAL_MEM unsigned *out, GLOBAL_MEM ftype *in1, GLOBAL_MEM ftype *in2 )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx] = ( in1[idx] < in2[idx] );
-}
-
-///Abs (for arrays)
-KERNEL void kabs( GLOBAL_MEM unsigned *out, GLOBAL_MEM double *in)
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx] = fabs(in[idx]);
-}
-
-/// Less than
-KERNEL void le( GLOBAL_MEM unsigned *out, GLOBAL_MEM ftype *in, ftype v )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx] = ( in[idx] < v );
-}
-
-/// Less or equal than
-KERNEL void leq( GLOBAL_MEM unsigned *out, GLOBAL_MEM ftype *in, ftype v )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx] = ( in[idx] <= v );
-}
-
-/// Logical and
-KERNEL void logical_and( GLOBAL_MEM unsigned *out, GLOBAL_MEM unsigned *in1, GLOBAL_MEM unsigned *in2 )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx] = (in1[idx] == in2[idx]);
-}
-
-/// Logical and
-KERNEL void logical_or( GLOBAL_MEM unsigned *out, GLOBAL_MEM unsigned *in1, GLOBAL_MEM unsigned *in2 )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx] = (in1[idx] || in2[idx]);
-}
-
-/// Create an array of ones
-KERNEL void ones_bool( GLOBAL_MEM unsigned *out )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx] = true;
-}
-
-/// Create an array of ones
-KERNEL void ones_double( GLOBAL_MEM ftype *out )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx] = 1.;
-}
-
-/// Take the real part of an array
-/*
-KERNEL void real( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx] = in[idx][0];
-}
-*/
-/// Get elements from an array by indices
-KERNEL void slice_from_integer( GLOBAL_MEM ftype *out, GLOBAL_MEM ftype *in, GLOBAL_MEM int *indices )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx] = in[indices[idx]];
-}
-
-/// Create an array filled with "false" till the given index
-KERNEL void false_till( GLOBAL_MEM unsigned *out, int n )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx] = (idx >= n);
-}
-
-/// Create an array filled with "true" till the given index
-KERNEL void true_till( GLOBAL_MEM unsigned *out, int n )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx] = (idx < n);
-}
-
-/// Create an array of zeros
-KERNEL void zeros_bool( GLOBAL_MEM unsigned *out )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx] = false;
-}
-
-/// Create an array of zeros
-KERNEL void zeros_double( GLOBAL_MEM ftype *out )
-{
-  SIZE_T idx = get_global_id(0);
-  out[idx] = 0.;
-}
-"""
-FUNCS_BY_ELEMENT = THREAD.compile(KERNEL_CODE)
+FUNCS_BY_ELEMENT = compile(f"""
+    #define USE_DOUBLE {1 if builtins.REAL=='double' else 0}
+    #include <exposed/kernels.ocl>
+""")
 
 # These functions take an array of doubles and return another array of doubles
 """
@@ -439,31 +225,31 @@ for function in ('ale', 'geq', 'le', 'leq', 'logical_and', 'logical_or'):
 
 
 def creating_array_dtype(dtype):
-    '''
-    Wrap a function automatically creating an output array with the
-    same shape as that of the input but with possible different data type.
-    '''
-    cache_mgr = get_array_cache(dtype)
+  """
+  Wrap a function automatically creating an output array with the
+  same shape as that of the input but with possible different data type.
+  """
+  cache_mgr = get_array_cache(dtype)
 
-    def __wrapper(function):
-        '''
-        Internal wrapper.
-        '''
-        @functools.wraps(function)
-        def __wrapper(size, *args, **kwargs):
-            '''
-            Internal wrapper.
-            '''
-            gs, ls = get_sizes(size)
-            out = cache_mgr.get_array(size)
-            function(out, *args, global_size=gs, local_size=ls, **kwargs)
-            return out
-        return __wrapper
+  def __wrapper(function):
+    """
+    Internal wrapper.
+    """
+    @functools.wraps(function)
+    def __wrapper(size, *args, **kwargs):
+      '''
+      Internal wrapper.
+      '''
+      gs, ls = get_sizes(size)
+      out = cache_mgr.get_array(size)
+      function(out, *args, global_size=gs, local_size=ls, **kwargs)
+      return out
     return __wrapper
+  return __wrapper
 
 
 CREATE_COMPLEX = creating_array_dtype(types.cpu_complex)
-CREATE_DOUBLE = creating_array_dtype(types.cpu_type)
+CREATE_DOUBLE = creating_array_dtype(types.cpu_real)
 CREATE_INT = creating_array_dtype(types.cpu_int)
 CREATE_BOOL = creating_array_dtype(types.cpu_bool)
 
@@ -515,9 +301,9 @@ def reikna_fft(a, inverse=False):
 
 # The declaration of functions starts here
 rfuncs_amax = declare_reduce_function(
-    lambda f, s: 'return ${f} > ${s} ? ${f} : ${s};', default=np.finfo(types.cpu_type).min)
+    lambda f, s: 'return ${f} > ${s} ? ${f} : ${s};', default=np.finfo(types.cpu_real).min)
 rfuncs_amin = declare_reduce_function(
-    lambda f, s: 'return ${f} < ${s} ? ${f} : ${s};', default=np.finfo(types.cpu_type).max)
+    lambda f, s: 'return ${f} < ${s} ? ${f} : ${s};', default=np.finfo(types.cpu_real).max)
 rfuncs_rsum = declare_reduce_function(lambda f, s: 'return ${f} + ${s};', default=0)
 rfuncs_count_nonzero = declare_reduce_function(
     lambda f, s: 'return ${f} + ${s};', default=0)
@@ -534,7 +320,7 @@ def arange(n, dtype=types.cpu_int):
     if dtype == types.cpu_int:
         return FUNCS_BY_ELEMENT.arange_int(n, types.cpu_int(0))
     elif dtype == types.cpu_complex:
-        return FUNCS_BY_ELEMENT.arange_complex(n, types.cpu_type(0))
+        return FUNCS_BY_ELEMENT.arange_complex(n, types.cpu_real(0))
     else:
         raise NotImplementedError(
             f'Function not implemented for data type "{dtype}"')
@@ -558,7 +344,7 @@ def concatenate(arrays, maximum=None):
 
     dtype = arrays[0].dtype
 
-    if dtype == types.cpu_type:
+    if dtype == types.cpu_real:
         function = FUNCS_BY_ELEMENT.assign_double
     elif dtype == types.cpu_bool:
         function = FUNCS_BY_ELEMENT.assign_bool
@@ -588,8 +374,8 @@ def count_nonzero(a):
 
 def allocate(a, copy=True, convert=True): # Work here to handle dtypes!
     if convert:
-        if a.dtype != types.cpu_type:
-            a = a.astype(types.cpu_type)
+        if a.dtype != types.cpu_real:
+            a = a.astype(types.cpu_real)
         return THREAD.to_device(a)
     # Is assumed to be a GPU-array
     if copy:
@@ -599,7 +385,7 @@ def allocate(a, copy=True, convert=True): # Work here to handle dtypes!
 
 
 
-def empty(size, dtype=types.cpu_type):
+def empty(size, dtype=types.cpu_real):
     return get_array_cache(dtype).get_array(size)
 
 
@@ -607,7 +393,7 @@ def empty(size, dtype=types.cpu_type):
 def exp(a):
   if a.dtype == types.cpu_complex:
     return FUNCS_BY_ELEMENT.exponential_complex(a)
-  elif a.dtype == types.cpu_type:
+  elif a.dtype == types.cpu_real:
     return FUNCS_BY_ELEMENT.exponential_double(a)
   else:
     raise NotImplementedError(f'Not implemented for data type "{a.dtype}"')
@@ -616,7 +402,7 @@ def exp(a):
 def sqrt(a):
   if a.dtype == types.cpu_complex:
     return FUNCS_BY_ELEMENT.sqrt_double(a)
-  elif a.dtype == types.cpu_type:
+  elif a.dtype == types.cpu_real:
     return FUNCS_BY_ELEMENT.sqrt_double(a)
   else:
     raise NotImplementedError(f'Not implemented for data type "{a.dtype}"')
@@ -664,7 +450,7 @@ def fftshift(a):
 
 
 def geq(a, v):
-    return FUNCS_BY_ELEMENT.geq(a, types.cpu_type(v))
+    return FUNCS_BY_ELEMENT.geq(a, types.cpu_real(v))
 
 
 
@@ -679,19 +465,19 @@ def interpolate_linear(x, xp, yp):
 
 
 def le(a, v):
-    return FUNCS_BY_ELEMENT.le(a, types.cpu_type(v))
+    return FUNCS_BY_ELEMENT.le(a, types.cpu_real(v))
 
 
 
 def leq(a, v):
-    return FUNCS_BY_ELEMENT.leq(a, types.cpu_type(v))
+    return FUNCS_BY_ELEMENT.leq(a, types.cpu_real(v))
 
 
 
 def linspace(vmin, vmax, size):
     return FUNCS_BY_ELEMENT.linspace(size,
-                                     types.cpu_type(vmin),
-                                     types.cpu_type(vmax),
+                                     types.cpu_real(vmin),
+                                     types.cpu_real(vmax),
                                      types.cpu_int(size))
 
 
@@ -739,8 +525,8 @@ def min(a):
 
 
 
-def ones(n, dtype=types.cpu_type):
-    if dtype == types.cpu_type:
+def ones(n, dtype=types.cpu_real):
+    if dtype == types.cpu_real:
         return FUNCS_BY_ELEMENT.ones_double(n)
     elif dtype == types.cpu_bool:
         return FUNCS_BY_ELEMENT.ones_bool(n)
@@ -769,7 +555,7 @@ def shuffling_index(n):
 
 def sum(a, *args):
   if len(args) == 0:
-    if a.dtype == types.cpu_type:
+    if a.dtype == types.cpu_real:
       return rfuncs_rsum(a)
     else:
       raise NotImplementedError(f'Not implemented for data type {a.dtype}')
@@ -823,8 +609,8 @@ def true_till(N, n):
 
 
 
-def zeros(n, dtype=types.cpu_type):
-  if dtype == types.cpu_type:
+def zeros(n, dtype=types.cpu_real):
+  if dtype == types.cpu_real:
     return FUNCS_BY_ELEMENT.zeros_double(n)
   elif dtype == types.cpu_bool:
     return FUNCS_BY_ELEMENT.zeros_bool(n)

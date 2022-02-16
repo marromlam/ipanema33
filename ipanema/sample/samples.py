@@ -17,10 +17,10 @@ import uproot3 as uproot
 import re
 import builtins
 
-from .parameter import Parameters
-from .core.utils import ristra
+from ..params import Parameters
+from ..core.utils import ristra
 
-from .tools.misc import get_vars_from_string
+from ..tools.misc import get_vars_from_string
 
 
 def cuts_and(*args):

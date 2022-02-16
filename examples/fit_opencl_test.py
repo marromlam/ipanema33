@@ -29,7 +29,7 @@ pars.add({'name':'sigma', "value":5, 'latex':'\sigma'})
 #%% Prepare kernel model ------------------------------------------------------
 #    This should be writen in reikna syntax...
 
-kernel = THREAD.compile("""
+kernel = ipanema.compile("""
 KERNEL
 void gaussian(GLOBAL_MEM double *x, GLOBAL_MEM double *y,
               float mu,  float sigma, int N )
@@ -71,7 +71,7 @@ x_h = np.random.normal(loc=m, scale=s, size=1000000)
 pandas_host = pd.DataFrame({'x':x_h})
 
 # Create an ipanema sample from p
-sample = ipanema.Sample.from_pandas(pandas_host)
+sample = ipanema.sample.Sample.from_pandas(pandas_host)
 
 # Allocate x and prob in device
 sample.allocate(x='x',prob='0*x')

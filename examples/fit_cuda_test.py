@@ -29,7 +29,7 @@ pars.add({'name':'sigma', "value":5, 'latex':'\sigma'})
 #%% Prepare kernel model ------------------------------------------------------
 #    This should be writen in reikna syntax...
 
-kernel = THREAD.compile("""
+kernel = ipanema.compile("""
 KERNEL
 void gaussian(GLOBAL_MEM double *x, GLOBAL_MEM double *y,
               float mu,  float sigma, int N )

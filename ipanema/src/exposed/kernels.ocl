@@ -1,3 +1,0 @@
-#include "special.ocl"
-#include "complex.ocl"
-#include "lineshapes.ocl"
