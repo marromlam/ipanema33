@@ -1,11 +1,10 @@
-import ipanema
 import numpy as np
 import matplotlib.pyplot as plt
 
-from ipanema import splot
+from ipanema import (Parameters, optimize, splot)
 
 
-pars = ipanema.Parameters()
+pars = Parameters()
 pars.add(dict(name="mu", value=1))
 pars.add(dict(name="sigma", value=0.2))
 pars.add(dict(name="expon", value=-1/2))
@@ -47,18 +46,18 @@ def fcn(pars, data):
 
 
 # fit
-result = ipanema.optimize(fcn, pars, method='minuit', fcn_kwgs=dict(data=m))
+result = optimize(fcn, pars, method='minuit', fcn_kwgs=dict(data=m))
 print(result)
-fitpars = ipanema.Parameters.clone(result.params)
+fitpars = Parameters.clone(result.params)
 fitpars['nsig'].set(value=fitpars['nsig'].value*len(m))
 fitpars['nbkg'].set(value=fitpars['nbkg'].value*len(m), free=True)
-fitpars = ipanema.Parameters.clone(result.params)
+fitpars = Parameters.clone(result.params)
 print(fitpars)
 
 
-sw = ipanema.splot.compute_sweights(lambda *x, **y: model(m, *x, **y),
-                                    ipanema.Parameters.build(fitpars, ['mu', 'sigma', 'expon']),
-                                    ipanema.Parameters.build(fitpars, ['nsig', 'nbkg']))
+sw = splot.compute_sweights(lambda *x, **y: model(m, *x, **y),
+                                    Parameters.build(fitpars, ['mu', 'sigma', 'expon']),
+                                    Parameters.build(fitpars, ['nsig', 'nbkg']))
 print(sw)
 
 

@@ -19,10 +19,12 @@ from scipy.stats import f
 from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
-from ..parameter import Parameter, Parameters
+from ..params import Parameter, Parameters
 import uncertainties as unc
 from uncertainties import unumpy as unp
 
+
+__all__ = ['fisher_test', 'confidence_interval', 'confidence_interval2d', 'plot_conf2d']
 
 
 ################################################################################
@@ -35,21 +37,21 @@ def fisher_test(ndata, nfree, new_chi, best_chi2, nfix=1):
   Parameters
   ----------
   ndata : int
-      Number of data points.
+  Number of data points.
   nfree : int
-      Number of free parameters.
+  Number of free parameters.
   new_chi2 : float
-      Chi2 of alternate model.
+  Chi2 of alternate model.
   best_chi2 : float
-      Best chi2.
+  Best chi2.
   n_fixed : int, optional (default=1)
-      Number of fixed parameters.
+  Number of fixed parameters.
 
 
   Returns
   -------
   float
-      Probability.
+  Probability.
 
   """
   nfree = ndata - ( nfree + nfix )

@@ -2,6 +2,11 @@ import numpy as np
 from uncertainties import unumpy as unp
 import numdifftools as ndt
 
+
+__all__ = ['uncertainty_wrapper', 'get_confidence_bands']
+
+
+
 # this was an old function...
 # def numericJacobian(f, x, vals, f_size = 1):
 #   J = np.zeros([len(x), f_size, len(vals)])

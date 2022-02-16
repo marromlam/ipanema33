@@ -1,6 +1,7 @@
 import numpy as np
 dataonly = 1
 
+__all__ = ['RooUnblindUniform']
 
 class RooBlindTools(object):
     def __init__(self, stSeedIn:str, Mode, centralValue:float, sigmaOffset:float, s2bMode:bool=False):
