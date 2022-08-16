@@ -23,16 +23,24 @@ user-transparent wraps.
 _Ipanema_ aims to superseed packages like RooFit, making
 minimization easier, handier and more user-friendly.
 
+
 ## Installation
 
 This package is very easy to install. First we simply clone this repo:
 ```
 git clone ssh://git@gitlab.cern.ch:7999/mromerol/ipanema3.git
+cd ipanema3
+```
+Then we create a conda environment with:
+```
+conda env create -f environment.yml
 ```
 and then we can install it with pip,
 ```
-pip install -e /path/to/ipanema3/
+pip install -r requirements.txt
+pip install -e ../ipanema3
 ```
+
 
 ### Setup with CUDA
 ```
