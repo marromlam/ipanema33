@@ -1,32 +1,30 @@
-#%% Imports --------------------------------------------------------------------
+# %% Imports --------------------------------------------------------------------
 #    First we should do some imports
+from ipanema import confidence_interval
+from ipanema import all_optimize_methods
+from ipanema import Parameter, Parameters, Optimizer
+import corner
+import matplotlib.pyplot as plt
+import numpy as np
+import os
 from ipanema import initialize
 initialize('python')
 
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-import corner
 
-from ipanema import Parameter, Parameters, Optimizer
-from ipanema import all_optimize_methods
-
-
-#%% Building the dataset to fit ------------------------------------------------
+# %% Building the dataset to fit ------------------------------------------------
 #    We create a ipanema.Parameters object with the true parameters.
 p_true = Parameters()
 a = Parameter('a', value=2.3, latex='a')
 b = Parameter('b', value=5.1, latex='b')
-p_true.add(a,b)
+p_true.add(a, b)
 
 
-
-#%% Create a model -------------------------------------------------------------
+# %% Create a model -------------------------------------------------------------
 #    Write down a model. Here we are writing a model that is at the same time
 #    the model (it no data is provided), or the residual fcn to optimize if the
 #    data is provided.
 
-def model(pars, x, y = None):
+def model(pars, x, y=None):
   vals = pars.valuesdict()
   a = vals['a']
   b = vals['b']
@@ -37,27 +35,26 @@ def model(pars, x, y = None):
   return (model - y)**2
 
 
-
-#%% Prepare arrays -------------------------------------------------------------
+# %% Prepare arrays -------------------------------------------------------------
 #    It's time to create a random dataset that follows the model with p_true
 #    set of parameters.
 
-data_x = np.linspace(-2,3,50)
+data_x = np.linspace(-2, 3, 50)
 noise = np.random.normal(scale=3, size=data_x.size)
-data_y = model(p_true,data_x) + 0.05*np.random.randn(len(data_x))
-#plt.plot(data_x,data_y,'.')
+data_y = model(p_true, data_x) + 0.05*np.random.randn(len(data_x))
+# plt.plot(data_x,data_y,'.')
 
 
-
-#%% Fitting --------------------------------------------------------------------
+# %% Fitting --------------------------------------------------------------------
 #   Lets create a p_fit datset of parameters. Here we can see a way to add
 #   parameters without construction a Parameter object beforehand.
 p_fit = Parameters()
-p_fit.add({'name':'a',   "value":2.3,  "min":2, "max":3,  'latex':r'a'})
-p_fit.add({'name':'b',   "value":5.1,  "min":4, "max":6,  'latex':r'b'})
+p_fit.add({'name': 'a',   "value": 2.3,  "min": 2, "max": 3,  'latex': r'a'})
+p_fit.add({'name': 'b',   "value": 5.1,  "min": 4, "max": 6,  'latex': r'b'})
 
 # Run the fit
-model_optimizer = Optimizer(model, params=p_fit, fcn_args=(data_x,data_y), policy='raise', verbose=False)
+model_optimizer = Optimizer(model, params=p_fit, fcn_args=(
+    data_x, data_y), policy='raise', verbose=False)
 result = {}
 
 """
@@ -77,10 +74,8 @@ for met in ['powell', 'cg', 'bfgs', 'lbfgsb', 'tnc', 'cobyla', 'slsqp', 'least_s
   print('\n')
 
 
-
 result['bfgs'].hess_inv*2
 
-from ipanema import confidence_interval
 ci, fp = confidence_interval(model_optimizer, result['bfgs'])
 
 
@@ -95,8 +90,6 @@ result['bfgs'].hess_inv*2
 result['bfgs'].hess_inv
 
 
-
-
 dir(result['bfgs'])
 result['bfgs']._covar_ndt
 result['bfgs'].params
@@ -109,7 +102,6 @@ result['lm'].params.print()
 result['emcee'].params.print()
 result['least_squares'].params.print()
 
-from ipanema import confidence_interval
 ci, fp = confidence_interval(model_optimizer, result['lm'])
 2*(ci['a0'][0]-ci['a0'][1])
 2*(ci['a1'][0]-ci['a1'][1])
@@ -124,35 +116,29 @@ corner.corner(result['emcee'].flatchain)
 print(result['emcee'])
 
 
-
-
-
-
-
-
 # %% shit
 remove: 'dogleg'  'trust-ncg'
 solve problems with: 'minuit' differential_evolution
 result = optimize(model, method="bfgs", params=p_fit,
                   fcn_args=(data_x,), fcn_kwgs={'y': data_y}
-                 )
+                  )
 print(result)
 
 # Run the fit with MCMC optimization
 result = optimize(model, method='emcee', params=p_fit,
                   args=(data_x,), kwgs={'y': data_y},
                   nan_policy='omit', burn=300, steps=2000, thin=20, workers=1,
-                  is_weighted=False )
+                  is_weighted=False)
 
 print(result)
 
 plt.close()
 corner.corner(result.flatchain,
-    labels=['$'+p.latex+'$' for p in result.params.values()],
-    smooth=True, plot_contours=True, color='C9')
+              labels=['$'+p.latex+'$' for p in result.params.values()],
+              smooth=True, plot_contours=True, color='C9')
 
 
 # Plot the fit over the data
 plt.close()
-plt.plot(data_x,data_y,'k.')
-plt.plot(data_x,model(result.params,data_x))
+plt.plot(data_x, data_y, 'k.')
+plt.plot(data_x, model(result.params, data_x))
