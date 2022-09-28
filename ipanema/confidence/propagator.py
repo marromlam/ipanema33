@@ -3,8 +3,7 @@ from uncertainties import unumpy as unp
 import numdifftools as ndt
 
 
-__all__ = ['uncertainty_wrapper', 'get_confidence_bands']
-
+__all__ = ["uncertainty_wrapper", "get_confidence_bands"]
 
 
 # this was an old function...
@@ -42,16 +41,17 @@ def fast_jac(f, vals, f_size=1):
     Jacobian of f at vals
   """
   J = np.zeros([f_size, len(vals)])
-  for l in range(0,len(vals)):
-    if vals[l]!= 0:
-      h = np.sqrt(np.finfo(float).eps)*vals[l]
+  for l in range(0, len(vals)):
+    if vals[l] != 0:
+      h = np.sqrt(np.finfo(float).eps) * vals[l]
     else:
       h = 1e-14
-    xhp = np.copy(vals).astype(np.float64); xhp[l] += +h
-    xhm = np.copy(vals).astype(np.float64); xhm[l] += -h;
-    J[:,l] = (f(xhp) - f(xhm))/(2*h)
+    xhp = np.copy(vals).astype(np.float64)
+    xhp[l] += +h
+    xhm = np.copy(vals).astype(np.float64)
+    xhm[l] += -h
+    J[:, l] = (f(xhp) - f(xhm)) / (2 * h)
   return J if f_size > 1 else J
-
 
 
 def fast_hesse(f, vals, f_size=1):
@@ -73,29 +73,28 @@ def fast_hesse(f, vals, f_size=1):
     Hessian matrix of f at vals
   """
   cov = np.zeros([f_size, len(vals), len(vals)])
-  g = lambda vals, pos: np.atleast_1d(f(vals))[pos]
-  print(g(vals,0))
-  for l in range(0,f_size):
-      hessian = ndt.Hessian(g)(vals,l)
-      print('\nhessian-nocorr',l,'\n',hessian)
-      pos = np.where(hessian==0, 1, 0)
-      rng = 1e-14 * np.random.rand(*hessian.shape)
-      #hessian = np.where(pos,0,hessian)
-      print('\nhessian-corr',l,'\n',hessian)
-      _cov = np.where(pos, 0.0, np.linalg.inv(hessian+rng) )
-      _cov = np.array([row*np.sign(row[i]) for i, row in enumerate(_cov)])
-      print('\ncov',l,'\n',_cov)
-      #_cov = np.linalg.inv(hessian+rng)
-      _diag = np.sqrt(np.abs(_cov.diagonal()))*np.sign(_cov.diagonal())
-      _diag = np.where(np.nan_to_num(_diag),np.nan_to_num(_diag),1)
-      print("diag\n", _diag)
-      print('\ncorrelation-1',l,'\n', _cov.T )
-      print('\ncorrelation+0',l,'\n', _cov.T/_diag )
-      print('\ncorrelation+1',l,'\n', (_cov.T/_diag).T )
-      print('\ncorrelation+2',l,'\n', ((_cov.T/_diag).T)/_diag )
-      cov[l,:,:] = ((_cov.T/_diag).T)/_diag
+  def g(vals, pos): return np.atleast_1d(f(vals))[pos]
+  print(g(vals, 0))
+  for l in range(0, f_size):
+    hessian = ndt.Hessian(g)(vals, l)
+    print("\nhessian-nocorr", l, "\n", hessian)
+    pos = np.where(hessian == 0, 1, 0)
+    rng = 1e-14 * np.random.rand(*hessian.shape)
+    # hessian = np.where(pos,0,hessian)
+    print("\nhessian-corr", l, "\n", hessian)
+    _cov = np.where(pos, 0.0, np.linalg.inv(hessian + rng))
+    _cov = np.array([row * np.sign(row[i]) for i, row in enumerate(_cov)])
+    print("\ncov", l, "\n", _cov)
+    # _cov = np.linalg.inv(hessian+rng)
+    _diag = np.sqrt(np.abs(_cov.diagonal())) * np.sign(_cov.diagonal())
+    _diag = np.where(np.nan_to_num(_diag), np.nan_to_num(_diag), 1)
+    print("diag\n", _diag)
+    print("\ncorrelation-1", l, "\n", _cov.T)
+    print("\ncorrelation+0", l, "\n", _cov.T / _diag)
+    print("\ncorrelation+1", l, "\n", (_cov.T / _diag).T)
+    print("\ncorrelation+2", l, "\n", ((_cov.T / _diag).T) / _diag)
+    cov[l, :, :] = ((_cov.T / _diag).T) / _diag
   return cov
-
 
 
 def uncertainty_wrapper(func, pars, hessian=False):
@@ -117,19 +116,19 @@ def uncertainty_wrapper(func, pars, hessian=False):
   uncertainties.uarray :
     Values of f evaluated at pars with error propagation
   """
-  #assert order > 0
+  # assert order > 0
 
   # ensure f is only function of pars
-  f = lambda pars: func(pars)
+  def f(pars): return func(pars)
 
   # get parameters and uncertainties
   try:
     _pars = list(pars.uvaluesdict().values())
-    vals = np.array([_pars[k].nominal_value for k in range(0,len(pars))])
-    uncs = np.array([_pars[k].std_dev for k in range(0,len(pars))])
+    vals = np.array([_pars[k].nominal_value for k in range(0, len(pars))])
+    uncs = np.array([_pars[k].std_dev for k in range(0, len(pars))])
   except:
-    vals = np.array([pars[k].nominal_value for k in range(0,len(pars))])
-    uncs = np.array([pars[k].std_dev for k in range(0,len(pars))])
+    vals = np.array([pars[k].nominal_value for k in range(0, len(pars))])
+    uncs = np.array([pars[k].std_dev for k in range(0, len(pars))])
 
   # compute f nominal_value
   f_val = f(vals)
@@ -145,17 +144,19 @@ def uncertainty_wrapper(func, pars, hessian=False):
 
   # compute f std_dev
   f_unc = np.atleast_1d(np.zeros_like(f_val))
-  for i in range(0,len(uncs)):
-    f_unc[:] += jac[:,i]**2*uncs[i]**2
+  for i in range(0, len(uncs)):
+    f_unc[:] += jac[:, i] ** 2 * uncs[i] ** 2
     if hessian:
-      for j in range(0,len(uncs)):
-        f_unc[:] += 2*hessian[i,j]*jac[:,i]*jac[:,j]*uncs[i]*uncs[j]
+      for j in range(0, len(uncs)):
+        f_unc[:] += (
+            2 * hessian[i, j] * jac[:, i] *
+            jac[:, j] * uncs[i] * uncs[j]
+        )
 
   # get uncertanties and ensure they are not negative!
-  f_unc = np.sqrt(np.where(f_unc>0,f_unc,0))
+  f_unc = np.sqrt(np.where(f_unc > 0, f_unc, 0))
 
-  return unp.uarray(f_val,f_unc)
-
+  return unp.uarray(f_val, f_unc)
 
 
 def get_confidence_bands(y, sigma=1):
@@ -177,8 +178,7 @@ def get_confidence_bands(y, sigma=1):
   """
   nom = unp.nominal_values(y)
   std = unp.std_devs(y)
-  return nom + sigma*std, nom - sigma*std
-
+  return nom + sigma * std, nom - sigma * std
 
 
 """

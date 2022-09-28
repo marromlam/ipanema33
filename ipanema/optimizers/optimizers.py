@@ -1,8 +1,6 @@
-################################################################################
-#                                                                              #
-#                                 OPTIMIZERS                                   #
-#                                                                              #
-################################################################################
+__all__ = ["optimize", "Optimizer"]
+__author__ = "Marcos Romero Lamas"
+__email__ = "mromerol@cern.ch"
 
 
 from collections import namedtuple
@@ -22,7 +20,7 @@ import numdifftools as ndt
 
 # Import methods
 from iminuit import Minuit as minuit
-from scipy.optimize import leastsq as levenberg_marquardt, optimize
+from scipy.optimize import leastsq as levenberg_marquardt  # , optimize
 from scipy.optimize import minimize as scipy_minimize
 from scipy.optimize import basinhopping as scipy_basinhopping
 from scipy.optimize import differential_evolution, least_squares
@@ -30,34 +28,36 @@ from scipy.optimize import dual_annealing as scipy_dual_annealing
 from scipy.optimize import shgo as scipy_shgo
 import emcee
 
-# Scipy functions
+# Scipy functions
 from scipy.stats import cauchy as cauchy_dist
 from scipy.stats import norm as norm_dist
 from scipy.version import version as scipy_version
 
-import six # faime falta?
+import six  # faime falta?
 import uncertainties as unc
 
 # Ipanema modules
 from ..params.parameter import Parameter, Parameters
 from ..utils.print_reports import fit_report
 
-__all__ = ['optimize', 'Optimizer']
 
 
-
-
-
+# Auxiliar functions {{{
 def asteval_with_uncertainties(*vals, **kwgs):
   """
   Calculate object value, given values for variables.
   """
-  _obj = kwgs.get('_obj', None)
-  _pars = kwgs.get('_pars', None)
-  _names = kwgs.get('_names', None)
+  _obj = kwgs.get("_obj", None)
+  _pars = kwgs.get("_pars", None)
+  _names = kwgs.get("_names", None)
   _asteval = _pars._asteval
-  if (_obj is None or _pars is None or _names is None or
-          _asteval is None or _obj._formula_ast is None):
+  if (
+      _obj is None
+      or _pars is None
+      or _names is None
+      or _asteval is None
+      or _obj._formula_ast is None
+  ):
     return 0
   for val, name in zip(vals, _names):
     _asteval.symtable[name] = val
@@ -71,7 +71,7 @@ def eval_stdev(obj, uvars, _names, _pars):
   """
   Evaluate uncertainty and set .stdev for a parameter `obj`.
   """
-  if not isinstance(obj, Parameter) or getattr(obj, '_formula_ast', None) is None:
+  if not isinstance(obj, Parameter) or getattr(obj, "_formula_ast", None) is None:
     return
   uval = wrap_ueval(*uvars, _obj=obj, _names=_names, _pars=_pars)
   try:
@@ -80,58 +80,51 @@ def eval_stdev(obj, uvars, _names, _pars):
     obj.stdev = 0
 
 
-
-
-
 SCIPY_METHODS = {
-  'nelder':                 'Nelder-Mead',
-  'powell':                 'Powell',
-  'cg':                     'CG',
-  'bfgs':                   'BFGS',
-  'newton':                 'Newton-CG',
-  'lbfgsb':                 'L-BFGS-B',
-  'tnc':                    'TNC',
-  'cobyla':                 'COBYLA',
-  'slsqp':                  'SLSQP',
-  'dogleg':                 'dogleg',
-  'trust-ncg':              'trust-ncg',
-  'differential_evolution': 'Differential-Evolution'
+    "nelder": "Nelder-Mead",
+    "powell": "Powell",
+    "cg": "CG",
+    "bfgs": "BFGS",
+    "newton": "Newton-CG",
+    "lbfgsb": "L-BFGS-B",
+    "tnc": "TNC",
+    "cobyla": "COBYLA",
+    "slsqp": "SLSQP",
+    "dogleg": "dogleg",
+    "trust-ncg": "trust-ncg",
+    "differential_evolution": "Differential-Evolution",
 }
 
 GRADIENT_METHODS = {
-  'powell':                 'Powell',
-  'cg':                     'CG',
-  'bfgs':                   'BFGS',
-  #'newton':                 'Newton-CG',
-  'lbfgsb':                 'L-BFGS-B',
-  'tnc':                    'TNC',
-  'cobyla':                 'COBYLA',
-  'slsqp':                  'SLSQP',
-  #'dogleg':                 'dogleg',
-  'trust-ncg':              'trust-ncg',
-  'minuit':                  'minuit',
-  'lm':                     'lm',
-  'least_squares':          'least_squares'
+    "powell": "Powell",
+    "cg": "CG",
+    "bfgs": "BFGS",
+    # 'newton':                 'Newton-CG',
+    "lbfgsb": "L-BFGS-B",
+    "tnc": "TNC",
+    "cobyla": "COBYLA",
+    "slsqp": "SLSQP",
+    # 'dogleg':                 'dogleg',
+    "trust-ncg": "trust-ncg",
+    "minuit": "minuit",
+    "lm": "lm",
+    "least_squares": "least_squares",
 }
 
 STOCHASTIC_METHODS = {
-  'emcee':                  'emcee',
-  'basinhopping':           'basinhopping',
-  'dual_annealing':         'dual_annealing'
+    "emcee": "emcee",
+    "basinhopping": "basinhopping",
+    "dual_annealing": "dual_annealing",
 }
 
-HEURISTIC_METHODS = {
-  'nelder':                 'Nelder-Mead'
-}
+HEURISTIC_METHODS = {"nelder": "Nelder-Mead"}
 
 GENETIC_METHODS = {
-  'differential_evolution': 'differential_evolution',
+    "differential_evolution": "differential_evolution",
 }
 
 
-LIPSCHIZ_METHODS = {
-  'shgo':                   'shgo'
-}
+LIPSCHIZ_METHODS = {"shgo": "shgo"}
 
 ALL_METHODS = {}
 ALL_METHODS.update(GRADIENT_METHODS)
@@ -142,7 +135,6 @@ ALL_METHODS.update(LIPSCHIZ_METHODS)
 
 
 
-# DONE
 def _lnprior_(value, bounds):
   """
   Get a log-prior probability
@@ -166,12 +158,20 @@ def _lnprior_(value, bounds):
   return 0
 
 
-
-
 # REVISIT
-def _lnpost_(value, fcn_call, params, param_vary, bounds, fcn_args=(),
-             fcn_kwgs=None, behavior='likelihood', is_weighted=True,
-             policy='raise', lnprob0 = 0):
+def _lnpost_(
+    value,
+    fcn_call,
+    params,
+    param_vary,
+    bounds,
+    fcn_args=(),
+    fcn_kwgs=None,
+    behavior="likelihood",
+    is_weighted=True,
+    policy="raise",
+    lnprob0=0,
+):
   """
   Calculate the log-posterior probability.
 
@@ -222,22 +222,23 @@ def _lnpost_(value, fcn_call, params, param_vary, bounds, fcn_args=(),
   out = fcn_call(params, *fcn_args, **userkwgs)
   out = _nan_handler_(out, policy=policy)
   lnprob = np.asarray(out).ravel()
-  lnprob -= lnprob0*np.ones_like(lnprob)/len(lnprob)
+  lnprob -= lnprob0 * np.ones_like(lnprob) / len(lnprob)
 
   if lnprob.size > 1:
-    if 'logfcn' in params and not is_weighted:
-      log_fcn = params['logfcn'].value
+    if "logfcn" in params and not is_weighted:
+      log_fcn = params["logfcn"].value
       c = np.log(2 * np.pi) + 2 * log_fcn
       lnprob = -0.5 * np.sum((lnprob / np.exp(log_fcn)) ** 2 + c)
     else:
       lnprob = -0.5 * (lnprob * lnprob).sum()
   else:
-    if behavior == 'likelihood':
+    if behavior == "likelihood":
       pass
-    elif behavior == 'chi2':
+    elif behavior == "chi2":
       lnprob *= -0.5
     else:
-      raise ValueError("behaviour must be either 'likelihood' or 'chi2'.")
+      raise ValueError(
+          "behaviour must be either 'likelihood' or 'chi2'.")
 
   return lnprob
 
@@ -264,11 +265,12 @@ def _random_instance_(seed=None):
     return np.random.RandomState(seed)
   if isinstance(seed, np.random.RandomState):
     return seed
-  raise ValueError(f'Cannot use {seed} to instatinate umpy.random.RandomState')
+  raise ValueError(
+      f"Cannot use {seed} to instatinate umpy.random.RandomState")
 
 
 # DONE
-def _nan_handler_(ary, policy='filter'):
+def _nan_handler_(ary, policy="filter"):
   """
   Specify behavior when an array contains numpy.nan or numpy.inf.
 
@@ -286,41 +288,39 @@ def _nan_handler_(ary, policy='filter'):
 
   """
 
-  if policy not in ('filter', 'omit', 'raise'):
+  if policy not in ("filter", "omit", "raise"):
     raise ValueError("Policy must be `filter`, `omit` or `raise`.")
 
-  def handler_func(x): return ~np.isfinite(x)
+  def handler_func(x):
+    return ~np.isfinite(x)
 
   # WARNING:  some problems prefer the mask and others go better
   #           with the mask, while others prefer the np.where
   #           behavior... needs to be studied
-  if policy == 'filter':
-    #return np.nan_to_num(ary, nan=1e12, posinf=1e12, neginf=1e12)
+  if policy == "filter":
+    # return np.nan_to_num(ary, nan=1e12, posinf=1e12, neginf=1e12)
     mask = ~handler_func(ary)
     if not np.all(mask):
-      return np.where(mask,ary,100)
-  elif policy == 'omit':
+      return np.where(mask, ary, 100)
+  elif policy == "omit":
     mask = ~handler_func(ary)
     if not np.all(mask):
       return ary[mask]
   else:
-    if np.where(np.isfinite(ary),0,1).sum():
-      raise ValueError("""NaN Values were found in the given array. Ipanema can
+    if np.where(np.isfinite(ary), 0, 1).sum():
+      raise ValueError(
+          """NaN Values were found in the given array. Ipanema can
         handle this kind of problems through nan_handler. Currently the policy
         is set to `raise`, change it to `filter`/`omit` in order to ipanema
         skip these non-numerical values.
-        """)
+        """
+      )
   return ary
 
-################################################################################
+# }}}
 
 
-
-
-
-
-################################################################################
-# OptimizerResult Object #######################################################
+# OptimizerResult Object {{{
 
 class OptimizerResult(object):
   """
@@ -357,18 +357,21 @@ class OptimizerResult(object):
     for k, v in kws.items():
       setattr(self, k, v)
 
-  @property# REVISIT
+  @property  # REVISIT
   def flatchain(self):
     """
     Show flatchain view of the sampling chain, only if emcee method was used.
     """
-    if hasattr(self, 'chain'):
+    if hasattr(self, "chain"):
       if len(self.chain.shape) == 4:
-        return pd.DataFrame(self.chain[0, ...].reshape((-1, self.nvary)),
-                            columns=self.param_vary)
+        return pd.DataFrame(
+            self.chain[0, ...].reshape((-1, self.nvary)),
+            columns=self.param_vary,
+        )
       elif len(self.chain.shape) == 3:
-        return pd.DataFrame(self.chain.reshape((-1, self.nvary)),
-                            columns=self.param_vary)
+        return pd.DataFrame(
+            self.chain.reshape((-1, self.nvary)), columns=self.param_vary
+        )
     else:
       return None
 
@@ -378,38 +381,49 @@ class OptimizerResult(object):
     """
     self.nvary = len(self.param_init)
     if isinstance(self.residuals, ndarray):
-      self.chi2 = self.residual + 0*self.init_residual
+      self.chi2 = self.residual + 0 * self.init_residual
       self.ndata = len(self.residuals)
       self.nfree = self.ndata - self.nvary
     else:
-      print('Error when computing statistics: residual is not an array.')
+      print("Error when computing statistics: residual is not an array.")
       self.chi2 = self.residual
       self.ndata = 1
       self.nfree = 1
     self.chi2red = self.chi2 / max(1, self.nfree)
-    self.nll2 = self.ndata * np.log(self.chi2 / self.ndata)   # -2*loglikelihood
-    self.aic = self.nll2 + 2 * self.nvary         # Akaike information criterion
-    self.bic = self.nll2 + np.log(self.ndata) * self.nvary  # Bayesian info crit
+    self.nll2 = self.ndata * \
+        np.log(self.chi2 / self.ndata)  # -2*loglikelihood
+    self.aic = self.nll2 + 2 * self.nvary  # Akaike information criterion
+    # Bayesian info crit
+    self.bic = self.nll2 + np.log(self.ndata) * self.nvary
 
   def __str__(self, corr=True, min_corr=0.5):
     return fit_report(self, show_correl=corr, min_correl=min_corr, as_string=True)
 
-################################################################################
-
+# }}}
 
 
 # Optimizer Object {{{
+
 
 class Optimizer(object):
   """
   A generaloptimizer for curve fitting and optimization.
   """
 
-  def __init__(self, fcn_call, params,
-               fcn_args=None, fcn_kwgs=None,
-               model_call=None, scale_covar=True, policy='filter',
-               residual_reduce='sum', calc_covar=True,
-               **method_kwgs):
+  def __init__(
+      self,
+      fcn_call,
+      params,
+      weight=None,
+      fcn_args=(),
+      fcn_kwgs={},
+      model_call=None,
+      scale_covar=True,
+      policy="filter",
+      residual_reduce="sum",
+      calc_covar=True,
+      **method_kwgs,
+  ):
     """
     Initialize the Optimizer class.
 
@@ -466,11 +480,18 @@ class Optimizer(object):
     self.fcn_call = fcn_call
     self.fcn_args = fcn_args
     self.fcn_kwgs = fcn_kwgs
-    if self.fcn_args is None: self.fcn_args = []
-    if self.fcn_kwgs is None: self.fcn_kwgs = {}
+    if self.fcn_args is None:
+      self.fcn_args = []
+    if self.fcn_kwgs is None:
+      self.fcn_kwgs = {}
     self.model_call = model_call
 
-    self.miner_kwgs = {k:v for k,v in method_kwgs.items() if k!='verbose'}
+    self.weight = weight
+    if not self.weight:
+        _shape = self.fcn_call(params, *self.fcn_args, **self.fcn_kwgs)
+        self.weight = _shape * 0 + 1
+
+    self.miner_kwgs = {k: v for k, v in method_kwgs.items() if k != "verbose"}
 
     self.calc_covar = calc_covar
     self.scale_covar = scale_covar
@@ -489,20 +510,21 @@ class Optimizer(object):
     self.chi2red = None
     self.covar = None
     self.residual = None
-    if isinstance(residual_reduce,str):
+    if isinstance(residual_reduce, str):
       self.behavior = residual_reduce
     else:
-      self.behavior = 'custom'
+      self.behavior = "custom"
 
-
-    if residual_reduce == 'chi2':
+    print("residual reduce:", residual_reduce)
+    if residual_reduce == "chi2":
       self.residual_reduce = self._residual_squared_sum_
-    elif residual_reduce == 'likelihood':
+    elif residual_reduce == "likelihood":
       self.residual_reduce = self._residual_likelihood_
     else:
       self.residual_reduce = residual_reduce
     self.params = params
     self.policy = policy
+
 
   @property
   def values(self):
@@ -512,33 +534,27 @@ class Optimizer(object):
     return {name: p.value for name, p in self.result.params.items()}
 
 
-
   # Residual reductions {{{
 
   def _residual_sum_(self, arr):
     """
     Reduce residual array to scalar with the sum.
     """
-    #print(_nan_handler_(arr.sum(), self.policy))
-    return _nan_handler_(arr, self.policy).sum()
-
-
+    return _nan_handler_(arr * self.weight, self.policy).sum()
 
   def _residual_squared_sum_(self, arr):
     """
     Reduce residual array to scalar with the squared sum.
     """
-    return _nan_handler_(arr*arr, self.policy).sum()
+    return _nan_handler_(arr * arr * self.weight, self.policy).sum()
 
-
-  def _residual_likelihood_(self, arr): #WARNING SHOULD BE MODIFIED
+  def _residual_likelihood_(self, arr):  # WARNING SHOULD BE MODIFIED
     """
     Reduce residual array to scalar with the squared sum.
     """
-    return _nan_handler_(arr.sum(), self.policy)
+    return -2 * _nan_handler_(arr * self.weight, self.policy).sum()
 
   # }}}
-
 
   # Wrappers around fcn_call {{{
 
@@ -576,12 +592,11 @@ class Optimizer(object):
         params[name].value = val
     params.update_constraints()
 
-
     # Compute model output
     out = self.fcn_call(params, *self.fcn_args, **self.fcn_kwgs)
     self.result.nfev += 1
 
-    # Apply method
+    # Apply method
     #    In the future this will be the swicher [chi2]/[maxll fit].
     #    That means the unse inputs the model, and a string to select
     #    the kind of fit to be performed.
@@ -590,7 +605,7 @@ class Optimizer(object):
     #                           *self.fcn_args, **self.fcn_kwgs)
     #   self._abort = self._abort or abort
 
-    # Finishing
+    # Finishing
     if self._abort:
       self.result.residual = out
       self.result.aborted = True
@@ -600,12 +615,11 @@ class Optimizer(object):
       raise KeyboardInterrupt("Optimization aborted by user.")
     else:
       if reduce:
-        #print("out.sum() =", out.sum())
-        return self.residual_reduce(out) - self.result.init_residual #+ 100
-        #return self.residual_reduce(out) - self.result.init_residual
+        # print("out.sum() =", out.sum())
+        # + 100
+        return self.residual_reduce(out) - self.result.init_residual
+        # return self.residual_reduce(out) - self.result.init_residual
       return _nan_handler_(np.asarray(out).ravel(), policy=self.policy)
-
-
 
   def _wrapper_minuit_(self, *fvars, reduce=True):
     """
@@ -613,13 +627,11 @@ class Optimizer(object):
     """
     return self._residual_(list(fvars), reduce=reduce, rebounding=False)
 
-
-
   def _wrapper_scipy_(self, fvars, reduce=True, rebounding=True):
     """
     Wrapper around `_residual_` function used for scipy methods.
     """
-    if self.result.method in ('shgo', 'dual_annealing', 'least_squares'):
+    if self.result.method in ("shgo", "dual_annealing", "least_squares"):
       rebounding = False
     else:
       rebounding = True
@@ -629,12 +641,43 @@ class Optimizer(object):
 
   # }}}
 
-
   # Statistics calculators {{{
-
-  def _calculate_covariance_matrix_(self, fvars):
+  def fast_jac(self, f, vals, f_size=1):
     """
-    The covariance matrix.
+    Computes fast numerical jacobian of a function. Be aware that this jacobian
+    was self-developed to be afap.
+  
+    Parameters
+    ----------
+    f : callable
+      Function the jacobian wants to be computed from.
+    vals : list
+      Points the jacobian of f wants to be computed at.
+    f_size : int
+      Dimension of f when evaluated at vals.
+  
+    Returns
+    -------
+    ndarray :
+      Jacobian of f at vals
+    """
+    J = np.zeros([f_size, len(vals)])
+    for l in range(0, len(vals)):
+      if vals[l] != 0:
+        h = np.sqrt(np.finfo(float).eps) * vals[l]
+      else:
+        h = 1e-14
+      xhp = np.copy(vals).astype(np.float64)
+      xhp[l] += +h
+      xhm = np.copy(vals).astype(np.float64)
+      xhm[l] += -h
+      J[:, l] = (f(xhp) - f(xhm)) / (2 * h)
+    return J if f_size > 1 else J
+
+  def _calculate_covariance_matrix_(self, fvars, fancy=False, fast=False):
+    """
+    Calculates covariant matrix correcltly even in weighted fits.
+
 
     Parameters
     ----------
@@ -645,17 +688,41 @@ class Optimizer(object):
     -------
     array
         Covariance matrix
+
+    Note
+    ----
+    This follows Eq. 18 in !(this paper)[https://arxiv.org/pdf/1911.01303.pdf]
+    which correcly derives how in weighted fits (with constant weights)
+    these should be applied in order to properly estimate the covariance matrix.
     """
-    nfev = deepcopy(self.result.nfev) # copy this
+    _nfev = deepcopy(self.result.nfev)  # copy this
+    def prob(x): return self._residual_(x, False, False)
+    def sum_prob(x): return self.residual_reduce(self._residual_(x, False, False))
+    _H = ndt.Hessian(sum_prob)(fvars)
+    if not fancy:
+      return np.linalg.inv(_H)
+    _g = self.fast_jac(prob, fvars, len(prob(fvars)))
+    _D = np.zeros((len(fvars), len(fvars)))
+    for i in range(len(fvars)):
+        for j in range(len(fvars)):
+            _d = self.weight**2 * _g[:,i] * _g[:,j]
+            # print("_d = ", _g[:,i])
+            _D[i, j] = np.sum(_d)
     try:
-      res = lambda x: self.residual_reduce(self._residual_(x, False))
-      hessian = ndt.Hessian(res)(fvars)
-      cov = 2 * np.linalg.inv(hessian)
+      _B = np.linalg.inv(_H)
+      _C = np.zeros((len(fvars), len(fvars)))
+      for i in range(len(fvars)):
+        for j in range(len(fvars)):
+          all_ci = []
+          for k in range(len(fvars)):
+            for l in range(len(fvars)):
+              all_ci.append( _B[i,k] * _D[k,l] * _B[l,j] )
+          _C[i,j] = sum(all_ci)
     except (LinAlgError, ValueError):
       return None
     finally:
-      self.result.nfev = nfev # paste it!
-    return cov
+      self.result.nfev = _nfev  # paste it!
+    return _C
 
 
   # maybe note necessary anymore
@@ -666,7 +733,6 @@ class Optimizer(object):
         cov_ext = np.dot(grad.T, grad) * cov_int
 
     In:
-    0.123456789:
         cov_int:  Internal covariance matrix
                   array
           fvars:  Array of values of parameters
@@ -677,53 +743,65 @@ class Optimizer(object):
                   array
 
     """
-    g = [self.result.params[name].scale_gradient(fvars[i]) for i, name in
-         enumerate(self.result.param_vary)]
+    g = [
+        self.result.params[name].scale_gradient(fvars[i])
+        for i, name in enumerate(self.result.param_vary)
+    ]
     g = np.atleast_2d(g)
     cov_ext = cov_int * np.dot(g.T, g)
     return cov_ext
-
 
   # REVISIT
   def _calculate_uncertainties_correlations_(self):
     """
     Calculate parameter uncertainties and correlations.
     """
-    np.seterr(all='ignore'); orig_warn_settings = np.geterr()
+    np.seterr(all="ignore")
+    print('hey')
+    orig_warn_settings = np.geterr()
     self.result.errorbars = True
 
     scaled_cov = self.result.cov
-    #print(self.result.chi2red)
-    if self.behavior == 'chi2':
+    # print(self.result.chi2red)
+    if self.behavior == "chi2":
       scaled_cov *= self.result.chi2red
-    self.result.cov = scaled_cov
+    # self.result.cov = scaled_cov
 
-    fvar = [self.result.params[var].value for var in self.result.param_vary]
+    fvar = [self.result.params[var].value for var in self.result.params]
     fvar = np.atleast_1d(fvar)
+    nvar = {var: False for var in self.result.params}
+    print(nvar, fvar)
 
     has_formula = False
-    for par in self.result.params.values():
-      par.stdev, par.correl = 0, None
-      has_formula = has_formula or par.formula is not None
-    
+    for k, v in self.result.params.items():
+      v.stdev, v.correl = 0, None
+      has_formula = has_formula or v.formula is not None
+      nvar[k] = True if v.formula else False
+    # print("has_formula =", has_formula)
+    # print(nvar)
+
     for ivar, name in enumerate(self.result.param_vary):
       par = self.result.params[name]
       par.stdev = sqrt(scaled_cov[ivar, ivar])
+      print(f"{name}: {par.uvalue:.4uP}")
       par.correl = {}
       try:
         self.result.errorbars = self.result.errorbars and (par.stdev > 0.0)
         for jvar, varn2 in enumerate(self.result.param_vary):
           if jvar != ivar:
-             par.correl[varn2] = (scaled_cov[ivar, jvar] /
-                                 (par.stdev * sqrt(scaled_cov[jvar, jvar])))
+            par.correl[varn2] = scaled_cov[ivar, jvar] / (
+                par.stdev * sqrt(scaled_cov[jvar, jvar])
+            )
       except ZeroDivisionError:
         self.result.errorbars = False
 
     if has_formula:
       try:
-        uvars = unc.correlated_values(fvar, scaled_cov)
+        uvars = unc.correlated_values(fvar, self.result.params.cov())
       except (LinAlgError, ValueError):
+        orint("error here")
         uvars = None
+      print(uvars)
 
       # for uncertainties on constrained parameters, use the calculated
       # "correlated_values", evaluate the uncertainties on the constrained
@@ -737,7 +815,6 @@ class Optimizer(object):
     np.seterr(**orig_warn_settings)
 
   # }}}
-
 
   # Prepare and unprepare fit {{{
 
@@ -771,7 +848,9 @@ class Optimizer(object):
       result.params = Parameters()
       for par in self.params:
         if not isinstance(par, Parameter):
-          raise InputError("The provided parameters must be ipanema.Parameters objects, can do nothing.")
+          raise InputError(
+              "The provided parameters must be ipanema.Parameters objects, can do nothing."
+          )
         else:
           result.params[par.name] = par
     elif self.params is None:
@@ -799,27 +878,28 @@ class Optimizer(object):
       if par.name is None:
         par.name = name
     result.nvary = len(result.param_vary)
-    result.init_values = {n: v for n, v in zip(result.param_vary, result.param_init)}
+    result.init_values = {
+        n: v for n, v in zip(result.param_vary, result.param_init)
+    }
 
     result.init_residual = 0
-
 
     # Set up reduce function
     if not callable(self.residual_reduce):
       self.residual_reduce = self._residual_sum_
 
-    result.init_residual = self._residual_(result.param_init, reduce=True, rebounding=False)
-    #print('residual at init', result.init_residual)
-    #print('params at init', result.param_init)
+    result.init_residual = self._residual_(
+        result.param_init, reduce=True, rebounding=False
+    )
+    # print('residual at init', result.init_residual)
+    # print('params at init', result.param_init)
 
     return result
-
 
   def unprepare_fit(self):
     pass
 
   # }}}
-
 
   # METHODS (should be in different files) {{{
 
@@ -829,13 +909,16 @@ class Optimizer(object):
     """
     Configure minuit paramters
     """
+
     def parameter_minuit_config(par):
       out = {par.name: par.init}
-      lims = [None,None]
-      if abs(par.min) != np.inf: lims[0] = par.min
-      if abs(par.max) != np.inf: lims[1] = par.max
-      out.update ({"limit_" + par.name: tuple(lims)})
-      out.update ({"error_" + par.name: 1e-6})
+      lims = [None, None]
+      if abs(par.min) != np.inf:
+        lims[0] = par.min
+      if abs(par.max) != np.inf:
+        lims[1] = par.max
+      out.update({"limit_" + par.name: tuple(lims)})
+      out.update({"error_" + par.name: 1e-6})
       return out
 
     config = {}
@@ -844,18 +927,30 @@ class Optimizer(object):
         config.update(parameter_minuit_config(pars[par]))
     return config
 
-
-  def minuit(self, params=None, method='hesse', strategy=1, errordef=1, tol=0.05, print_level=-1, pedantic=False, maxiter=False, verbose=False, **crap):
+  def minuit(
+      self,
+      params,
+      method:str ="hesse",
+      strategy=1,
+      errordef=1,
+      tol=0.05,
+      print_level=-1,
+      pedantic=False,
+      maxiter=False,
+      verbose=False,
+      **crap,
+  ):
     """
     Optimization using Minuit.
     """
-    result = self.prepare_fit(params=params); #method='minos'
-    result.method = f'Minuit ({method})'
+    result = self.prepare_fit(params=params)
+    # method='minos'
+    result.method = f"Minuit ({method})"
 
     if verbose:
-      print_level=2
+      print_level = 2
     if not maxiter:
-      maxiter = 1000 * (len(result.param_init)+1)
+      maxiter = 1000 * (len(result.param_init) + 1)
     if verbose:
       print(f"{'method':>25} : {method}")
       print(f"{'maxiter':>25} : {maxiter}")
@@ -869,51 +964,83 @@ class Optimizer(object):
 
     minuit_pars = self._configure_minuit_parameters_(result.params)
     try:
-      ret = minuit(self._wrapper_minuit_,
-                   forced_parameters=self.result.param_vary, **minuit_pars,
-                   print_level=print_level, pedantic=pedantic,
-                   errordef=errordef)
-      ret.strategy = strategy;
-      ret.tol = tol;
+      ret = minuit(
+          self._wrapper_minuit_,
+          forced_parameters=self.result.param_vary,
+          **minuit_pars,
+          print_level=print_level,
+          pedantic=pedantic,
+          errordef=errordef,
+      )
+      ret.strategy = strategy
+      ret.tol = tol
       # Call migrad
       if verbose:
-        print('Migrad is running')
+        print("Migrad is running")
       ret.migrad(ncall=maxiter)
-      _counter = 1; # set a counter
+      _counter = 1
+      # set a counter
       while not ret.migrad_ok() and _counter <= 5:
         if _counter == 1:
           if verbose:
-            print(f"Goddamnit! This function is not well behaved!",\
-                  f"Try:", end="")
-        ret.migrad(ncall=1000 * (len(result.param_init)+1))
+            print(
+                f"Goddamnit! This function is not well behaved!",
+                f"Try:",
+                end="",
+            )
+        for k, v in minuit_pars.items():
+          if not k.startswith('limit') and not k.startswith('error'):
+            # print(k, v)
+            minuit_pars[k] = 0.9*v + (1.1*v - 0.9*v)*np.random.rand()
+            # print(k, v)
+        # print(minuit_pars)
+        ret = minuit(
+            self._wrapper_minuit_,
+            forced_parameters=self.result.param_vary,
+            **minuit_pars,
+            print_level=print_level,
+            pedantic=pedantic,
+            errordef=errordef,
+        )
+        ret.strategy = strategy
+        ret.tol = tol
+        ret.migrad(ncall=1000 * (len(result.param_init) + 1))
         _counter += 1
         if verbose:
           print(f"{_counter} ", end="")
       if _counter >= 5:
         if verbose:
-          print(f"Minuit cannot handle this fcn optimization.",
-                f"Call other method, ipanema provides a wide variety.")
+          print(
+              f"Minuit cannot handle this fcn optimization.",
+              f"Call other method, ipanema provides a wide variety.",
+          )
 
-      if method == 'hesse':
+      if method == "hesse" or method == "minos":
         if verbose:
-          print('Hesse is running')
-        #ret.migrad()
-        #self.result.init_residual = 0
+          print("Hesse is running")
+        # ret.migrad()
+        # self.result.init_residual = 0
         ret.hesse()
         if ret.get_fmin().hesse_failed:
           if verbose:
-            print(f"Seems like hesse has problems to find a valid covariance matrix")
-          ret.strategy = 2;
+            print(
+                f"Seems like hesse has problems to find a valid covariance matrix"
+            )
+          ret.strategy = 2
           ret.migrad()
           ret.hesse()
           if verbose:
             if ret.get_fmin().hesse_failed:
-              print(f"Hesse keeps complaining you may have to change the minimizer...")
+              print(
+                  f"Hesse keeps complaining you may have to change the minimizer..."
+              )
             else:
-              print(f"Ipanema kicked hesse's ass, and now it gives proper cov")
-      elif method == 'minos':
+              print(
+                  f"Ipanema kicked hesse's ass, and now it gives proper cov"
+              )
+      if method == "minos":
         if verbose:
-          print('Minos is running')
+          print("Minos is running")
         ret.minos()
     except KeyboardInterrupt:
       pass
@@ -926,8 +1053,8 @@ class Optimizer(object):
         ret.print_param()
       # calculate fit statistics
       result.x = np.atleast_1d(ret.args)
-      result.residuals = self._wrapper_minuit_(*result.x, reduce = False)
-      result.residual = self._wrapper_minuit_(*result.x, reduce = True)
+      result.residuals = self._wrapper_minuit_(*result.x, reduce=False)
+      result.residual = self._wrapper_minuit_(*result.x, reduce=True)
       result.residual += self.result.init_residual
       result.nfev -= 1
 
@@ -940,6 +1067,14 @@ class Optimizer(object):
     # calculate the cov and estimate uncertanties/correlations
     try:
       result.cov = np.matrix(ret.matrix())
+      # print("========================= minuit cov")
+      # print(result.cov)
+      # self._calculate_uncertainties_correlations_()
+      # print("========================= fancy cov")
+      # result.cov = self._calculate_covariance_matrix_(result.x, False, True)
+      # print("USED COVARIANCE")
+      # print(result.cov)
+      self._calculate_uncertainties_correlations_()
     except:
       ret.migrad()
       ret.hesse()
@@ -951,24 +1086,48 @@ class Optimizer(object):
       par.stdev = ret.errors[ipar]
       par.correl = {}
       try:
-        self.result.errorbars = self.result.errorbars and (par.stdev > 0.0)
+        self.result.errorbars = self.result.errorbars and (
+            par.stdev > 0.0)
         for jvar, varn2 in enumerate(self.result.param_vary):
           if jvar != ivar:
-             par.correl[varn2] = (self.result.cov[ivar, jvar] /
-                                 (par.stdev * sqrt(self.result.cov[jvar, jvar])))
+            par.correl[varn2] = self.result.cov[ivar, jvar] / (
+                par.stdev * sqrt(self.result.cov[jvar, jvar])
+            )
       except ZeroDivisionError:
         self.result.errorbars = False
-    self.result.message  = f"Fit is valid: {ret.migrad_ok()}."
-    self.result.message += f"This fit has errordef={ret.errordef} and tol={ret.tol}."
+    self.result.message = f"Fit is valid: {ret.migrad_ok()}."
+    self.result.message += (
+        f"This fit has errordef={ret.errordef} and tol={ret.tol}."
+    )
     self.result.message += f"Current estimated distance to minimum is {ret.edm:.4}."
     return result
 
   # }}}
 
-
   # Scipy.optimize methods handler {{{
 
-  def scalar_optimize(self, params=None, method='Nelder-Mead', maxiter=False, hess=False, updating='immediate', workers=1, strategy='best1bin', popsize=15, tol=0.01, mutation=(0.5, 1), recombination=0.7, seed=None, callback=None, disp=False, polish=True, init='latinhypercube', atol=0, verbose=False, **crap):
+  def scalar_optimize(
+      self,
+      params=None,
+      method="Nelder-Mead",
+      maxiter=False,
+      hess=False,
+      updating="immediate",
+      workers=1,
+      strategy="best1bin",
+      popsize=15,
+      tol=0.01,
+      mutation=(0.5, 1),
+      recombination=0.7,
+      seed=None,
+      callback=None,
+      disp=False,
+      polish=True,
+      init="latinhypercube",
+      atol=0,
+      verbose=False,
+      **crap,
+  ):
     """
     Optimization using scipy.optimize functions. For info about the Methods
     please check :scipydoc:`optimize.optimize`
@@ -976,8 +1135,8 @@ class Optimizer(object):
     result = self.prepare_fit(params=params)
     result.method = method
     if not maxiter:
-      maxiter = 1000 * (len(result.param_init)+1)
-    if method != 'Differential-Evolution':
+      maxiter = 1000 * (len(result.param_init) + 1)
+    if method != "Differential-Evolution":
       updating = None
       workers = None
       strategy = None
@@ -994,12 +1153,13 @@ class Optimizer(object):
       polish = None
       init = None
       atol = None
-    if method == 'Differential-Evolution':
+    if method == "Differential-Evolution":
       maxiter = None
       for par in params.values():
-        if (par.free and not (np.isfinite(par.min) and np.isfinite(par.max))):
-          raise ValueError('Differential Evolution requires finite bounds.')
-        diff_ev_bounds = [(-np.pi / 2., np.pi / 2.)] * len(variables)
+        if par.free and not (np.isfinite(par.min) and np.isfinite(par.max)):
+          raise ValueError(
+              "Differential Evolution requires finite bounds.")
+        diff_ev_bounds = [(-np.pi / 2.0, np.pi / 2.0)] * len(variables)
     if verbose:
       disp = True
     if verbose:
@@ -1022,34 +1182,46 @@ class Optimizer(object):
       print(f"{'non-used arguments':>25} : {crap}")
       print(f"{'params':>25} : {result.params.valuesdict()}")
 
-    if method == 'Nelder-Mead':
+    if method == "Nelder-Mead":
       maxiter *= 10
     variables = result.param_init
     params = result.params
     variables = [params[par].value for par in params if params[par].free]
 
-    #scpmin_kws.update(self.miner_kwgs)
-    #scpmin_kws.update(method_kwgs)
+    # scpmin_kws.update(self.miner_kwgs)
+    # scpmin_kws.update(method_kwgs)
 
-    scpmin_kws = {"updating":updating, "workers":workers, "strategy":strategy,
-                  "popsize":popsize, "disp":disp, "mutation":mutation,
-                  "recombination":recombination, "seed":seed, "init":init,
-                  "callback":callback, "polish":polish, "tol":tol,
-                  "atol":atol, "maxiter":maxiter#, "iprint": iprint
-                 }
-    scpmin_kws = {k:v for k,v in scpmin_kws.items() if v != None}
+    scpmin_kws = {
+        "updating": updating,
+        "workers": workers,
+        "strategy": strategy,
+        "popsize": popsize,
+        "disp": disp,
+        "mutation": mutation,
+        "recombination": recombination,
+        "seed": seed,
+        "init": init,
+        "callback": callback,
+        "polish": polish,
+        "tol": tol,
+        "atol": atol,
+        "maxiter": maxiter,  # , "iprint": iprint
+    }
+    scpmin_kws = {k: v for k, v in scpmin_kws.items() if v != None}
 
     # swicher: differential evolution is a bit different
-    if method == 'Differential-Evolution':
+    if method == "Differential-Evolution":
       try:
-        ret = differential_evolution(self._wrapper_scipy_, diff_ev_bounds,
-                                     options=scpmin_kws)
+        ret = differential_evolution(
+            self._wrapper_scipy_, diff_ev_bounds, options=scpmin_kws
+        )
       except KeyboardInterrupt:
         pass
     else:
       try:
-        ret = scipy_minimize(self._wrapper_scipy_, variables, method=method,
-                             options=scpmin_kws)
+        ret = scipy_minimize(
+            self._wrapper_scipy_, variables, method=method, options=scpmin_kws
+        )
       except KeyboardInterrupt:
         pass
 
@@ -1059,21 +1231,23 @@ class Optimizer(object):
           setattr(result, attr, value)
       else:
         for attr in dir(ret):
-          if not attr.startswith('_'):
+          if not attr.startswith("_"):
             setattr(result, attr, getattr(ret, attr))
 
       result.x = np.atleast_1d(result.x)
-      unbound_res_f = lambda x: self.residual_reduce(self._residual_(x, False))
-      result.residuals = self._residual_(result.x,reduce=False)
-      result.residual = self._residual_(result.x,reduce=True)
+      def unbound_res_f(x): return self.residual_reduce(
+          self._residual_(x, False))
+      result.residuals = self._residual_(result.x, reduce=False)
+      result.residual = self._residual_(result.x, reduce=True)
       result.residual += self.result.init_residual
       result.nfev -= 1
 
     result._compute_statistics_()
     # calculate the cov and estimate uncertanties/correlations
-    if (not result.aborted and self.calc_covar):
-      if 'hess_inv' in dir(ret):
+    if not result.aborted and self.calc_covar:
+      if "hess_inv" in dir(ret):
         cov = 2 * ret.hess_inv
+        cov = self._calculate_covariance_matrix_(result.x)
       else:
         cov = self._calculate_covariance_matrix_(result.x)
       cov = self._calculate_covariance_matrix_(result.x)
@@ -1085,10 +1259,25 @@ class Optimizer(object):
 
   # }}}
 
+  # MCMC Hammer {{{
 
-  # MCMC Hammer {{{
-
-  def emcee(self, params=None, steps=1000, nwalkers=100, burn=0, thin=1, ntemps=1, pos=None, reuse_sampler=False, workers=1, behavior='likelihood', is_weighted=True, seed=None, verbose=False, progress=True):
+  def emcee(
+      self,
+      params=None,
+      steps=1000,
+      nwalkers=100,
+      burn=0,
+      thin=1,
+      ntemps=1,
+      pos=None,
+      reuse_sampler=False,
+      workers=1,
+      behavior="likelihood",
+      is_weighted=True,
+      seed=None,
+      verbose=False,
+      progress=True,
+  ):
     """
     Bayesian sampling of the posterior distribution using emcee, a well known
     Markov Chain Monte Carlo package. The emcee package assumes that the
@@ -1157,9 +1346,11 @@ class Optimizer(object):
     # if you're reusing the sampler then ntemps, nwalkers have to be
     # determined from the previous sampling
     if reuse_sampler:
-      if not hasattr(self, 'sampler') or not hasattr(self, '_lastpos'):
-        raise ValueError("You wanted to use an existing sampler, but "
-                         "it hasn't been created yet")
+      if not hasattr(self, "sampler") or not hasattr(self, "_lastpos"):
+        raise ValueError(
+            "You wanted to use an existing sampler, but "
+            "it hasn't been created yet"
+        )
       if len(self._lastpos.shape) == 2:
         ntemps = 1
         nwalkers = self._lastpos.shape[0]
@@ -1170,22 +1361,29 @@ class Optimizer(object):
 
     result = self.prepare_fit(params=tparams)
     params = result.params
-    result.method = 'emcee'
+    result.method = "emcee"
 
     # check whether the fcn_call returns a vector of residuals
     out = self.fcn_call(params, *self.fcn_args, **self.fcn_kwgs)
     out = np.asarray(out).ravel()
     if out.size > 1 and is_weighted is False:
       # we need to marginalise over a constant data uncertainty
-      if 'logfcn' not in params:
+      if "logfcn" not in params:
         # log_fcn should already be in params if is_weighted was
         # previously set to True.
-        params.add({'name': 'logfcn', 'value': np.log(0.1), 'min':np.log(0.001), 'max':100*np.log(2), 'free': True, 'latex':'log(L)'})
+        params.add(
+            {
+                "name": "logfcn",
+                "value": np.log(0.1),
+                "min": np.log(0.001),
+                "max": 100 * np.log(2),
+                "free": True,
+                "latex": "log(L)",
+            }
+        )
         # have to re-prepare the fit
         result = self.prepare_fit(params)
         params = result.params
-
-
 
     # Removing internal parameter scaling. We could possibly keep it,
     # but I don't know how this affects the emcee sampling.
@@ -1206,9 +1404,9 @@ class Optimizer(object):
       param.from_internal = lambda val: val
       lb, ub = param.min, param.max
       if lb is None or lb is np.nan:
-          lb = -np.inf
+        lb = -np.inf
       if ub is None or ub is np.nan:
-          ub = np.inf
+        ub = np.inf
       bounds.append((lb, ub))
     bounds = np.array(bounds)
 
@@ -1218,29 +1416,31 @@ class Optimizer(object):
     auto_pool = None
     sampler_kwgs = {}
     if isinstance(workers, int) and workers > 1:
-        auto_pool = multiprocessing.Pool(workers)
-        sampler_kwgs['pool'] = auto_pool
-    elif hasattr(workers, 'map'):
-        sampler_kwgs['pool'] = workers
+      auto_pool = multiprocessing.Pool(workers)
+      sampler_kwgs["pool"] = auto_pool
+    elif hasattr(workers, "map"):
+      sampler_kwgs["pool"] = workers
 
     # function arguments for the log-probability functions
     # these values are sent to the log-probability functions by the sampler.
     lnprob_args = (self.fcn_call, params, result.param_vary, bounds)
-    lnprob_kwgs = { 'is_weighted': is_weighted,
-                    'behavior': 'likelihood' if behavior=='likelihood' else 'chi2',
-                    'fcn_args': self.fcn_args,
-                    'fcn_kwgs': self.fcn_kwgs,
-                    'policy': self.policy, 'lnprob0':self.result.init_residual
-                  }
+    lnprob_kwgs = {
+        "is_weighted": is_weighted,
+        "behavior": "likelihood" if behavior == "likelihood" else "chi2",
+        "fcn_args": self.fcn_args,
+        "fcn_kwgs": self.fcn_kwgs,
+        "policy": self.policy,
+        "lnprob0": self.result.init_residual,
+    }
 
     if ntemps > 1:
       # the prior and likelihood function args and kwgs are the same
-      sampler_kwgs['loglargs'] = lnprob_args
-      sampler_kwgs['loglkwgs'] = lnprob_kwgs
-      sampler_kwgs['logpargs'] = (bounds,)
+      sampler_kwgs["loglargs"] = lnprob_args
+      sampler_kwgs["loglkwgs"] = lnprob_kwgs
+      sampler_kwgs["logpargs"] = (bounds,)
     else:
-      sampler_kwgs['args'] = lnprob_args
-      sampler_kwgs['kwargs'] = lnprob_kwgs
+      sampler_kwgs["args"] = lnprob_args
+      sampler_kwgs["kwargs"] = lnprob_kwgs
 
     # set up the random number generator
     rng = _random_instance_(seed)
@@ -1248,24 +1448,28 @@ class Optimizer(object):
     # now initialise the samplers
     if reuse_sampler:
       if auto_pool is not None:
-          self.sampler.pool = auto_pool
+        self.sampler.pool = auto_pool
 
       p0 = self._lastpos
       if p0.shape[-1] != self.nvary:
-          raise ValueError("You cannot reuse the sampler if the number"
-                            "of freeing parameters has changed")
+        raise ValueError(
+            "You cannot reuse the sampler if the number"
+            "of freeing parameters has changed"
+        )
     elif ntemps > 1:
       # Parallel Tempering
       # jitter the starting position by scaled Gaussian noise
-      p0 = 1 + rng.randn(ntemps, nwalkers, self.nvary) * 1.e-4
+      p0 = 1 + rng.randn(ntemps, nwalkers, self.nvary) * 1.0e-4
       p0 *= var_arr
-      self.sampler = emcee.PTSampler(ntemps, nwalkers, self.nvary,
-                                      _lnpost_, _lnprior_, **sampler_kwgs)
+      self.sampler = emcee.PTSampler(
+          ntemps, nwalkers, self.nvary, _lnpost_, _lnprior_, **sampler_kwgs
+      )
     else:
-      p0 = 1 + rng.randn(nwalkers, self.nvary) * 1.e-4
+      p0 = 1 + rng.randn(nwalkers, self.nvary) * 1.0e-4
       p0 *= var_arr
-      self.sampler = emcee.EnsembleSampler(nwalkers, self.nvary,
-                                            _lnpost_, **sampler_kwgs)
+      self.sampler = emcee.EnsembleSampler(
+          nwalkers, self.nvary, _lnpost_, **sampler_kwgs
+      )
 
     # user supplies an initialisation position for the chain
     # If you try to run the sampler with p0 of a wrong size then you'll get
@@ -1283,10 +1487,12 @@ class Optimizer(object):
         tpos_shape = list(tpos.shape)
         tpos_shape.pop(2)
         if tpos_shape == (ntemps, nwalkers, self.nvary):
-            tpos = tpos[..., -1, :]
+          tpos = tpos[..., -1, :]
       else:
-        raise ValueError('pos should have shape (nwalkers, nvary)'
-                         'or (ntemps, nwalkers, nvary) if ntemps > 1')
+        raise ValueError(
+            "pos should have shape (nwalkers, nvary)"
+            "or (ntemps, nwalkers, nvary) if ntemps > 1"
+        )
       p0 = tpos
 
     # if you specified a seed then you also need to seed the sampler
@@ -1329,31 +1535,32 @@ class Optimizer(object):
     result.lnprob = np.copy(lnprobability)
     result.errorbars = True
     result.nvary = len(result.param_vary)
-    result.nfev = ntemps*nwalkers*steps
+    result.nfev = ntemps * nwalkers * steps
 
     # Calculate the residual with the "best fit" parameters
     out = self.fcn_call(params, *self.fcn_args, **self.fcn_kwgs)
-    result.residuals = self._residual_(np.array(params),reduce=False)
-    result.residual = self._residual_(np.array(params),reduce=True)
+    result.residuals = self._residual_(np.array(params), reduce=False)
+    result.residual = self._residual_(np.array(params), reduce=True)
     result.residual += self.result.init_residual
 
     # If uncertainty was automatically estimated, weight the residual properly
     if (not is_weighted) and (result.residual.size > 1):
-      if 'logfcn' in params:
-        result.residuals = result.residuals/np.exp(params['logfcn'].value)
+      if "logfcn" in params:
+        result.residuals = result.residuals / \
+            np.exp(params["logfcn"].value)
 
     # Calculate statistics for the two standard cases:
-    if isinstance(result.residuals, ndarray) or (behavior == 'chi2'):
+    if isinstance(result.residuals, ndarray) or (behavior == "chi2"):
       result._compute_statistics_()
 
     # Handle special case unique to emcee:
     # This should eventually be moved into result._compute_statistics_.
-    elif behavior == 'likelihood':
+    elif behavior == "likelihood":
       result.ndata = 1
       result.nfree = 1
 
       # assuming prior prob = 1, this is true
-      nll2 = -2*result.residual
+      nll2 = -2 * result.residual
 
       # assumes that residual is properly weighted
       result.chi2 = np.exp(nll2)
@@ -1369,10 +1576,9 @@ class Optimizer(object):
 
   # }}}
 
+  # Trust-Region and Levenberg-Marquardt method {{{
 
-  # Trust-Region and Levenberg-Marquardt method {{{
-
-  def least_squares(self, params=None, method='lm', verbose=False, **method_kwgs):
+  def least_squares(self, params=None, method="lm", verbose=False, **method_kwgs):
     """
     Standard least squares fitting method calling a Trust Region Reflective
     algorithm, which solver the standard least squares problem or the
@@ -1395,14 +1601,14 @@ class Optimizer(object):
 
     """
     result = self.prepare_fit(params)
-    if method == 'least_squares':
-      result.method = 'Least-Squares'
-      method_ = 'trf'
-    elif method == 'lm':
-      result.method = 'Levenberg-Marquardt'
-      method_ = 'lm'
+    if method == "least_squares":
+      result.method = "Least-Squares"
+      method_ = "trf"
+    elif method == "lm":
+      result.method = "Levenberg-Marquardt"
+      method_ = "lm"
 
-    replace_none = lambda x, sign: sign*np.inf if x is None else x
+    def replace_none(x, sign): return sign * np.inf if x is None else x
 
     start_vals, lower_bounds, upper_bounds = [], [], []
 
@@ -1413,13 +1619,21 @@ class Optimizer(object):
       upper_bounds.append(replace_none(par.max, +1))
 
     try:
-      if method_== 'trf':
-        ret = least_squares(lambda x: self._residual_(x,False), start_vals,
-                            bounds=(lower_bounds, upper_bounds),
-                            method='trf',**method_kwgs)
-      elif method_ == 'lm':
-        ret = least_squares(lambda x: self._residual_(x,False), start_vals,
-                            method='lm',**method_kwgs)
+      if method_ == "trf":
+        ret = least_squares(
+            lambda x: self._residual_(x, False),
+            start_vals,
+            bounds=(lower_bounds, upper_bounds),
+            method="trf",
+            **method_kwgs,
+        )
+      elif method_ == "lm":
+        ret = least_squares(
+            lambda x: self._residual_(x, False),
+            start_vals,
+            method="lm",
+            **method_kwgs,
+        )
       result.residual = ret.fun
     except KeyboardInterrupt:
       pass
@@ -1435,7 +1649,7 @@ class Optimizer(object):
     result._compute_statistics_()
 
     # Uncertanties and correlations
-    if (not result.aborted and self.calc_covar):
+    if not result.aborted and self.calc_covar:
       _covar_ndt = self._calculate_covariance_matrix_(ret.x)
       if _covar_ndt is not None:
         result.cov = self._int2ext_cov_(_covar_ndt, ret.x)
@@ -1443,100 +1657,105 @@ class Optimizer(object):
 
     return result
 
-
   def levenberg_marquardt(self, params=None, verbose=False, **kws):
-        """
-        merge this with least squares...
-        """
-        result = self.prepare_fit(params=params)
-        result.method = 'Levenberg-Marquardt (lm)'
-        result.nfev -= 2  # correct for "pre-fit" initialization/checks
-        variables = result.param_init
-        nvars = len(variables)
-        lskws = dict(full_output=1, xtol=1.e-7, ftol=1.e-7, col_deriv=False,
-                     gtol=1.e-7, maxfev=2000*(nvars+1))
+    """
+    merge this with least squares...
+    """
+    result = self.prepare_fit(params=params)
+    result.method = "Levenberg-Marquardt (lm)"
+    result.nfev -= 2  # correct for "pre-fit" initialization/checks
+    variables = result.param_init
+    nvars = len(variables)
+    lskws = dict(
+        full_output=1,
+        xtol=1.0e-7,
+        ftol=1.0e-7,
+        col_deriv=False,
+        gtol=1.0e-7,
+        maxfev=2000 * (nvars + 1),
+    )
 
-        lskws.update(self.miner_kwgs)
-        lskws.update(kws)
+    lskws.update(self.miner_kwgs)
+    lskws.update(kws)
 
+    self.col_deriv = False
 
-        self.col_deriv = False
+    # suppress runtime warnings during fit and error analysis
+    orig_warn_settings = np.geterr()
+    np.seterr(all="ignore")
+    try:
+      lsout = levenberg_marquardt(self._residual_, variables, **lskws)
+    except KeyboardInterrupt:
+      pass
 
-        # suppress runtime warnings during fit and error analysis
-        orig_warn_settings = np.geterr()
-        np.seterr(all='ignore')
-        try:
-          lsout = levenberg_marquardt(self._residual_, variables, **lskws)
-        except KeyboardInterrupt:
-          pass
+    if not result.aborted:
+      _best, _cov, infodict, errmsg, ier = lsout
+      result.residuals = self._residual_(_best, False)
+      result.residual = self._residual_(_best, reduce=True)
+      result.residual += self.result.init_residual
+      result.nfev -= 1
+    result._compute_statistics_()
 
-        if not result.aborted:
-          _best, _cov, infodict, errmsg, ier = lsout
-          result.residuals = self._residual_(_best,False)
-          result.residual = self._residual_(_best, reduce=True)
-          result.residual += self.result.init_residual
-          result.nfev -= 1
-        result._compute_statistics_()
+    if result.aborted:
+      return result
 
-        if result.aborted:
-          return result
+    result.ier = ier
+    result.lmdif_message = errmsg
+    result.success = ier in [1, 2, 3, 4]
+    if ier in {1, 2, 3}:
+      result.message = "Fit succeeded."
+    elif ier == 0:
+      result.message = (
+          "Invalid Input Parameters. I.e. more variables "
+          "than data points given, tolerance < 0.0, or "
+          "no data provided."
+      )
+    elif ier == 4:
+      result.message = "One or more variable did not affect the fit."
+    elif ier == 5:
+      result.message = self._err_maxfev % lskws["maxfev"]
+    else:
+      result.message = "Tolerance seems to be too small."
 
-        result.ier = ier
-        result.lmdif_message = errmsg
-        result.success = ier in [1, 2, 3, 4]
-        if ier in {1, 2, 3}:
-            result.message = 'Fit succeeded.'
-        elif ier == 0:
-            result.message = ('Invalid Input Parameters. I.e. more variables '
-                              'than data points given, tolerance < 0.0, or '
-                              'no data provided.')
-        elif ier == 4:
-            result.message = 'One or more variable did not affect the fit.'
-        elif ier == 5:
-            result.message = self._err_maxfev % lskws['maxfev']
-        else:
-            result.message = 'Tolerance seems to be too small.'
+    # self.errorbars = error bars were successfully estimated
+    result.errorbars = _cov is not None
+    if result.errorbars:
+      # transform the covariance matrix to "external" parameter space
+      result.cov = self._int2ext_cov_(_cov, _best)
+      # calculate parameter uncertainties and correlations
+      self._calculate_uncertainties_correlations_()
+    else:
+      result.message = "%s Could not estimate error-bars." % result.message
 
-        # self.errorbars = error bars were successfully estimated
-        result.errorbars = (_cov is not None)
-        if result.errorbars:
-            # transform the covariance matrix to "external" parameter space
-            result.cov = self._int2ext_cov_(_cov, _best)
-            # calculate parameter uncertainties and correlations
-            self._calculate_uncertainties_correlations_()
-        else:
-            result.message = '%s Could not estimate error-bars.' % result.message
+    np.seterr(**orig_warn_settings)
 
-        np.seterr(**orig_warn_settings)
-
-        return result
+    return result
 
   # }}}
 
+  # Basin - Hopping method {{{
 
-  # Basin - Hopping method {{{
-
-  def basinhopping(self, params=None, verbose=False, **method_kwgs):
+  def basin_hopping(self, params=None, verbose=False, **method_kwgs):
     """
     shit shit shit
     """
     result = self.prepare_fit(params=params)
-    result.method = 'basinhopping'
+    result.method = "Basin-Hopping"
 
     basinhopping_kwgs = dict(
-                              niter=100,
-                              T=1.0,
-                              stepsize=0.5,
-                              take_step=None,
-                              accept_test=None,
-                              callback=None,
-                              interval=50,
-                              disp=False,
-                              niter_success=None,
-                              seed=None
-                            )
+        niter=100,
+        T=1.0,
+        stepsize=0.5,
+        take_step=None,
+        accept_test=None,
+        callback=None,
+        interval=50,
+        disp=False,
+        niter_success=None,
+        seed=None,
+    )
 
-    #basinhopping_kwgs.update(self.miner_kwgs)
+    # basinhopping_kwgs.update(self.miner_kwgs)
     print(self.miner_kwgs)
     print(method_kwgs)
     basinhopping_kwgs.update(method_kwgs)
@@ -1544,15 +1763,15 @@ class Optimizer(object):
     x0 = result.param_init
 
     try:
-      ret = scipy_basinhopping(self._wrapper_scipy_, x0,
-                               **basinhopping_kwgs)
+      ret = scipy_basinhopping(
+          self._wrapper_scipy_, x0, **basinhopping_kwgs)
     except KeyboardInterrupt:
       pass
 
     if not result.aborted:
       result.message = ret.message
       result.residuals = self._residual_(ret.x)
-      result.residual = self._residual_(ret.x,reduce=True)
+      result.residual = self._residual_(ret.x, reduce=True)
       result.residual += self.result.init_residual
       result.nfev -= 1
 
@@ -1560,7 +1779,7 @@ class Optimizer(object):
     result._compute_statistics_()
 
     # Uncertanties and correlations
-    if (not result.aborted and self.calc_covar):
+    if not result.aborted and self.calc_covar:
       _covar_ndt = self._calculate_covariance_matrix_(ret.x)
       if _covar_ndt is not None:
         result.cov = self._int2ext_cov_(_covar_ndt, ret.x)
@@ -1570,32 +1789,32 @@ class Optimizer(object):
 
   # }}}
 
-
-  # Simplicial Homology Global Optimization method {{{
+  # Simplicial Homology Global Optimization method {{{
 
   def shgo(self, params=None, verbose=False, **method_kwgs):
     """
     shit shit
     """
     result = self.prepare_fit(params=params)
-    result.method = 'shgo'
+    result.method = "shgo"
 
     shgo_kwgs = dict(
-                      constraints=None,
-                      n=100,
-                      iters=1,
-                      callback=None,
-                      minimizer_kwargs=None,
-                      options=None,
-                      sampling_method='simplicial'
-                    )
+        constraints=None,
+        n=100,
+        iters=1,
+        callback=None,
+        minimizer_kwargs=None,
+        options=None,
+        sampling_method="simplicial",
+    )
 
     shgo_kwgs.update(self.miner_kwgs)
     shgo_kwgs.update(method_kwgs)
 
     freeing = np.asarray([par.free for par in self.params.values()])
-    bounds = np.asarray([(par.min, par.max) for par in
-                         self.params.values()])[freeing]
+    bounds = np.asarray([(par.min, par.max) for par in self.params.values()])[
+        freeing
+    ]
 
     try:
       ret = scipy_shgo(self._wrapper_scipy_, bounds, **shgo_kwgs)
@@ -1604,12 +1823,12 @@ class Optimizer(object):
 
     if not result.aborted:
       for attr, value in ret.items():
-        if attr in ['success', 'message']:
+        if attr in ["success", "message"]:
           setattr(result, attr, value)
         else:
-          setattr(result, 'shgo_{}'.format(attr), value)
+          setattr(result, "shgo_{}".format(attr), value)
       result.residuals = self._residual_(result.shgo_x, False)
-      result.residual = self._residual_(result.shgo_x,reduce=True)
+      result.residual = self._residual_(result.shgo_x, reduce=True)
       result.residual += self.result.init_residual
       result.nfev -= 1
 
@@ -1617,7 +1836,7 @@ class Optimizer(object):
     result._compute_statistics_()
 
     # Uncertanties and correlations
-    if (not result.aborted and self.calc_covar):
+    if not result.aborted and self.calc_covar:
       result.cov = self._calculate_covariance_matrix_(result.shgo_x)
       if result.cov is not None:
         self._calculate_uncertainties_correlations_()
@@ -1626,8 +1845,7 @@ class Optimizer(object):
 
   # }}}
 
-
-  # Dual Annealing optimization {{{
+  # Dual Annealing optimization {{{
 
   def dual_annealing(self, params=None, verbose=False, **method_kwgs):
     """
@@ -1657,53 +1875,54 @@ class Optimizer(object):
     """
 
     result = self.prepare_fit(params=params)
-    result.method = 'dual_annealing'
+    result.method = "dual_annealing"
 
     da_kwgs = dict(
-                    maxiter=1000,
-                    local_search_options={},
-                    initial_temp=5230.0,
-                    restart_temp_ratio=2e-05,
-                    visit=2.62,
-                    accept=-5.0,
-                    maxfun=10000000.0,
-                    seed=None,
-                    no_local_search=False,
-                    callback=None,
-                    x0=None
-                  )
+        maxiter=1000,
+        local_search_options={},
+        initial_temp=5230.0,
+        restart_temp_ratio=2e-05,
+        visit=2.62,
+        accept=-5.0,
+        maxfun=10000000.0,
+        seed=None,
+        no_local_search=False,
+        callback=None,
+        x0=None,
+    )
     da_kwgs.update(self.miner_kwgs)
     da_kwgs.update(method_kwgs)
 
     freeing = np.asarray([par.free for par in self.params.values()])
-    bounds = np.asarray([(par.min, par.max) for par in
-                         self.params.values()])[freeing]
+    bounds = np.asarray([(par.min, par.max) for par in self.params.values()])[
+        freeing
+    ]
 
     if not np.all(np.isfinite(bounds)):
-      raise ValueError('dual_annealing requires finite bounds for all'
-                       ' freeing parameters')
+      raise ValueError(
+          "dual_annealing requires finite bounds for all" " freeing parameters"
+      )
 
     try:
-      fcn = scipy_dual_annealing(self._wrapper_scipy_, bounds,
-                                 **da_kwgs)
+      fcn = scipy_dual_annealing(self._wrapper_scipy_, bounds, **da_kwgs)
     except KeyboardInterrupt:
       pass
 
     if not result.aborted:
       for attr, value in fcn.items():
-        if attr in ['success', 'message']:
+        if attr in ["success", "message"]:
           setattr(result, attr, value)
         else:
-          setattr(result, 'da_{}'.format(attr), value)
+          setattr(result, "da_{}".format(attr), value)
       result.residuals = self._residual_(result.da_x, False)
-      result.residual = self._residual_(result.da_x,reduce=True)
+      result.residual = self._residual_(result.da_x, reduce=True)
       result.residual += self.result.init_residual
       result.nfev -= 1
 
     result._compute_statistics_()
 
     # calculate the cov and estimate uncertanties/correlations
-    if (not result.aborted and self.calc_covar):
+    if not result.aborted and self.calc_covar:
       result.cov = self._calculate_covariance_matrix_(result.da_x)
       if result.cov is not None:
         self._calculate_uncertainties_correlations_()
@@ -1714,10 +1933,9 @@ class Optimizer(object):
 
   # }}}
 
+  # Optimization launcher {{{
 
-  # Optimization launcher {{{
-
-  def optimize(self, params=None, method='lbfgsb', **method_kwgs):
+  def optimize(self, params=None, method="lbfgsb", **method_kwgs):
     """
     Perform the minimization.
 
@@ -1741,7 +1959,7 @@ class Optimizer(object):
         * - `cobyla`: Constrained optimization by linear approx
         * STOCHASTIC-BASED:
         * - `emmcc`: Maximum likelihood via Monte-Carlo Markov Chain
-        * - `basinhopping`: basinhopping (~Metropolis–Hastings)
+        * - `basin_hopping`: basinhopping (~Metropolis–Hastings)
         * - `dual_annealing`: Dual Annealing optimization
         * – `multinest`: -> not yet
         * GENETIC ALGORITHMS:
@@ -1768,53 +1986,65 @@ class Optimizer(object):
         Method
 
     """
-    kwgs = {'params': params}
+    kwgs = {"params": params}
     kwgs.update(self.miner_kwgs)
     kwgs.update(method_kwgs)
     miner = method.lower()
-    if   miner == 'lm':
-      #function = self.least_squares
+    if miner == "lm":
+      # function = self.least_squares
       function = self.levenberg_marquardt
-      #kwgs['method'] = 'lm'
-    elif miner.startswith('least'):
+      # kwgs['method'] = 'lm'
+    elif miner.startswith("least"):
       function = self.least_squares
-      kwgs['method'] = 'least_squares'
-    elif miner == 'brute':
+      kwgs["method"] = "least_squares"
+    elif miner == "brute":
       function = self.brute
-    elif miner == 'basinhopping':
-      function = self.basinhopping
-    elif miner == 'emcee':
+    elif miner == "basin_hopping":
+      function = self.basin_hopping
+    elif miner == "emcee":
       function = self.emcee
-    elif miner == 'shgo':
+    elif miner == "shgo":
       function = self.shgo
-    elif miner == 'minuit':
+    elif miner == "minuit":
       function = self.minuit
-      kwgs['method'] = 'hesse'
-    elif miner == 'minos':
+      kwgs["method"] = "hesse"
+    elif miner == "minos":
       function = self.minuit
-      kwgs['method'] = 'minos'
-    elif miner == 'dual_annealing':
+      kwgs["method"] = "minos"
+    elif miner == "dual_annealing":
       function = self.dual_annealing
     else:
       function = self.scalar_optimize
       for k, v in SCIPY_METHODS.items():
-        if (k.lower().startswith(miner) or v.lower().startswith(miner)):
-          kwgs['method'] = v
+        if k.lower().startswith(miner) or v.lower().startswith(miner):
+          kwgs["method"] = v
     return function(**kwgs)
 
   # }}}
 
+
 # }}}
 
 
-# Optimize function {{{
+# Optimize function {{{
 
-def optimize(fcn_call, params, method='lbfgsb',
-             fcn_args=None, fcn_kwgs=None,
-             model_call=None,
-             scale_covar=True, policy='filter', calc_covar=True,
-             residual_reduce=None,
-             verbose=False, timeit=False, **method_kwgs):
+
+def optimize(
+    fcn_call,
+    params,
+    method="lbfgsb",
+    weight=None,
+    fcn_args=None,
+    fcn_kwgs=None,
+    model_call=None,
+    scale_covar=True,
+    policy="filter",
+    calc_covar=True,
+    residual_reduce=None,
+    verbose=False,
+    timeit=False,
+    **method_kwgs,
+):
   """
   Search for the minimum of an objective function with one of the provided
   methods.
@@ -1852,21 +2082,30 @@ def optimize(fcn_call, params, method='lbfgsb',
 
   """
   t0 = timer()
-  fitter = Optimizer(fcn_call, params, fcn_args=fcn_args, fcn_kwgs=fcn_kwgs,
-                     model_call=model_call, scale_covar=scale_covar,
-                     policy=policy, residual_reduce=residual_reduce,
-                     calc_covar=calc_covar)
+  fitter = Optimizer(
+      fcn_call,
+      params,
+      fcn_args=fcn_args,
+      fcn_kwgs=fcn_kwgs,
+      weight=weight,
+      model_call=model_call,
+      scale_covar=scale_covar,
+      policy=policy,
+      residual_reduce=residual_reduce,
+      calc_covar=calc_covar,
+  )
   result = fitter.optimize(method=method, verbose=verbose, **method_kwgs)
-  tf = timer()-t0
+  tf = timer() - t0
   if verbose:
     timeit = True
   if timeit:
     hours, rem = divmod(tf, 3600)
     minutes, seconds = divmod(rem, 60)
-    print(f'Optimization finished in {hours}h {minutes}m {seconds:2.3}s.')
+    print(f"Optimization finished in {hours}h {minutes}m {seconds:2.3}s.")
   return result
+
 
 # }}}
 
 
-# vim:foldmethod=marker
+# vim: fdm=marker ts=2 sw=2 sts=2 sr et
