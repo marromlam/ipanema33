@@ -361,6 +361,43 @@ class Parameters(OrderedDict):
     cov = uncs[:, np.newaxis] * corr * uncs
     return cov
 
+  def corr_from_matrix(self, mat, pars=False):
+    print('eo')
+    if not pars:
+      pars = list(self.keys())
+    r, c = mat.shape
+    if r != c or r != len(pars):
+        raise ValueError('sizes do not match')
+    for i, r in enumerate(pars):
+      if r in self.keys():
+        print(r)
+        _corr = {}
+        for j, c in enumerate(pars):
+            if c in self.keys():
+                print(c)
+                _corr[c] = mat[i,j]
+        if not self[r].correl:
+            self[r].correl = _corr
+        else:
+            self[r].correl.update(_corr)
+    # print(self.corr(pars))
+
+  def cov_from_matrix(self, mat, pars=False):
+    if not pars:
+      pars = list(self.keys())
+    r, c = mat.shape
+    if r != c or r != len(pars):
+        raise ValueError('sizes do not match')
+    for i, r in enumerate(pars):
+        _corr = {}
+        for j, c in enumerate(pars):
+            _corr[c] = mat[i,j] / (pars[r].stdev * pars[c].stdev)
+        if not self[r].correl:
+            self[r].correl = _corr
+        else:
+            self[r].correl.update(_corr)
+
+
   def lock(self, *args):
     if args:
       for par in args:

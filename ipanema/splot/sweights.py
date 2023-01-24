@@ -59,7 +59,7 @@ def compute_sweights(model, params, yields, weights="None"):
   # on a specie, and set the others to zero
   _yields = {}
   for k, v in yields.items():
-    if not np.allclose(v.value / _sum_yields, 0, 1e-10):
+    if not np.allclose(v.value / _sum_yields, 0, 1e-10, 1e-2 / _number_of_events):
       __yields = Parameters.clone(yields)
       for _k in __yields.keys():
         __yields[_k].set(value=0, init=0, min=-np.inf, max=np.inf)

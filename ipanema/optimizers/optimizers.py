@@ -515,7 +515,7 @@ class Optimizer(object):
     else:
       self.behavior = "custom"
 
-    print("residual reduce:", residual_reduce)
+    # print("residual reduce:", residual_reduce)
     if residual_reduce == "chi2":
       self.residual_reduce = self._residual_squared_sum_
     elif residual_reduce == "likelihood":
@@ -757,7 +757,7 @@ class Optimizer(object):
     Calculate parameter uncertainties and correlations.
     """
     np.seterr(all="ignore")
-    print('hey')
+    # print('hey')
     orig_warn_settings = np.geterr()
     self.result.errorbars = True
 
@@ -770,7 +770,7 @@ class Optimizer(object):
     fvar = [self.result.params[var].value for var in self.result.params]
     fvar = np.atleast_1d(fvar)
     nvar = {var: False for var in self.result.params}
-    print(nvar, fvar)
+    # print(nvar, fvar)
 
     has_formula = False
     for k, v in self.result.params.items():
@@ -783,7 +783,7 @@ class Optimizer(object):
     for ivar, name in enumerate(self.result.param_vary):
       par = self.result.params[name]
       par.stdev = sqrt(scaled_cov[ivar, ivar])
-      print(f"{name}: {par.uvalue:.4uP}")
+      # print(f"{name}: {par.uvalue:.4uP}")
       par.correl = {}
       try:
         self.result.errorbars = self.result.errorbars and (par.stdev > 0.0)
@@ -799,9 +799,8 @@ class Optimizer(object):
       try:
         uvars = unc.correlated_values(fvar, self.result.params.cov())
       except (LinAlgError, ValueError):
-        orint("error here")
         uvars = None
-      print(uvars)
+      # print(uvars)
 
       # for uncertainties on constrained parameters, use the calculated
       # "correlated_values", evaluate the uncertainties on the constrained

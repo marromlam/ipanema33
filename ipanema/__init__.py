@@ -11,7 +11,7 @@ objs = get_exposed_package_objects(IPANEMAPATH)
 globals().update(objs)
 
 
-__all__ = ["IPANEMAPATH", "IPANEMALIB"]
+__all__ = ["IPANEMAPATH", "IPANEMALIB", "IPANEMA"]
 __all__ += list(objs.keys())
 __all__.sort()
 
